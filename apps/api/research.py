@@ -5,7 +5,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 from sqlalchemy import select
 from uuid import UUID
 from core.storage.models import ResearchJobRecord as Job
-from core.research import jobs
+from core.research import jobs, batches
 from sqlalchemy.orm import Session
 from core.models import Candle, Instrument
 from core.storage.models import CandleRecord, InstrumentRecord
@@ -36,6 +36,31 @@ class RunRequest(BaseModel):
         if value is not None and (value.tzinfo is None or value.utcoffset() is None): raise ValueError('as_of must be timezone-aware')
         if value is not None and value>datetime.now(timezone.utc): raise ValueError('Future as_of unavailable')
         return value
+
+
+class Variant(BaseModel):
+    model_config=ConfigDict(extra='forbid')
+    strategy: Literal['ema_long_flat_v1','sma_long_flat_v1']
+    parameters: dict
+
+    @model_validator(mode='after')
+    def normalized(self):
+        _,validated=resolve(self.strategy).create(self.parameters)
+        self.parameters=validated.model_dump(mode='json')
+        return self
+
+
+class BatchRequest(BaseModel):
+    model_config=ConfigDict(extra='forbid')
+    base: RunRequest
+    variants: list[Variant]=Field(min_length=2,max_length=8)
+
+    @model_validator(mode='after')
+    def unique(self):
+        from core.backtest.spot import digest
+        signatures=[digest(variant.model_dump(mode='json')) for variant in self.variants]
+        if len(set(signatures))!=len(signatures):raise ValueError('Duplicate variants unavailable')
+        return self
 
 
 def prepare(engine,request):
@@ -73,6 +98,29 @@ def router_for(engine):
         try:return jobs.enqueue(engine,frozen,bars,instrument)
         except jobs.QueueFull:raise HTTPException(429,'Research queue full (20 active tasks)')
         except ValueError as error:raise HTTPException(409,str(error))
+
+    @router.post('/api/v1/research/batches',status_code=202)
+    def submit_batch(request:BatchRequest):
+        bars,instrument,base=prepare(engine,request.base)
+        requests=[]
+        for variant in request.variants:
+            config=dict(base['config'])
+            if variant.strategy=='ema_long_flat_v1':config['period']=variant.parameters['period']
+            frozen=RunRequest.model_validate({**base,**variant.model_dump(mode='json'),'config':config}).model_dump(mode='json')
+            requests.append(frozen)
+        try:return batches.enqueue(engine,requests,bars,instrument)
+        except jobs.QueueFull:raise HTTPException(429,'Research queue full; batch was not submitted')
+        except ValueError as error:raise HTTPException(409,str(error))
+
+    @router.get('/api/v1/research/batches/{batch_id}')
+    def get_batch(batch_id:UUID):
+        try:return batches.read(engine,str(batch_id))
+        except KeyError:raise HTTPException(404,'Batch not found')
+
+    @router.post('/api/v1/research/batches/{batch_id}/cancel')
+    def cancel_batch(batch_id:UUID):
+        try:return batches.cancel(engine,str(batch_id))
+        except KeyError:raise HTTPException(404,'Batch not found')
 
     @router.get('/api/v1/research/jobs')
     def list_jobs():

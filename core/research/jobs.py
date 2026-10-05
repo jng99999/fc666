@@ -19,17 +19,27 @@ def view(job):
     return {'job_id':job.job_id,'created_at':job.created_at,'updated_at':job.updated_at,'status':job.status,'progress':job.progress,'cancel_requested':job.cancel_requested,'attempts':job.attempts,'request':job.request,'error':job.error,'run_id':None if job.result is None else job.result['run_id']}
 
 def enqueue(engine,request,bars,instrument):
+    return enqueue_many(engine,[request],bars,instrument)[0]
+
+
+def enqueue_many(engine,requests,bars,instrument):
+    """One admission lock and transaction: all variants accepted or none."""
+    if not 1<=len(requests)<=8:raise ValueError('Require 1..8 tasks')
     if len(bars)<2:raise ValueError('Require at least two finalized bars')
     if any(b.open_time!=a.close_time or b.timeframe!=a.timeframe for a,b in zip(bars,bars[1:])):raise ValueError('Contiguous ordered series required')
-    snapshot={'request_sha256':digest(request),'engine_version':VERSION,'strategy':request.get('strategy','ema_long_flat_v1'),'dataset':[b.model_dump(mode='json') for b in bars],'instrument':instrument.model_dump(mode='json')}
-    snapshot['sha256']=digest(snapshot)
+    dataset=[b.model_dump(mode='json') for b in bars]
     stamp=now()
     with Session(engine) as session,session.begin():
         session.execute(text('SELECT pg_advisory_xact_lock(6660601)'))
         count=session.scalar(select(func.count()).select_from(Job).where(Job.status.in_(['QUEUED','RUNNING'])))
-        if count>=ACTIVE_LIMIT:raise QueueFull()
-        job=Job(job_id=str(uuid4()),created_at=stamp,updated_at=stamp,status='QUEUED',progress=0,cancel_requested=False,attempts=0,request=request,snapshot=snapshot)
-        session.add(job);session.flush();return view(job)
+        if count+len(requests)>ACTIVE_LIMIT:raise QueueFull()
+        created=[]
+        for request in requests:
+            snapshot={'request_sha256':digest(request),'engine_version':VERSION,'strategy':request.get('strategy','ema_long_flat_v1'),'dataset':dataset,'instrument':instrument.model_dump(mode='json')}
+            snapshot['sha256']=digest(snapshot)
+            job=Job(job_id=str(uuid4()),created_at=stamp,updated_at=stamp,status='QUEUED',progress=0,cancel_requested=False,attempts=0,request=request,snapshot=snapshot)
+            session.add(job);created.append(job)
+        session.flush();return [view(job) for job in created]
 
 def heartbeat(engine,worker_id):
     with Session(engine) as session,session.begin():

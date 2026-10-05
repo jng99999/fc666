@@ -57,3 +57,9 @@ UV_CACHE_DIR=/workspace/.cache/uv uv run --frozen python -m tests.browser_jobs
 UV_CACHE_DIR=/workspace/.cache/uv uv run --frozen python -m scripts.reproduce_backtest .runtime/browser-job-export.json
 ```
 start.sh执行0004 schema并启动独立研究worker；研究health在/api/v1/research/status，进程日志.runtime/research.log。停止/恢复只作用自己拥有的进程，死任务租约30秒后可重领，结果与快照保存在PG。详细合同RESEARCH_JOBS.md；确认的官方REST修正保留candle_revisions审计，禁止用普通导入覆盖冲突。
+
+参数批次研究验证（真实服务启动后，测试会停止/恢复自己的research进程）：
+```bash
+UV_CACHE_DIR=/workspace/.cache/uv uv run --frozen python -m tests.browser_batches
+```
+同一机器上会改变worker状态的浏览器套件应顺序执行；契约与范围见RESEARCH_BATCHES.md。
