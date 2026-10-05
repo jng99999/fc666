@@ -8,6 +8,7 @@ from core.storage.schema import SCHEMA_REVISION
 from apps.api.settings import Settings
 from apps.api.research import router_for as research_router
 from apps.api.replay import router_for as replay_router
+from apps.api.paper import router_for as paper_router
 from apps.api.market import router_for, market_health
 
 logger = logging.getLogger("fc666.api")
@@ -30,6 +31,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(router_for(engine,cache,config.redis_url))
     app.include_router(research_router(engine))
     app.include_router(replay_router(engine))
+    app.include_router(paper_router(engine))
 
     @app.get("/health/live")
     def live():
@@ -48,6 +50,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 conn.execute(text("SELECT job_id FROM research_jobs LIMIT 0"))
                 conn.execute(text("SELECT worker_id FROM research_workers LIMIT 0"))
                 conn.execute(text("SELECT session_id FROM replay_sessions LIMIT 0"))
+                conn.execute(text("SELECT session_id FROM paper_sessions LIMIT 0"))
                 checks["schema"] = conn.execute(text("SELECT version_num FROM alembic_version")).scalar() == SCHEMA_REVISION
         except Exception:
             logger.warning("readiness_dependency_unavailable", extra={"dependency": "database"})
@@ -64,8 +67,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @app.get("/api/v1/system/status")
     def status():
-        return {"phase": 5, "mode": config.trading_mode, "live_trading": False,
+        return {"phase": 8, "mode": config.trading_mode, "live_trading": False,
                 "market_data": market_health(cache), "execution": "not_implemented",
-                "strategy": "not_implemented", "risk": "not_implemented"}
+                "strategy": "builtin_ema_sma_v1", "risk": "historical_paper_entry_limits_v1",
+                "paper": "historical_spot_next_open_v1"}
 
     return app

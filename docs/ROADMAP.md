@@ -1,6 +1,6 @@
 # 分阶段路线与当前状态
 
-状态：Phase 0 PARTIAL（架构/产品/设计文档已落地；研究深度与竞品 UI 实测待补充）。Phase 1 工程基础已实现并验证（见 [PHASE_1_REPORT](PHASE_1_REPORT.md)）；Phase 2 Spot 与 Phase 3 核心只读终端已实现并验证（见 PHASE_2_REPORT/PHASE_3_REPORT）；Phase 2b 衍生品、Phase 3 overlays/长时性能仍待实现或验收；Phase 4 首批基础指标/确认swing/价格overlays已实现，完整结构与regime仍待完成（见PHASE_4_REPORT）；Phase 5 Spot回测首片已实现（见PHASE_5_REPORT），其余回测能力未完成；Phase6后台任务首片已实现（见PHASE_6_REPORT），完整SDK/Lab及Phase7–15待完成。
+状态：Phase 0 PARTIAL（架构/产品/设计文档已落地；研究深度与竞品 UI 实测待补充）。Phase 1 工程基础已实现并验证（见 [PHASE_1_REPORT](PHASE_1_REPORT.md)）；Phase 2 Spot 与 Phase 3 核心只读终端已实现并验证（见 PHASE_2_REPORT/PHASE_3_REPORT）；Phase 2b 衍生品、Phase 3 overlays/长时性能仍待实现或验收；Phase 4 首批基础指标/确认swing/价格overlays已实现，完整结构与regime仍待完成（见PHASE_4_REPORT）；Phase 5 Spot回测首片已实现（见PHASE_5_REPORT），其余回测能力未完成；Phase6后台任务首片已实现（见PHASE_6_REPORT），完整SDK/Lab待完成；Phase7闭合柱回放与EMA/SMA决策已实现；Phase8历史Spot Paper首片已实现，实时Paper与Phase9–15待完成。
 禁止一次性实现完整项目；每阶段执行需求、架构检查、设计、实现、测试、运行、修复、审查、安全、性能、文档、报告。阶段间依赖可以先设计或引入必要基础，但不得伪称后续完整模块已完成。
 
 | Phase | 交付范围 | 阶段验收 |

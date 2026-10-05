@@ -32,7 +32,7 @@ check 运行真实数据库/Redis integration 和模型测试、alembic check、
 
 ## 诊断
 日志 `.runtime/api.log`、`.runtime/web.log`、`.runtime/market.log`；secret 不入日志。数据库用 .env 的 DATABASE_URL，Redis 用 REDIS_URL；API 工厂启动时加载设置。前端服务器代理使用 API_BASE_URL（默认本机 8000），浏览器只访问同源 API 与 /stream/v1/market。
-LIVE_TRADING=true 或 TRADING_MODE=LIVE 会使设置校验失败。未实现 private orders、risk、strategy，不能通过环境变量启用交易。
+LIVE_TRADING=true 或 TRADING_MODE=LIVE 会使设置校验失败。已实现内置EMA/SMA与历史Paper最低买入限制；private orders、完整Risk/OMS和Live未实现，不能通过环境变量启用实盘交易。
 云网络保留 session proxy/TLS/CA，Docker 此阶段容器不访问外网（只有 daemon 拉镜像）。后续包含网络 build/run 时须按 runtime 技能挂载 CA，不禁用验证。
 
 ## 行情与浏览器验证
@@ -56,7 +56,7 @@ UV_CACHE_DIR=/workspace/.cache/uv uv run --frozen python -m scripts.reproduce_ba
 UV_CACHE_DIR=/workspace/.cache/uv uv run --frozen python -m tests.browser_jobs
 UV_CACHE_DIR=/workspace/.cache/uv uv run --frozen python -m scripts.reproduce_backtest .runtime/browser-job-export.json
 ```
-start.sh执行0005 schema并启动独立研究worker；研究health在/api/v1/research/status，进程日志.runtime/research.log。停止/恢复只作用自己拥有的进程，死任务租约30秒后可重领，结果与快照保存在PG。详细合同RESEARCH_JOBS.md；确认的官方REST修正保留candle_revisions审计，禁止用普通导入覆盖冲突。
+start.sh执行最新0006 schema并启动独立研究worker；研究health在/api/v1/research/status，进程日志.runtime/research.log。停止/恢复只作用自己拥有的进程，死任务租约30秒后可重领，结果与快照保存在PG。详细合同RESEARCH_JOBS.md；确认的官方REST修正保留candle_revisions审计，禁止用普通导入覆盖冲突。
 
 参数批次研究验证（真实服务启动后，测试会停止/恢复自己的research进程）：
 ```bash
@@ -69,10 +69,10 @@ UV_CACHE_DIR=/workspace/.cache/uv uv run --frozen python -m tests.browser_batche
 UV_CACHE_DIR=/workspace/.cache/uv uv run --frozen python -m tests.browser_holdout
 UV_CACHE_DIR=/workspace/.cache/uv uv run --frozen python -m scripts.reproduce_backtest .runtime/browser-holdout-export.json
 ```
-范围与冷启动边界见HOLDOUT_RESEARCH.md。安装、0005 schema和四服务启动保持现有流程。
+范围与冷启动边界见HOLDOUT_RESEARCH.md。安装、最新0006 schema和四服务启动保持现有流程。
 
 ## 历史回放验证
-start.sh自动迁移到0005（replay_sessions），无需新服务或密钥。
+start.sh自动迁移到最新0006（保留0005的replay_sessions），无需新服务或密钥。
 ```bash
 UV_CACHE_DIR=/workspace/.cache/uv uv run --frozen python -m tests.browser_replay
 ```
@@ -86,3 +86,14 @@ UV_CACHE_DIR=/workspace/.cache/uv uv run --frozen python -m scripts.verify_repla
 ```
 
 前缀核对仅验证已到达内容的内部一致性，详见REPLAY_DECISIONS.md。
+
+## 历史 Paper 验证
+
+start.sh自动迁移到0006，新增paper_sessions并保留已有回放、研究与行情数据。无新依赖、服务、密钥或域名。/health/ready验证paper_sessions与0006 head。
+
+```bash
+UV_CACHE_DIR=/workspace/.cache/uv uv run --frozen python -m tests.browser_paper
+UV_CACHE_DIR=/workspace/.cache/uv uv run --frozen python -m scripts.verify_paper_prefix .runtime/browser-paper-prefix.json
+```
+
+/paper只访问自身前缀API；真实历史驱动，当前不订阅实时行情。资金/库存、风险限额和恢复边界见PAPER_TRADING.md。

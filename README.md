@@ -1,8 +1,10 @@
 # FC666
 
-专业 Crypto Quant Workstation，已实现工程基础、Binance Spot 公共行情、只读交易终端和闭合柱历史回放：FastAPI、Next.js/TypeScript、PostgreSQL/TimescaleDB、Redis。
+专业 Crypto Quant Workstation，已实现工程基础、Binance Spot 公共行情、只读交易终端、闭合柱历史回放和历史模拟账户：FastAPI、Next.js/TypeScript、PostgreSQL/TimescaleDB、Redis。
 终端提供 BTC/USDT、ETH/USDT 六周期真实 K 线、报价、订单簿、成交、布局保存、移动端切换和基础指标 overlays、RSI/MACD/ATR 面板与已确认结构标记。新增EMA/SMA两种内置策略的真实历史现货回测研究页、版本/参数清单、后台任务/取消/恢复、共享快照的2–8组参数批次比较、固定参数样本内/样本外分段研究与完整离线复现导出。完整策略Lab、组合策略/多类型回测、模拟交易、AI 和订单执行仍 **Not Implemented**。
 历史回放提供固定快照、逐根/播放/暂停/速度、刷新恢复、因果指标及固定 EMA/SMA 目标决策；支持已到达前缀下载与离线核对，不含逐笔簿/撮合。
+
+`/paper` 提供独立现货模拟资金/持仓、下一柱开盘成交、手续费/滑点、买入金额与回撤限制、手动停止买入及持久恢复。当前仅历史闭合柱驱动，实时 Paper 与实盘未开放；详见 [Paper 契约](docs/PAPER_TRADING.md)。
 实盘强制关闭，`LIVE_TRADING=true` 或 `TRADING_MODE=LIVE` 会被拒绝。
 
 ## 开始开发

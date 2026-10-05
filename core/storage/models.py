@@ -104,3 +104,19 @@ class ReplaySessionRecord(Base):
         CheckConstraint("cursor >= 0 AND cursor <= json_array_length(snapshot->'dataset')",name='ck_replay_cursor'),
         CheckConstraint('revision >= 0',name='ck_replay_revision'),
     )
+
+class PaperSessionRecord(Base):
+    __tablename__ = 'paper_sessions'
+    session_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    snapshot: Mapped[dict] = mapped_column(JSON)
+    ledger: Mapped[dict] = mapped_column(JSON)
+    cursor: Mapped[int] = mapped_column(Integer)
+    revision: Mapped[int] = mapped_column(Integer)
+    halt_at: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    __table_args__ = (
+        CheckConstraint("cursor >= 0 AND cursor <= json_array_length(snapshot->'dataset')", name='ck_paper_cursor'),
+        CheckConstraint('revision >= 0', name='ck_paper_revision'),
+        CheckConstraint('halt_at IS NULL OR (halt_at >= 0 AND halt_at <= cursor)', name='ck_paper_halt'),
+    )
