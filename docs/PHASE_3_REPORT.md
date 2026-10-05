@@ -17,4 +17,4 @@ Binance Spot BTC/USDT、ETH/USDT 真实报价、六周期 K 线与 volume、订�
 运行 tests.browser_terminal；浏览器输出 .runtime/browser-report.json、terminal-desktop.png、terminal-mobile.png。图表 benchmark 源码 tests/web/chart-benchmark.ts，结果 .runtime/chart-windowed.json；API 测量 .runtime/api-benchmark.json。运行文件被忽略，不提交为产品数据。
 测试使用 npm 完整性验证安装的 @sparticuz/chromium 和软件图形渲染；未关闭 TLS 或 web security。标准 Playwright CDN 下载受代理限制，已用 npm 浏览器分发解决。
 这不是十分钟持续负载、生产并发或全市场性能验收。React commit 数、深度历史 panning、完整 accessibility audit 尚未量化。未实现指标、回测成交 overlays、衍生品、策略、订单、模拟/实盘交易及 AI。
-TradingView 官方 NOTICE 与外链、库 attribution logo 已保留，见 apps/web/THIRD_PARTY_NOTICES.md。
+TradingView 官方 NOTICE 与外链、库 attribution logo 已保留，见 docs/THIRD_PARTY_NOTICES.md。
