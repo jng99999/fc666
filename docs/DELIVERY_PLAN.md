@@ -21,3 +21,5 @@ Spot EMA Long/Flat回测、Decimal账本、真实数据API/研究页面、完整
 Phase 0 深入竞品交互研究、Phase 2b derivatives、Phase 3 指标/成交 overlays 与长时负载/深度导航性能验收继续保留，不将短时 smoke 宣称完整性能达标。
 Phase 5–15 按 ROADMAP.md：回测 → SDK/Lab → Replay → Paper → Portfolio/Risk → AI → OMS → Reconciliation → Live → Optimization → Hardening。
 Live 默认关闭，必须满足风险、执行、恢复、故障验收并获得独立实盘授权；健康接口和纸面收益不能解锁下单。
+
+Phase 6 策略扩展基础已完成：见STRATEGY_REGISTRY.md。下一执行顺序：v2历史复现与旧队列兼容 → v3策略/参数快照 → SMA回测与页面 → 后端、真实任务与浏览器验收。SMA当前只完成决策模块，未开放任务提交。

@@ -11,6 +11,7 @@ from core.models import Candle, Instrument
 from core.storage.models import CandleRecord, InstrumentRecord
 from core.exchange.binance import SYMBOLS
 from core.backtest.spot import BacktestConfig, simulate
+from core.strategy.registry import DEFINITIONS
 
 class RunRequest(BaseModel):
     model_config=ConfigDict(extra='forbid')
@@ -55,7 +56,8 @@ def router_for(engine):
 
     @router.get('/api/v1/research/strategies')
     def strategies():
-        return [{'strategy':'ema_long_flat_v1','version':1,'description':'Finalized close above SMA-seeded EMA -> LONG; otherwise FLAT; warmup -> no signal','config_schema':BacktestConfig.model_json_schema()}]
+        return [{**definition.describe(),'config_schema':BacktestConfig.model_json_schema()}
+                for definition in DEFINITIONS.values() if definition.backtest_available]
 
     @router.post('/api/v1/research/jobs',status_code=202)
     def submit(request:RunRequest):

@@ -5,7 +5,8 @@ import json
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 from core.models import Candle, Instrument
 from core.indicators.engine import IndicatorEngine
-from core.strategy.contracts import EmaLongFlat, StrategyContext
+from core.strategy.contracts import StrategyContext
+from core.strategy.registry import resolve
 
 VERSION = 'spot-next-open-v2'
 from core.backtest.analytics import analyze
@@ -51,7 +52,7 @@ def simulate(bars: list[Candle], instrument: Instrument, config: BacktestConfig,
         ctx.prec=60
         cash=config.initial_cash;quantity=Decimal(0);cost=Decimal(0);fees=Decimal(0);realized=Decimal(0)
         peak=config.initial_cash;drawdown=Decimal(0)
-        pending=None;fills=[];orders=[];equity=[];signals=[];market_states=[];indicator=IndicatorEngine(period=config.period);strategy=EmaLongFlat()
+        pending=None;fills=[];orders=[];equity=[];signals=[];market_states=[];indicator=IndicatorEngine(period=config.period);strategy=resolve('ema_long_flat_v1').create({'period':config.period})[0]
         for index,bar in enumerate(bars):
             if checkpoint is not None and index%25==0:checkpoint(index,len(bars))
             if pending is not None:
