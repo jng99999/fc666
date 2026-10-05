@@ -11,3 +11,5 @@
 后续长任务：完善Phase4 regime与指标SDK→Phase5更多撮合与分析/事件向量对照→Phase6版本策略与后台任务→Replay→Paper与最小Risk→Portfolio/Risk→AI→OMS与恢复。每次进入下一撮合能力先定义可观测语义和失效测试。
 
 实盘仍默认关闭。用户的常规自主发布授权不替代Live阶段资金/账户/交易限额授权，也不豁免Risk/OMS/Reconciliation验收。
+
+后续切片执行记录：新增回测v2成本/完整交易/风险收益分析、ER/ATR闭合历史分类、保留v1离线复现，详见PHASE_5_ANALYTICS_REPORT.md。下一阶段独立对照和更多撮合能力仍未完成。

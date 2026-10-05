@@ -25,3 +25,5 @@ null 表示预热未满足或零成交量无 VWAP，禁止填0或前向填充。
 新增RSI/MACD/ATR独立pane，均线周期10/20/50/100和历史窗口120/500/1000。API支持oscillator_period(1–500)、swing_radius(1–20)，所有参数和seed仍随请求明确。
 对最近已确认swing high/low用闭合价严格首次突破，分别up/down；每个level仅一次事件，新pivot重置level。首次/同向突破称BOS，已知方向反转称CHOCH；未确认pivot、影线touch、相等close不算突破。事件available_at为当前柱close，未来数据不能改变既往事件。这是明确的局部规则，不冒充所有市场结构学派或完整regime。
 图上标记放在确认柱，完整事件在API返回；为可读性仅显示当前窗口最近20个结构标记。改变窗口会改变seed和初始结构状态，研究必须记录窗口。
+
+新增er-atr-v1分类与明确预热/阈值/可见时点，见ANALYTICS.md。这是可解释局部历史分类，完整多周期regime仍未完成。

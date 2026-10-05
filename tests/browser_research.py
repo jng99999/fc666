@@ -26,6 +26,8 @@ if __name__=='__main__':
         expect(page.locator('.chart-caption')).to_contain_text('SMA50')
         with page.expect_response(lambda r:'/api/market/indicators' in r.url and 'limit=120' in r.url) as response:page.get_by_label('历史窗口',exact=True).select_option('120')
         assert len(response.value.json()['rows'])==120
+        assert response.value.json()['rows'][-1]['regime']['rule_version']=='er-atr-v1'
+        expect(page.get_by_test_id('market-regime')).not_to_have_text('')
         page.screenshot(path=str(ROOT/'.runtime/terminal-indicators.png'),full_page=True)
         page.get_by_role('button',name='指标 overlays').click()
         page.wait_for_function(f"document.querySelectorAll('[data-testid=price-chart] canvas').length=={canvas_count}")
@@ -34,11 +36,16 @@ if __name__=='__main__':
         with page.expect_response(lambda r:'/api/market/backtest' in r.url) as response:page.get_by_role('button',name='运行历史回测').click()
         assert response.value.status==200
         data=response.value.json();run_id=reproduce(data)
+        assert data['manifest']['engine_version']=='spot-next-open-v2'
+        assert 'analysis' in data and 'market_states' in data
         expect(page.get_by_test_id('backtest-result')).to_contain_text('已完成')
         expect(page.locator('.research-metrics>div')).to_have_count(9)
         assert 'NaN' not in page.locator('.research-metrics').inner_text()
         expect(page.locator('.research-metrics')).to_contain_text('%')
         expect(page.get_by_role('img',name='回测权益曲线')).to_be_visible()
+        expect(page.get_by_role('img',name='回测回撤曲线')).to_be_visible()
+        expect(page.get_by_test_id('risk-analysis')).to_contain_text('Sharpe')
+        assert 'NaN' not in page.get_by_test_id('risk-analysis').inner_text()
         page.get_by_label('截止时间（含时区，可空）').fill(data['manifest']['end'])
         with page.expect_response(lambda r:'/api/market/backtest' in r.url) as response:page.get_by_role('button',name='运行历史回测').click()
         assert response.value.json()['run_id']==run_id

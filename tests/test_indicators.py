@@ -97,3 +97,16 @@ def test_structure_break_is_close_confirmed_once_and_causal():
     assert rows[-1]['structure_breaks'][0]['kind']=='CHOCH'
     assert rows[-1]['structure_breaks'][0]['direction']=='down'
     assert run(values[:7])==rows[:7]
+
+def test_regime_efficiency_warmup_direction_flat_and_prefix():
+    upward=run([10,11,12,13,14,15],period=3,oscillator_period=2)
+    assert upward[2]['regime']['label']=='UNAVAILABLE'
+    assert upward[3]['regime']['label']=='TREND_UP'
+    assert upward[3]['regime']['efficiency_ratio']==1
+    assert upward[3]['regime']['available_at']==upward[3]['available_at']
+    assert run([15,14,13,12],period=3,oscillator_period=2)[-1]['regime']['label']=='TREND_DOWN'
+    flat=run([10]*5,period=3,oscillator_period=2)
+    assert flat[-1]['regime']['label']=='RANGE' and flat[-1]['regime']['efficiency_ratio']==0
+    oscillating=run([10,11,10,11],period=3,oscillator_period=2)
+    assert oscillating[-1]['regime']['label']=='RANGE'
+    assert run([10,11,12,13],period=3,oscillator_period=2)==upward[:4]

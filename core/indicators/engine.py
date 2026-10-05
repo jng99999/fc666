@@ -35,6 +35,7 @@ class IndicatorEngine:
                 raise ValueError('Periods must be integers in [1, 500]')
         self.period, self.radius = period, swing_radius
         self.window = deque(maxlen=period)
+        self.regime_window = deque(maxlen=period+1)
         self.swings = deque(maxlen=2 * swing_radius + 1)
         self.ema = Average(period)
         self.fast, self.slow, self.signal = Average(12), Average(26), Average(9)
@@ -56,6 +57,7 @@ class IndicatorEngine:
         if not all(math.isfinite(v) for v in (close, high, low, volume)):
             raise ValueError('Non-finite float research conversion')
         self.window.append(close)
+        self.regime_window.append(close)
         sma = math.fsum(self.window) / self.period if len(self.window) == self.period else None
         std = math.sqrt(math.fsum((v - sma) ** 2 for v in self.window) / self.period) if sma is not None else None
         ema = self.ema.push(close)
@@ -110,7 +112,16 @@ class IndicatorEngine:
                       bollinger_mid=sma, bollinger_upper=None if std is None else sma + 2 * std, bollinger_lower=None if std is None else sma - 2 * std, vwap=vwap)
         if any(v is not None and not math.isfinite(v) for v in values.values()):
             raise ValueError('Non-finite indicator output')
-        return {'open_time': bar.open_time.isoformat(), 'available_at': bar.close_time.isoformat(), 'values': values, 'confirmed_swings': confirmed, 'structure_breaks': breaks,
+        ready=len(self.regime_window)==self.regime_window.maxlen and atr is not None
+        movement=math.fsum(abs(b-a) for a,b in zip(self.regime_window,list(self.regime_window)[1:]))
+        change=self.regime_window[-1]-self.regime_window[0]
+        efficiency=abs(change)/movement if ready and movement else 0.0 if ready else None
+        atr_fraction=atr/close if atr is not None else None
+        regime={'rule_version':'er-atr-v1','available_at':bar.close_time.isoformat(),'lookback_changes':self.period,
+                'label':'UNAVAILABLE' if not ready else 'RANGE' if efficiency<.35 else 'TREND_UP' if change>0 else 'TREND_DOWN',
+                'efficiency_ratio':efficiency,'atr_fraction':atr_fraction,
+                'volatility':'UNAVAILABLE' if atr_fraction is None else 'HIGH' if atr_fraction>=.02 else 'LOW' if atr_fraction<.005 else 'NORMAL'}
+        return {'regime':regime,'open_time': bar.open_time.isoformat(), 'available_at': bar.close_time.isoformat(), 'values': values, 'confirmed_swings': confirmed, 'structure_breaks': breaks,
                 'trend': 'unavailable' if ema is None or sma is None else 'up' if close > ema and ema > sma else 'down' if close < ema and ema < sma else 'mixed'}
 
 

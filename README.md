@@ -27,6 +27,7 @@ bash scripts/start.sh
 - [Phase 3 终端与性能报告](docs/PHASE_3_REPORT.md)
 - [Phase 4 指标首批报告](docs/PHASE_4_REPORT.md)
 - [Phase 5 回测首片报告](docs/PHASE_5_REPORT.md)
+- [风险收益分析与市场分类](docs/PHASE_5_ANALYTICS_REPORT.md)
 - [自主长任务计划](docs/LONG_TASK_PLAN.md)
 - [运行与诊断](docs/DEVELOPMENT.md)
 - [产品规格](docs/PRODUCT.md)

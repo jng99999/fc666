@@ -6,8 +6,12 @@ from core.backtest.spot import BacktestConfig,simulate
 from core.models import Candle,Instrument
 
 def reproduce(data):
-    if data['manifest']['engine_version']!='spot-next-open-v1': raise ValueError('Unsupported engine version')
-    result=simulate([Candle.model_validate(b) for b in data['dataset']],Instrument.model_validate(data['manifest']['instrument']),BacktestConfig.model_validate(data['manifest']['config']))
+    version=data['manifest']['engine_version']
+    if version=='spot-next-open-v1':
+        from core.backtest.legacy_v1 import simulate as runner, BacktestConfig as config_type
+    elif version=='spot-next-open-v2':runner=simulate;config_type=BacktestConfig
+    else:raise ValueError('Unsupported engine version')
+    result=runner([Candle.model_validate(b) for b in data['dataset']],Instrument.model_validate(data['manifest']['instrument']),config_type.model_validate(data['manifest']['config']))
     if result!=data: raise ValueError('Export differs from reproduced result')
     return result['run_id']
 
