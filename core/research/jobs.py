@@ -35,7 +35,7 @@ def enqueue_many(engine,requests,bars,instrument):
         if count+len(requests)>ACTIVE_LIMIT:raise QueueFull()
         created=[]
         for request in requests:
-            snapshot={'request_sha256':digest(request),'engine_version':VERSION,'strategy':request.get('strategy','ema_long_flat_v1'),'dataset':dataset,'instrument':instrument.model_dump(mode='json')}
+            snapshot={'request_sha256':digest(request),'engine_version':'spot-holdout-v1' if request.get('research_type')=='holdout' else VERSION,'strategy':request.get('strategy','ema_long_flat_v1'),'dataset':dataset,'instrument':instrument.model_dump(mode='json')}
             snapshot['sha256']=digest(snapshot)
             job=Job(job_id=str(uuid4()),created_at=stamp,updated_at=stamp,status='QUEUED',progress=0,cancel_requested=False,attempts=0,request=request,snapshot=snapshot)
             session.add(job);created.append(job)
@@ -97,13 +97,18 @@ def execute(engine,job_id,owner,stopping=lambda:False):
         heartbeat(engine,owner)
     try:
         body={key:value for key,value in snapshot.items() if key!='sha256'}
-        if digest(body)!=snapshot['sha256'] or snapshot['engine_version'] not in [VERSION,'spot-next-open-v2'] or digest(request)!=snapshot['request_sha256']:raise ValueError('Unsupported or altered job snapshot')
+        if digest(body)!=snapshot['sha256'] or snapshot['engine_version'] not in [VERSION,'spot-next-open-v2','spot-holdout-v1'] or digest(request)!=snapshot['request_sha256']:raise ValueError('Unsupported or altered job snapshot')
         runner=simulate;config_type=BacktestConfig;options={'strategy_id':snapshot['strategy'],'parameters':request.get('parameters')}
         if snapshot['strategy']!=request.get('strategy','ema_long_flat_v1'):raise ValueError('Strategy snapshot mismatch')
         if snapshot['engine_version']=='spot-next-open-v2':
             from core.backtest.legacy_v2 import simulate as runner, BacktestConfig as config_type
             if snapshot['strategy']!='ema_long_flat_v1':raise ValueError('Unsupported legacy strategy')
             options={}
+        if snapshot['engine_version']=='spot-holdout-v1':
+            from core.backtest.holdout import simulate as runner
+            if request.get('research_type')!='holdout':raise ValueError('Holdout request type mismatch')
+            options['train_bars']=request['train_bars']
+        elif request.get('research_type')=='holdout':raise ValueError('Holdout engine mismatch')
         result=runner([Candle.model_validate(b) for b in snapshot['dataset']],Instrument.model_validate(snapshot['instrument']),config_type.model_validate(request['config']),checkpoint=checkpoint,**options)
         finish(engine,job_id,owner,result=result)
     except Cancelled:finish(engine,job_id,owner)

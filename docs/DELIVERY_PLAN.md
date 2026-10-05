@@ -27,3 +27,5 @@ Phase 6 策略扩展基础已完成：见STRATEGY_REGISTRY.md。下一执行顺�
 Phase 6 两种内置策略执行已完成：EMA/SMA可在研究页面提交，v3运行参数进入快照/manifest，v2旧任务及v1/v2导出兼容验证通过。详见STRATEGY_REGISTRY.md。下一目标：有界参数批次研究和真实结果比较；完整SDK、代码沙箱与完整撮合对照继续保留待办。
 
 Phase 6 参数批次研究已实现：最多8组同历史/规则/截止快照，整批原子提交，逐项失败/取消隔离，真实指标比较与完整导出。见RESEARCH_BATCHES.md及PHASE_6_BATCHES_REPORT.md。下一目标为明确数据隔离的样本内/样本外分段研究，仍不自动寻优或开放实盘。
+
+Phase 6 固定参数分段研究已实现：独立样本区间、冷启动资金/指标/信号，结果分别计算，不自动选参。见HOLDOUT_RESEARCH.md及PHASE_6_HOLDOUT_REPORT.md。下一目标为Phase7历史市场回放首片；完整SDK/代码沙箱/自动优化/滚动再训练仍保留待办。

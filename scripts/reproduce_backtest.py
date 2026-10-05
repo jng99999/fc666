@@ -7,6 +7,11 @@ from core.models import Candle,Instrument
 
 def reproduce(data):
     version=data['manifest']['engine_version']
+    if version=='spot-holdout-v1':
+        from core.backtest.holdout import simulate as runner
+        result=runner([Candle.model_validate(bar) for bar in data['dataset']],Instrument.model_validate(data['manifest']['instrument']),BacktestConfig.model_validate(data['manifest']['config']),strategy_id=data['manifest']['strategy'],parameters=data['manifest']['parameters'],train_bars=data['manifest']['train_bars'])
+        if result!=data:raise ValueError('Export differs from reproduced result')
+        return result['run_id']
     if version=='spot-next-open-v1':
         from core.backtest.legacy_v1 import simulate as runner, BacktestConfig as config_type
     elif version=='spot-next-open-v2':

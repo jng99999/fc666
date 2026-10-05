@@ -20,3 +20,5 @@
 
 /* Reserve actual footer height when indicator captions wrap. */
 .chart-body{display:flex;flex-direction:column}.chart-canvas{position:relative;inset:auto;flex:1;min-height:0}.chart-caption{position:static;flex-shrink:0;padding:3px 10px}
+
+.batch-research input{color:var(--text);background:var(--panel);border:1px solid #52657d;border-radius:4px;padding:8px;max-width:120px;margin-right:12px}

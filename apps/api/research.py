@@ -38,6 +38,12 @@ class RunRequest(BaseModel):
         return value
 
 
+class HoldoutRequest(BaseModel):
+    model_config=ConfigDict(extra='forbid')
+    base: RunRequest
+    train_bars: int=Field(default=60,ge=2,le=998,strict=True)
+
+
 class Variant(BaseModel):
     model_config=ConfigDict(extra='forbid')
     strategy: Literal['ema_long_flat_v1','sma_long_flat_v1']
@@ -96,6 +102,16 @@ def router_for(engine):
     def submit(request:RunRequest):
         bars,instrument,frozen=prepare(engine,request)
         try:return jobs.enqueue(engine,frozen,bars,instrument)
+        except jobs.QueueFull:raise HTTPException(429,'Research queue full (20 active tasks)')
+        except ValueError as error:raise HTTPException(409,str(error))
+
+    @router.post('/api/v1/research/holdouts',status_code=202)
+    def submit_holdout(request:HoldoutRequest):
+        from core.backtest.holdout import validate_split
+        bars,instrument,frozen=prepare(engine,request.base)
+        try:
+            validate_split(bars,request.train_bars,request.base.strategy,request.base.parameters,request.base.config)
+            return jobs.enqueue(engine,{**frozen,'research_type':'holdout','train_bars':request.train_bars},bars,instrument)
         except jobs.QueueFull:raise HTTPException(429,'Research queue full (20 active tasks)')
         except ValueError as error:raise HTTPException(409,str(error))
 

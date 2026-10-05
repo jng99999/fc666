@@ -63,3 +63,10 @@ start.sh执行0004 schema并启动独立研究worker；研究health在/api/v1/re
 UV_CACHE_DIR=/workspace/.cache/uv uv run --frozen python -m tests.browser_batches
 ```
 同一机器上会改变worker状态的浏览器套件应顺序执行；契约与范围见RESEARCH_BATCHES.md。
+
+分段研究验证（顺序执行，测试会停止/恢复自己拥有的research进程）：
+```bash
+UV_CACHE_DIR=/workspace/.cache/uv uv run --frozen python -m tests.browser_holdout
+UV_CACHE_DIR=/workspace/.cache/uv uv run --frozen python -m scripts.reproduce_backtest .runtime/browser-holdout-export.json
+```
+范围与冷启动边界见HOLDOUT_RESEARCH.md。安装、0004 schema和四服务启动保持现有流程。

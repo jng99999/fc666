@@ -2,6 +2,7 @@
 import {useState,useEffect,type FormEvent} from 'react';
 import {z} from 'zod';
 import BatchResearch from './BatchResearch';
+import HoldoutResearch from './HoldoutResearch';
 const decimal=z.string().refine(v=>Number.isFinite(Number(v)));
 const Fill=z.object({side:z.enum(['BUY','SELL']),decision_at:z.string(),execution_at:z.string(),quantity:decimal,price:decimal,fee:decimal,simulated:z.literal(true)}).passthrough();
 const Analysis=z.object({annualized_return:z.number().finite().nullable(),sharpe:z.number().finite().nullable(),sortino:z.number().finite().nullable(),calmar:z.number().finite().nullable(),closed_trade_count:z.number().int(),win_rate:z.number().finite().nullable(),profit_factor:decimal.nullable(),expectancy:decimal.nullable(),exposure_fraction:z.number().finite(),warnings:z.array(z.string()),unavailable_reasons:z.record(z.string(),z.string()),closed_trades:z.array(z.object({entry_at:z.string(),exit_at:z.string(),net_pnl:decimal,fees:decimal,holding_seconds:z.number(),exit_count:z.number()}).passthrough()),drawdown:z.array(z.object({as_of:z.string(),drawdown:decimal}))}).passthrough();
@@ -21,7 +22,7 @@ export default function Research(){
  const [cash,setCash]=useState('10000'),[fee,setFee]=useState('0.001'),[slippage,setSlippage]=useState('0.0005'),[cutoff,setCutoff]=useState('');
  const [job,setJob]=useState<Job|null>(null),[activeId,setActiveId]=useState<string|null>(null),[history,setHistory]=useState<Job[]>([]);
  const [run,setRun]=useState<Run|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState('');
- async function loadHistory(){try{const response=await fetch('/api/research/jobs',{cache:'no-store'});if(response.ok)setHistory(z.array(JobSchema).parse(await response.json()));}catch{/* History fetch does not manufacture successful tasks. */}}
+ async function loadHistory(){try{const response=await fetch('/api/research/jobs',{cache:'no-store'});if(response.ok)setHistory(z.array(JobSchema).parse(await response.json()).filter(item=>item.request.research_type!=='holdout'));}catch{/* History fetch does not manufacture successful tasks. */}}
  useEffect(()=>{const saved=localStorage.getItem(ACTIVE_JOB);if(saved&&z.uuid().safeParse(saved).success){setActiveId(saved);setBusy(true);}void loadHistory();},[]);
  useEffect(()=>{
   if(!activeId)return;
@@ -55,6 +56,7 @@ export default function Research(){
  <label>截止时间（含时区，可空）<input placeholder="2026-10-05T12:00:00Z" value={cutoff} onChange={e=>setCutoff(e.target.value)}/></label>
  <button disabled={busy} type="submit">{busy?'计算中…':'运行历史回测'}</button></form><p>预算上限为可用资金的50%，单次成交容量用上一闭合柱成交量的1%作为研究代理；不是开盘时真实流动性保证。</p>
  <BatchResearch base={{strategy,parameters:strategy==='ema_long_flat_v1'?{period:Number(period)}:{fast:Number(fast),slow:Number(slow)},symbol,timeframe,limit:Number(limit),as_of:cutoff||null,config:{initial_cash:cash,fee_rate:fee,slippage_rate:slippage,period:Number(period),allocation:'0.5',participation:'0.01'}}}/>
+ <HoldoutResearch base={{strategy,parameters:strategy==='ema_long_flat_v1'?{period:Number(period)}:{fast:Number(fast),slow:Number(slow)},symbol,timeframe,limit:Number(limit),as_of:cutoff||null,config:{initial_cash:cash,fee_rate:fee,slippage_rate:slippage,period:Number(period),allocation:'0.5',participation:'0.01'}}}/>
  {job?<section data-testid="research-task" data-status={job.status}><h2>后台任务 · {{QUEUED:"排队中",RUNNING:"计算中",SUCCEEDED:"已完成",FAILED:"失败",CANCELLED:"已取消"}[job.status]}{job.cancel_requested?' · 已请求取消':''}</h2><progress aria-label="回测任务进度" max={100} value={job.progress}/><span> {job.progress}% · 尝试 {job.attempts}/3</span><p>{job.status==='QUEUED'?'排队等待研究进程，刷新页面可恢复任务。 ':''}{job.request.symbol} · {job.request.timeframe} · 固定截止 {job.request.as_of}</p>{['QUEUED','RUNNING'].includes(job.status)?<button disabled={job.cancel_requested} onClick={()=>void cancel()}>取消任务</button>:null}</section>:null}
  <details><summary>最近研究任务（最多20条）</summary><button onClick={()=>void loadHistory()}>刷新任务记录</button><ul>{history.map(item=><li key={item.job_id}><button onClick={()=>restore(item)}>{item.request.symbol} · {item.request.timeframe} · {item.status} · {item.job_id.slice(0,8)}</button></li>)}</ul></details>
  {error?<p role="alert">{error}</p>:null}
