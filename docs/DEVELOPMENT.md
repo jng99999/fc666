@@ -1,0 +1,52 @@
+# 本地开发与云任务启动
+
+工作目录 `/workspace/fc666`；已有隔离 checkout，不额外创建 worktree。
+要求 Python 3.12、uv、Node 24（Next 要求至少 20.9）、npm、Docker/Compose 与本机 daemon。开发只绑定 127.0.0.1。环境不暴露 localhost 用户预览链接。
+
+## 安装
+```bash
+cd /workspace/fc666
+bash scripts/install.sh
+```
+停止本脚本拥有的 API/web/market 后冻结安装 uv.lock/package-lock.json，构建 web；完成后需运行 start.sh。缓存使用 /workspace/.cache，NEXT_TELEMETRY_DISABLED=1。本地 .env 只在不存在时以 0600 和随机数据库密码生成；不打印、不提交；已存在配置永不覆盖。
+
+## 启动与检查
+```bash
+bash scripts/start.sh
+python3 scripts/dev_services.py status
+python3 scripts/dev_services.py stop
+bash scripts/check.sh
+bash scripts/start.sh
+```
+启动 TimescaleDB/Redis，等待健康，执行 Alembic upgrade，再启动 API、生产 web 和公共行情 worker。status 实际请求 API 和 web 的 readiness 链路；ready 表示工程依赖就绪，交易始终关闭；行情健康另看 /api/v1/market/status，不能用工程 readiness 替代行情有效性。
+check 运行真实数据库/Redis integration 和模型测试、alembic check、前端 typecheck/build。测试创建并销毁唯一 fc666_test_* 数据库，不 downgrade 开发数据库。
+生产构建前先停止 web，避免读写同一 .next；重新安装脚本只作用依赖/构建及未存在的本地配置。首次无 .next 类型时先 build 再 typecheck。
+
+## 停止与开发
+```bash
+.venv/bin/python scripts/dev_services.py stop
+```
+只停止本脚本拥有的 API/web/market 进程，不停其他进程、不删除数据库 volume。需要关基础服务时使用同一个 compose 文件的 stop，不用 down -v。
+开发 API：`.venv/bin/python -m uvicorn apps.api.main:create_app --factory --reload --host 127.0.0.1 --port 8000`。
+开发前端：在 apps/web 执行 `NEXT_TELEMETRY_DISABLED=1 npm run dev`。启动手动进程前先 stop 管理进程，避免端口冲突。
+
+## 诊断
+日志 `.runtime/api.log`、`.runtime/web.log`、`.runtime/market.log`；secret 不入日志。数据库用 .env 的 DATABASE_URL，Redis 用 REDIS_URL；API 工厂启动时加载设置。前端服务器代理使用 API_BASE_URL（默认本机 8000），浏览器只访问同源 API 与 /stream/v1/market。
+LIVE_TRADING=true 或 TRADING_MODE=LIVE 会使设置校验失败。未实现 private orders、risk、strategy，不能通过环境变量启用交易。
+云网络保留 session proxy/TLS/CA，Docker 此阶段容器不访问外网（只有 daemon 拉镜像）。后续包含网络 build/run 时须按 runtime 技能挂载 CA，不禁用验证。
+
+## 行情与浏览器验证
+公共现货无需交易所密钥。保留代理和 CA，REST 使用 data-api.binance.vision，WS 使用 data-stream.binance.vision。worker 启动/重连会补齐最近 120 根已关闭 K 线，再建立有效订单簿；缺口或序列断裂不能冒充健康。
+```bash
+UV_CACHE_DIR=/workspace/.cache/uv uv run --frozen python -m scripts.import_market --bars 120
+UV_CACHE_DIR=/workspace/.cache/uv uv run --frozen python -m tests.browser_terminal
+```
+浏览器验证要求服务已启动和真实公共行情可达，会短暂停止自己拥有的 market worker 并在 finally 恢复。输出和截图位于忽略的 .runtime。浏览器通过锁定的 @sparticuz/chromium npm 包安装，由 scripts/browser_path.mjs 解压；Playwright 使用该可执行文件，无需额外 CDN 下载。保留 TLS 和 npm 完整性校验。此 Chromium 只用于隔离的自动化测试。
+性能结果与限制见 PHASE_3_REPORT.md；合成数据只在隔离图表 benchmark 使用，不注入产品行情。
+
+## 回测研究验证
+```bash
+UV_CACHE_DIR=/workspace/.cache/uv uv run --frozen python -m tests.browser_research
+UV_CACHE_DIR=/workspace/.cache/uv uv run --frozen python -m scripts.reproduce_backtest .runtime/browser-backtest-export.json
+```
+浏览器研究测试使用真实数据库历史并下载完整结果；注入非法费率仅用于验证错误路径。离线复现不需要网络或数据库。研究页仅模拟，不开启下单。

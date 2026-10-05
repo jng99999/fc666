@@ -1,0 +1,26 @@
+name: fc666
+services:
+  postgres:
+    image: timescale/timescaledb:2.26.0-pg17@sha256:18d486ab4aa441636f007b24da25dddf02a59524b9f391b9b60ac85a4667f339
+    environment:
+      POSTGRES_USER: fc666
+      POSTGRES_DB: fc666
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Run scripts/local_config.py first}
+    ports: ["127.0.0.1:5432:5432"]
+    volumes: ["postgres-data:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fc666 -d fc666"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+  redis:
+    image: redis:7.4.7-alpine@sha256:02f2cc4882f8bf87c79a220ac958f58c700bdec0dfb9b9ea61b62fb0e8f1bfcf
+    ports: ["127.0.0.1:6379:6379"]
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+volumes:
+  postgres-data:
