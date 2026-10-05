@@ -2,7 +2,7 @@
 
 Phase7首片：BTCUSDT/ETHUSDT Spot六周期的固定闭合OHLCV历史回放。不存在历史逐笔成交/订单簿、柱内路径、回放撮合或模拟/实盘下单。回放页不挂载实时socket、不请求实时行情或完整市场历史接口。
 
-POST /api/v1/replay/sessions一次捕获2..1000根已闭合、同品种/周期且连续的历史和当前规则；请求允许symbol/timeframe/limit/period/as_of，严格参数校验。快照version=closed-bar-replay-v1、数据、规则及实际截止共同进入SHA；PG replay_sessions保存快照与cursor/revision。schema0005新增该表，ready验证表存在与最新迁移。
+POST /api/v1/replay/sessions一次捕获2..1000根已闭合、同品种/周期且连续的历史和当前规则；请求允许symbol/timeframe/limit/period/as_of及可选strategy/parameters，严格参数校验。新快照version=closed-bar-replay-v2，旧v1读取与推进保持兼容。版本、数据、规则及实际截止共同进入SHA；PG replay_sessions保存快照与cursor/revision。schema0005新增该表，ready验证表存在与最新迁移。
 
 初始cursor=0，clock=首柱open_time，没有价格/指标。cursor=k时只返回前k根，clock为第k根close_time；每根close_time <= clock。指标仅从这个前缀重算，未成熟值为null，确认pivot/突破按原可用时间返回，重置不保留后来的确认信息。响应允许事先知道快照时间范围、总柱数及hash，禁止返回未到达价格、完整dataset、完整snapshot或未来指标。没有完整快照下载端点。
 
@@ -14,4 +14,4 @@ GET /api/v1/replay/sessions/{UUID}返回已确认前缀。POST /.../{UUID}/comma
 
 测试：后端连续性/零根/每根时钟与因果指标/重置、未来价格变化不改相同前缀、并发旧revision只有一项成功、重复推进拒绝、真实PG新客户端恢复及后续历史/规则变化不改已接受快照、hash篡改回滚、DB游标约束通过。浏览器覆盖实际控制、暂停/刷新、冲突、提交后丢失确认响应无自动重试、结束、移动布局及不请求实时/完整历史数据。报告PHASE_7_REPORT.md。
 
-范围限制：最多1000根，指标GET每次从前缀重算；没有持久播放后台时钟、会话列表/删除/保留策略、多用户鉴权、回放策略/账本、逐笔订单簿或自动交易。公开服务仍只绑定loopback；不把独立回放首片当作完整Market Replay平台。下一切片可在明确版本/事件语义后引入回放策略决策，仍不执行真实订单。
+范围限制：最多1000根，指标GET每次从前缀重算；没有持久播放后台时钟、会话列表/删除/保留策略、多用户鉴权、Paper账本、逐笔订单簿或自动交易。公开服务仍只绑定loopback；不把独立回放首片当作完整Market Replay平台。固定EMA/SMA回放决策已实现，事件与前缀核对契约见REPLAY_DECISIONS.md。下一阶段为Paper账户与最低风险限制。

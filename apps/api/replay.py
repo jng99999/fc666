@@ -5,6 +5,7 @@ from fastapi import APIRouter,HTTPException
 from pydantic import BaseModel,ConfigDict,Field,field_validator,model_validator
 from apps.api.research import prepare,RunRequest
 from core.replay import sessions
+from core.replay.decisions import normalized
 
 
 class ReplayRequest(BaseModel):
@@ -14,6 +15,13 @@ class ReplayRequest(BaseModel):
     limit: int=Field(default=120,ge=2,le=1000,strict=True)
     period: int=Field(default=20,ge=2,le=500,strict=True)
     as_of: datetime|None=None
+    strategy: Literal['ema_long_flat_v1','sma_long_flat_v1']|None=None
+    parameters: dict|None=None
+
+    @model_validator(mode='after')
+    def strategy_parameters(self):
+        _,self.parameters=normalized(self.strategy,self.parameters,self.period)
+        return self
 
     @field_validator('as_of')
     @classmethod

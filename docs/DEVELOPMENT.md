@@ -77,3 +77,12 @@ start.sh自动迁移到0005（replay_sessions），无需新服务或密钥。
 UV_CACHE_DIR=/workspace/.cache/uv uv run --frozen python -m tests.browser_replay
 ```
 回放页/replay仅显示已到达前缀；协议与限制见REPLAY.md。不要增加完整快照/未来数据端点来绕过控制。
+
+回放策略与下载验证：
+
+```bash
+UV_CACHE_DIR=/workspace/.cache/uv uv run --frozen python -m tests.browser_replay_decisions
+UV_CACHE_DIR=/workspace/.cache/uv uv run --frozen python -m scripts.verify_replay_prefix .runtime/browser-replay-decision-prefix.json
+```
+
+前缀核对仅验证已到达内容的内部一致性，详见REPLAY_DECISIONS.md。

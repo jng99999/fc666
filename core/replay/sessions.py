@@ -6,8 +6,10 @@ from core.storage.models import ReplaySessionRecord as Replay
 from core.models import Candle,Instrument
 from core.indicators.engine import calculate
 from core.backtest.spot import digest
+from core.replay.decisions import normalized,events,RULE
 
-VERSION='closed-bar-replay-v1'
+VERSION='closed-bar-replay-v2'
+LEGACY_VERSION='closed-bar-replay-v1'
 class Conflict(Exception):pass
 
 
@@ -23,7 +25,7 @@ def visible(record):
     snapshot=record.snapshot
     if digest({key:value for key,value in snapshot.items() if key!='sha256'})!=snapshot['sha256']:
         raise ValueError('Replay snapshot integrity failed')
-    if snapshot['version']!=VERSION:raise ValueError('Unsupported replay version')
+    if snapshot['version'] not in [VERSION,LEGACY_VERSION]:raise ValueError('Unsupported replay version')
     bars=[Candle.model_validate(bar) for bar in snapshot['dataset']]
     instrument=Instrument.model_validate(snapshot['instrument']);validate(bars,instrument)
     if not 0<=record.cursor<=len(bars):raise ValueError('Invalid replay cursor')
@@ -31,18 +33,26 @@ def visible(record):
     clock=reached[-1].close_time if reached else bars[0].open_time
     # Rebuild strictly from the reached prefix; reset therefore cannot retain future pivots.
     indicators=calculate(reached,as_of=clock,period=snapshot['request']['period'])
-    return {'session_id':record.session_id,'revision':record.revision,'cursor':record.cursor,'total':len(bars),
+    response={'session_id':record.session_id,'revision':record.revision,'cursor':record.cursor,'total':len(bars),
             'status':'ENDED' if record.cursor==len(bars) else 'READY','clock':clock,
-            'manifest':{'version':VERSION,'symbol':snapshot['request']['symbol'],
+            'manifest':{'version':snapshot['version'],'symbol':snapshot['request']['symbol'],
                         'timeframe':snapshot['request']['timeframe'],'period':snapshot['request']['period'],
                         'as_of':snapshot['request']['as_of'],'snapshot_sha256':snapshot['sha256'],
                         'start':bars[0].open_time,'end':bars[-1].close_time},
             'candles':[bar.model_dump(mode='json') for bar in reached],
             'indicators':indicators,'trading_enabled':False}
+    if snapshot['version']==VERSION:
+        request=snapshot['request'];strategy_id=request.get('strategy')
+        definition,parameters=normalized(strategy_id,request.get('parameters'),request['period'])
+        response['manifest'].update({'strategy':strategy_id,'strategy_version':None if definition is None else definition.version,'parameters':parameters,'decision_rule':RULE})
+        response['decisions']=events(reached,indicators,strategy_id=strategy_id,parameters=parameters,period=request['period'],snapshot_sha256=snapshot['sha256'])
+    return response
 
 
 def create(engine,request,bars,instrument):
     validate(bars,instrument)
+    _,parameters=normalized(request.get('strategy'),request.get('parameters'),request['period'])
+    request={**request,'strategy':request.get('strategy'),'parameters':parameters}
     snapshot={'version':VERSION,'request':request,'dataset':[bar.model_dump(mode='json') for bar in bars],
               'instrument':instrument.model_dump(mode='json')}
     snapshot['sha256']=digest(snapshot);stamp=datetime.now(timezone.utc)

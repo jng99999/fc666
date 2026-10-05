@@ -31,3 +31,5 @@ Phase 6 参数批次研究已实现：最多8组同历史/规则/截止快照，
 Phase 6 固定参数分段研究已实现：独立样本区间、冷启动资金/指标/信号，结果分别计算，不自动选参。见HOLDOUT_RESEARCH.md及PHASE_6_HOLDOUT_REPORT.md。下一目标为Phase7历史市场回放首片；完整SDK/代码沙箱/自动优化/滚动再训练仍保留待办。
 
 Phase7闭合柱回放首片已实现：固定PG快照、prefix-only API、时钟与CAS游标、播放控制/刷新恢复/因果指标，见REPLAY.md与PHASE_7_REPORT.md。下一目标为可审计回放策略决策事件；完整逐笔回放/撮合、Paper账户与Risk仍未实现。
+
+Phase7回放决策已完成：冻结EMA/SMA参数、闭合柱目标事件、前缀下载与离线核对，兼容旧v1。163项后端、迁移、类型/构建及两套回放浏览器验证通过，见PHASE_7_DECISIONS_REPORT.md。下一目标：Phase8有限Spot Paper账户与最低风险限制，明确资金/库存、下一柱撮合、费用规则与恢复语义后实现；实盘关闭。
