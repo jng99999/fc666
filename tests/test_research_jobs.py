@@ -113,11 +113,11 @@ def test_cancel_during_actual_computation_discards_partial_outputs(database,monk
     engine,_,_=database
     job_id=jobs.enqueue(engine,{'config':cfg().model_dump(mode='json')},liquid(list(range(10,70))),rules())['job_id']
     owner=str(uuid4());jobs.claim(engine,owner);original=jobs.simulate
-    def computation(*args,checkpoint):
+    def computation(*args,checkpoint,**options):
         def during(done,total):
             if done>=25:jobs.cancel(engine,job_id)
             checkpoint(done,total)
-        return original(*args,checkpoint=during)
+        return original(*args,checkpoint=during,**options)
     monkeypatch.setattr(jobs,'simulate',computation)
     jobs.execute(engine,job_id,owner)
     with Session(engine) as session:
@@ -135,3 +135,36 @@ def test_enqueued_snapshot_not_changed_by_later_database_market_updates(database
     save_candles(engine,liquid([10,12,14,10,9,20])[5:])
     owner=str(uuid4());jobs.claim(engine,owner);jobs.execute(engine,job_id,owner)
     with Session(engine) as session:assert session.get(Job,job_id).result==expected
+
+
+def test_pre_upgrade_v2_queued_job_executes_with_legacy_engine(database):
+    from core.backtest.legacy_v2 import simulate as old_simulate
+    engine,_,_=database
+    job_id=submit(engine)
+    with Session(engine) as session,session.begin():
+        task=session.get(Job,job_id)
+        snapshot=dict(task.snapshot);snapshot['engine_version']='spot-next-open-v2'
+        snapshot['sha256']=jobs.digest({k:v for k,v in snapshot.items() if k!='sha256'})
+        task.snapshot=snapshot
+    owner=str(uuid4());assert jobs.claim(engine,owner)==job_id
+    jobs.execute(engine,job_id,owner)
+    with Session(engine) as session:
+        task=session.get(Job,job_id)
+        assert task.status=='SUCCEEDED'
+        assert task.result==old_simulate(liquid([10,12,14,10,9]),rules(),cfg())
+        assert reproduce(task.result)==task.result['run_id']
+
+
+def test_sma_task_snapshot_and_strict_api_parameters(database):
+    from apps.api.research import RunRequest
+    engine,_,_=database
+    with pytest.raises(ValueError):RunRequest(strategy='sma_long_flat_v1',parameters={'fast':20,'slow':10})
+    with pytest.raises(ValueError):RunRequest(parameters={'period':2}) # conflict with default config.period
+    request={'strategy':'sma_long_flat_v1','parameters':{'fast':2,'slow':3},'config':cfg().model_dump(mode='json')}
+    job_id=jobs.enqueue(engine,request,liquid([10,12,14,10,9]),rules())['job_id']
+    owner=str(uuid4());jobs.claim(engine,owner);jobs.execute(engine,job_id,owner)
+    with Session(engine) as session:
+        task=session.get(Job,job_id);assert task.status=='SUCCEEDED'
+        assert task.result['manifest']['parameters']=={'fast':2,'slow':3}
+        assert task.result['manifest']['strategy']=='sma_long_flat_v1'
+        assert reproduce(task.result)==task.result['run_id']

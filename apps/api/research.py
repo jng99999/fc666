@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from typing import Literal
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 from sqlalchemy import select
 from uuid import UUID
 from core.storage.models import ResearchJobRecord as Job
@@ -11,16 +11,24 @@ from core.models import Candle, Instrument
 from core.storage.models import CandleRecord, InstrumentRecord
 from core.exchange.binance import SYMBOLS
 from core.backtest.spot import BacktestConfig, simulate
-from core.strategy.registry import DEFINITIONS
+from core.strategy.registry import DEFINITIONS, resolve
 
 class RunRequest(BaseModel):
     model_config=ConfigDict(extra='forbid')
-    strategy: Literal['ema_long_flat_v1']='ema_long_flat_v1'
+    strategy: Literal['ema_long_flat_v1','sma_long_flat_v1']='ema_long_flat_v1'
+    parameters: dict | None=None
     symbol: Literal['BTCUSDT','ETHUSDT']='BTCUSDT'
     timeframe: Literal['1m','5m','15m','1h','4h','1d']='1h'
     limit: int=Field(default=120,ge=2,le=1000,strict=True)
     as_of: datetime | None=None
     config: BacktestConfig=Field(default_factory=BacktestConfig)
+
+    @model_validator(mode='after')
+    def strategy_parameters(self):
+        _,validated=resolve(self.strategy).create(self.parameters if self.parameters is not None else ({'period':self.config.period} if self.strategy=='ema_long_flat_v1' else {}))
+        if self.strategy=='ema_long_flat_v1' and validated.period!=self.config.period:raise ValueError('EMA period must match config.period')
+        self.parameters=validated.model_dump(mode='json')
+        return self
 
     @field_validator('as_of')
     @classmethod
@@ -46,7 +54,7 @@ def router_for(engine):
     @router.post('/api/v1/research/backtest')
     def backtest(request:RunRequest):
         bars,instrument,_=prepare(engine,request)
-        try: return simulate(bars,instrument,request.config)
+        try: return simulate(bars,instrument,request.config,strategy_id=request.strategy,parameters=request.parameters)
         except ValueError as error: raise HTTPException(409,str(error))
     @router.get('/api/v1/research/status')
     def worker_status():

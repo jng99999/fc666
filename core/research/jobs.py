@@ -21,7 +21,7 @@ def view(job):
 def enqueue(engine,request,bars,instrument):
     if len(bars)<2:raise ValueError('Require at least two finalized bars')
     if any(b.open_time!=a.close_time or b.timeframe!=a.timeframe for a,b in zip(bars,bars[1:])):raise ValueError('Contiguous ordered series required')
-    snapshot={'request_sha256':digest(request),'engine_version':VERSION,'strategy':'ema_long_flat_v1','dataset':[b.model_dump(mode='json') for b in bars],'instrument':instrument.model_dump(mode='json')}
+    snapshot={'request_sha256':digest(request),'engine_version':VERSION,'strategy':request.get('strategy','ema_long_flat_v1'),'dataset':[b.model_dump(mode='json') for b in bars],'instrument':instrument.model_dump(mode='json')}
     snapshot['sha256']=digest(snapshot)
     stamp=now()
     with Session(engine) as session,session.begin():
@@ -87,8 +87,14 @@ def execute(engine,job_id,owner,stopping=lambda:False):
         heartbeat(engine,owner)
     try:
         body={key:value for key,value in snapshot.items() if key!='sha256'}
-        if digest(body)!=snapshot['sha256'] or snapshot['engine_version']!=VERSION or digest(request)!=snapshot['request_sha256']:raise ValueError('Unsupported or altered job snapshot')
-        result=simulate([Candle.model_validate(b) for b in snapshot['dataset']],Instrument.model_validate(snapshot['instrument']),BacktestConfig.model_validate(request['config']),checkpoint=checkpoint)
+        if digest(body)!=snapshot['sha256'] or snapshot['engine_version'] not in [VERSION,'spot-next-open-v2'] or digest(request)!=snapshot['request_sha256']:raise ValueError('Unsupported or altered job snapshot')
+        runner=simulate;config_type=BacktestConfig;options={'strategy_id':snapshot['strategy'],'parameters':request.get('parameters')}
+        if snapshot['strategy']!=request.get('strategy','ema_long_flat_v1'):raise ValueError('Strategy snapshot mismatch')
+        if snapshot['engine_version']=='spot-next-open-v2':
+            from core.backtest.legacy_v2 import simulate as runner, BacktestConfig as config_type
+            if snapshot['strategy']!='ema_long_flat_v1':raise ValueError('Unsupported legacy strategy')
+            options={}
+        result=runner([Candle.model_validate(b) for b in snapshot['dataset']],Instrument.model_validate(snapshot['instrument']),config_type.model_validate(request['config']),checkpoint=checkpoint,**options)
         finish(engine,job_id,owner,result=result)
     except Cancelled:finish(engine,job_id,owner)
     except LostLease:pass # Old worker may never publish after expiry/reclaim.

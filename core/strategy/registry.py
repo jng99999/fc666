@@ -84,7 +84,7 @@ DEFINITIONS = MappingProxyType({
         EmaParameters, EmaLongFlat, True),
     'sma_long_flat_v1': Definition('sma_long_flat_v1', 1,
         'Finalized fast SMA above slow SMA -> LONG; otherwise FLAT; slow-window warmup -> no signal',
-        SmaParameters, SmaLongFlat, False),
+        SmaParameters, SmaLongFlat, True),
 })
 
 

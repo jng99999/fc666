@@ -36,7 +36,7 @@ if __name__=='__main__':
         with page.expect_response(lambda r:'/api/research/jobs/' in r.url and r.url.endswith('/result')) as response:page.get_by_role('button',name='运行历史回测').click()
         assert response.value.status==200
         data=response.value.json();run_id=reproduce(data)
-        assert data['manifest']['engine_version']=='spot-next-open-v2'
+        assert data['manifest']['engine_version']=='spot-next-open-v3'
         assert 'analysis' in data and 'market_states' in data
         expect(page.get_by_test_id('backtest-result')).to_contain_text('已完成')
         expect(page.locator('.research-metrics>div')).to_have_count(9)
@@ -54,6 +54,23 @@ if __name__=='__main__':
         assert reproduce(json.loads(exported.read_text()))==run_id
         page.screenshot(path=str(ROOT/'.runtime/research-desktop.png'),full_page=True)
         checks.append('real historical run, fixed-cutoff determinism, downloaded full export offline reproduction')
+        page.get_by_label('策略',exact=True).select_option('sma_long_flat_v1')
+        page.get_by_label('SMA 快周期',exact=True).fill('3')
+        page.get_by_label('SMA 慢周期',exact=True).fill('7')
+        with page.expect_response(lambda r:'/api/research/jobs/' in r.url and r.url.endswith('/result')) as response:page.get_by_role('button',name='运行历史回测').click()
+        sma=response.value.json()
+        assert sma['manifest']['strategy']=='sma_long_flat_v1'
+        assert sma['manifest']['parameters']=={'fast':3,'slow':7}
+        assert sma['manifest']['data_sha256']==data['manifest']['data_sha256']
+        assert sma['run_id']!=run_id
+        with page.expect_download() as download:page.get_by_role('button',name='下载结果与清单').click()
+        sma_export=ROOT/'.runtime/browser-sma-export.json';download.value.save_as(str(sma_export))
+        assert reproduce(json.loads(sma_export.read_text()))==sma['run_id']
+        page.reload(wait_until='domcontentloaded')
+        expect(page.get_by_test_id('backtest-result')).to_contain_text('已完成')
+        page.locator('details').filter(has=page.get_by_text('数据与运行清单',exact=True)).locator('summary').click()
+        expect(page.get_by_test_id('backtest-result')).to_contain_text('sma_long_flat_v1')
+        checks.append('SMA selection, immutable parameters, complete downloaded export and refresh restoration')
         page.get_by_label('费率',exact=True).fill('0.5');page.get_by_role('button',name='运行历史回测').click()
         expect(page.locator('.research-page p[role=alert]')).to_contain_text('参数或历史数据不可用')
         expect(page.get_by_test_id('backtest-result')).to_have_count(0)

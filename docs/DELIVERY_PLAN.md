@@ -23,3 +23,5 @@ Phase 5–15 按 ROADMAP.md：回测 → SDK/Lab → Replay → Paper → Portfo
 Live 默认关闭，必须满足风险、执行、恢复、故障验收并获得独立实盘授权；健康接口和纸面收益不能解锁下单。
 
 Phase 6 策略扩展基础已完成：见STRATEGY_REGISTRY.md。下一执行顺序：v2历史复现与旧队列兼容 → v3策略/参数快照 → SMA回测与页面 → 后端、真实任务与浏览器验收。SMA当前只完成决策模块，未开放任务提交。
+
+Phase 6 两种内置策略执行已完成：EMA/SMA可在研究页面提交，v3运行参数进入快照/manifest，v2旧任务及v1/v2导出兼容验证通过。详见STRATEGY_REGISTRY.md。下一目标：有界参数批次研究和真实结果比较；完整SDK、代码沙箱与完整撮合对照继续保留待办。

@@ -9,9 +9,11 @@ def reproduce(data):
     version=data['manifest']['engine_version']
     if version=='spot-next-open-v1':
         from core.backtest.legacy_v1 import simulate as runner, BacktestConfig as config_type
-    elif version=='spot-next-open-v2':runner=simulate;config_type=BacktestConfig
+    elif version=='spot-next-open-v2':
+        from core.backtest.legacy_v2 import simulate as runner, BacktestConfig as config_type
+    elif version=='spot-next-open-v3':runner=simulate;config_type=BacktestConfig
     else:raise ValueError('Unsupported engine version')
-    result=runner([Candle.model_validate(b) for b in data['dataset']],Instrument.model_validate(data['manifest']['instrument']),config_type.model_validate(data['manifest']['config']))
+    result=runner([Candle.model_validate(b) for b in data['dataset']],Instrument.model_validate(data['manifest']['instrument']),config_type.model_validate(data['manifest']['config']),**({'strategy_id':data['manifest']['strategy'],'parameters':data['manifest']['parameters']} if version=='spot-next-open-v3' else {}))
     if result!=data: raise ValueError('Export differs from reproduced result')
     return result['run_id']
 

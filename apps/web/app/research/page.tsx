@@ -15,6 +15,7 @@ function Equity({rows}:{rows:Run['equity']}){
  return <figure><figcaption>收盘标记权益曲线 · quote currency · 未强制平仓</figcaption><svg viewBox="0 0 1000 200" role="img" aria-label="回测权益曲线"><polyline points={points} fill="none" stroke="#77b7ff" strokeWidth="2"/><text x="20" y="195" fill="#a9b8cc">{min.toFixed(2)} — {max.toFixed(2)}</text></svg></figure>;
 }
 export default function Research(){
+ const [strategy,setStrategy]=useState('ema_long_flat_v1'),[fast,setFast]=useState('10'),[slow,setSlow]=useState('20');
  const [symbol,setSymbol]=useState('BTCUSDT'),[timeframe,setTimeframe]=useState('1h'),[limit,setLimit]=useState('120'),[period,setPeriod]=useState('20');
  const [cash,setCash]=useState('10000'),[fee,setFee]=useState('0.001'),[slippage,setSlippage]=useState('0.0005'),[cutoff,setCutoff]=useState('');
  const [job,setJob]=useState<Job|null>(null),[activeId,setActiveId]=useState<string|null>(null),[history,setHistory]=useState<Job[]>([]);
@@ -34,17 +35,19 @@ export default function Research(){
   void poll();return()=>{abort.abort();if(timer)clearTimeout(timer);};
  },[activeId]);
  async function submit(event:FormEvent){event.preventDefault();setBusy(true);setError('');setRun(null);setJob(null);setActiveId(null);localStorage.removeItem(ACTIVE_JOB);
-  try{const response=await fetch('/api/research/jobs',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({strategy:'ema_long_flat_v1',symbol,timeframe,limit:Number(limit),as_of:cutoff||null,config:{initial_cash:cash,fee_rate:fee,slippage_rate:slippage,period:Number(period),allocation:'0.5',participation:'0.01'}}),signal:AbortSignal.timeout(15000)});const data=await response.json();if(!response.ok)throw new Error(typeof data.detail==='string'?data.detail:'参数或历史数据不可用');const created=JobSchema.parse(data);localStorage.setItem(ACTIVE_JOB,created.job_id);setJob(created);setActiveId(created.job_id);void loadHistory();}
+  try{const response=await fetch('/api/research/jobs',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({strategy,parameters:strategy==='ema_long_flat_v1'?{period:Number(period)}:{fast:Number(fast),slow:Number(slow)},symbol,timeframe,limit:Number(limit),as_of:cutoff||null,config:{initial_cash:cash,fee_rate:fee,slippage_rate:slippage,period:Number(period),allocation:'0.5',participation:'0.01'}}),signal:AbortSignal.timeout(15000)});const data=await response.json();if(!response.ok)throw new Error(typeof data.detail==='string'?data.detail:'参数或历史数据不可用');const created=JobSchema.parse(data);localStorage.setItem(ACTIVE_JOB,created.job_id);setJob(created);setActiveId(created.job_id);void loadHistory();}
   catch(e){setError(e instanceof Error?e.message:'提交失败');setBusy(false);}
  }
  async function cancel(){if(!job)return;try{const response=await fetch(`/api/research/jobs/${job.job_id}/cancel`,{method:'POST'});if(!response.ok)throw new Error('任务已结束或无法取消');setJob(JobSchema.parse(await response.json()));}catch(e){setError(e instanceof Error?e.message:'取消失败');}}
  function restore(item:Job){setRun(null);setError('');setJob(item);setBusy(!['SUCCEEDED','FAILED','CANCELLED'].includes(item.status));localStorage.setItem(ACTIVE_JOB,item.job_id);setActiveId(null);setTimeout(()=>setActiveId(item.job_id),0);}
- return <main className="research-page"><header><strong>FC666 · Research</strong><a href="/">行情终端</a><span className="badge">只读研究 · 实盘关闭</span></header><h1>现货历史回测</h1><p>EMA Long / Flat v1 固定基线策略；闭合柱决策，下一柱开盘模拟成交。仅支持现货做多/空仓，不含杠杆、卖空和真实下单。</p>
+ return <main className="research-page"><header><strong>FC666 · Research</strong><a href="/">行情终端</a><span className="badge">只读研究 · 实盘关闭</span></header><h1>现货历史回测</h1><p>EMA / SMA Long / Flat v1 内置基线策略；闭合柱决策，下一柱开盘模拟成交。仅支持现货做多/空仓，不含杠杆、卖空和真实下单。</p>
  <form onSubmit={submit} className="research-form">
+ <label>策略<select aria-label="策略" value={strategy} onChange={e=>setStrategy(e.target.value)}><option value="ema_long_flat_v1">EMA Long / Flat v1</option><option value="sma_long_flat_v1">SMA Long / Flat v1</option></select></label>
  <label>交易对<select value={symbol} onChange={e=>setSymbol(e.target.value)}><option>BTCUSDT</option><option>ETHUSDT</option></select></label>
  <label>周期<select value={timeframe} onChange={e=>setTimeframe(e.target.value)}>{['1m','5m','15m','1h','4h','1d'].map(v=><option key={v}>{v}</option>)}</select></label>
  <label>历史柱数<input required type="number" min="2" max="1000" value={limit} onChange={e=>setLimit(e.target.value)}/></label>
- <label>EMA 周期<input required type="number" min="2" max="500" value={period} onChange={e=>setPeriod(e.target.value)}/></label>
+ {strategy==='sma_long_flat_v1'?<><label>SMA 快周期<input required type="number" min="2" max="499" value={fast} onChange={e=>setFast(e.target.value)}/></label><label>SMA 慢周期<input required type="number" min={Number(fast)+1} max="500" value={slow} onChange={e=>setSlow(e.target.value)}/></label></>:null}
+ <label>{strategy==='ema_long_flat_v1'?'EMA 周期':'市场分类周期'}<input required type="number" min="2" max="500" value={period} onChange={e=>setPeriod(e.target.value)}/></label>
  <label>初始资金<input required inputMode="decimal" value={cash} onChange={e=>setCash(e.target.value)}/></label>
  <label>费率<input required inputMode="decimal" value={fee} onChange={e=>setFee(e.target.value)}/></label>
  <label>滑点率<input required inputMode="decimal" value={slippage} onChange={e=>setSlippage(e.target.value)}/></label>
@@ -63,6 +66,6 @@ export default function Research(){
  <h3>完整交易（未平仓及部分退出不计入）</h3><div className="research-table"><table><thead><tr><th>开仓 UTC</th><th>平仓 UTC</th><th>净收益</th><th>费用</th><th>持有秒数</th><th>退出成交次数</th></tr></thead><tbody>{run.analysis.closed_trades.map((trade,i)=><tr key={i}><td>{trade.entry_at}</td><td>{trade.exit_at}</td><td>{trade.net_pnl}</td><td>{trade.fees}</td><td>{trade.holding_seconds}</td><td>{trade.exit_count}</td></tr>)}</tbody></table></div>
  <p>{run.orders.filter(o=>o.status==='REJECTED').length} 次拒绝 · {run.orders.filter(o=>o.status==='PARTIAL_CANCELLED').length} 次部分成交后取消。结束仓位按最后收盘价标记，未强制清仓。</p>
  <p>模拟滑点与tick取整总成本：{String(run.metrics.slippage_cost??"不可用")} USDT；成本已反映在成交价和收益中，不重复扣款。</p><h3>模拟成交记录</h3><div className="research-table"><table><thead><tr><th>方向</th><th>决策 UTC</th><th>成交 UTC</th><th>数量</th><th>价格</th><th>费用</th></tr></thead><tbody>{run.fills.map((fill,i)=><tr key={i}><td>{fill.side}</td><td>{fill.decision_at}</td><td>{fill.execution_at}</td><td>{fill.quantity}</td><td>{fill.price}</td><td>{fill.fee}</td></tr>)}</tbody></table></div>{run.fills.length===0?<p>该参数与时间窗口没有成交。</p>:null}
- <details><summary>数据与运行清单</summary><p>run_id: {run.run_id}</p><p>data_sha256: {run.manifest.data_sha256}</p><p>{run.manifest.start} → {run.manifest.end}</p><ul>{run.manifest.assumptions.map(s=><li key={s}>{s}</li>)}</ul></details><button onClick={()=>{const blob=new Blob([JSON.stringify(run,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`fc666-${run.run_id}.json`;a.click();URL.revokeObjectURL(url);}}>下载结果与清单</button></section>:null}
+ <details><summary>数据与运行清单</summary><p>run_id: {run.run_id}</p><p>策略：{String(run.manifest.strategy)} · 参数：{JSON.stringify(run.manifest.parameters??{})} · 引擎：{run.manifest.engine_version}</p><p>data_sha256: {run.manifest.data_sha256}</p><p>{run.manifest.start} → {run.manifest.end}</p><ul>{run.manifest.assumptions.map(s=><li key={s}>{s}</li>)}</ul></details><button onClick={()=>{const blob=new Blob([JSON.stringify(run,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`fc666-${run.run_id}.json`;a.click();URL.revokeObjectURL(url);}}>下载结果与清单</button></section>:null}
  </main>;
 }

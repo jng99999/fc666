@@ -6,9 +6,9 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 from core.models import Candle, Instrument
 from core.indicators.engine import IndicatorEngine
 from core.strategy.contracts import StrategyContext
-from core.strategy.registry import resolve
+from core.strategy.contracts import EmaLongFlat
 
-VERSION = 'spot-next-open-v3'
+VERSION = 'spot-next-open-v2'
 from core.backtest.analytics import analyze
 
 class BacktestConfig(BaseModel):
@@ -34,16 +34,13 @@ def rounded(value, step, mode):
     return (value/step).to_integral_value(rounding=mode)*step
 
 
-def simulate(bars: list[Candle], instrument: Instrument, config: BacktestConfig, *, checkpoint=None, strategy_id='ema_long_flat_v1', parameters=None):
+def simulate(bars: list[Candle], instrument: Instrument, config: BacktestConfig, *, checkpoint=None):
     if instrument.market_type!='SPOT': raise ValueError('Only Spot long/flat is implemented')
     if not 2<=len(bars)<=1000: raise ValueError('Require 2..1000 finalized bars')
     for i,bar in enumerate(bars):
         if not bar.is_closed or bar.instrument_id!=instrument.instrument_id: raise ValueError('Finalized matching instrument required')
         if i and (bar.timeframe!=bars[i-1].timeframe or bar.open_time!=bars[i-1].close_time): raise ValueError('Contiguous ordered series required')
-    definition=resolve(strategy_id)
-    strategy,validated=definition.create(parameters if parameters is not None else ({'period':config.period} if strategy_id=='ema_long_flat_v1' else {}))
-    if strategy_id=='ema_long_flat_v1' and validated.period!=config.period:raise ValueError('EMA period must match config.period')
-    manifest={'analytics_version':'equity-trades-v1','regime_rule':'er-atr-v1','engine_version':VERSION,'strategy':strategy_id,'strategy_version':definition.version,'parameters':validated.model_dump(mode='json'),'config':config.model_dump(mode='json'),
+    manifest={'analytics_version':'equity-trades-v1','regime_rule':'er-atr-v1','engine_version':VERSION,'strategy':'ema_long_flat_v1','config':config.model_dump(mode='json'),
               'instrument':instrument.model_dump(mode='json'),'data_sha256':digest([b.model_dump(mode='json') for b in bars]),
               'bars':len(bars),'start':bars[0].open_time.isoformat(),'end':bars[-1].close_time.isoformat(),
               'assumptions':['closed-bar decision; next-bar open execution; no same-close fill',
@@ -55,7 +52,7 @@ def simulate(bars: list[Candle], instrument: Instrument, config: BacktestConfig,
         ctx.prec=60
         cash=config.initial_cash;quantity=Decimal(0);cost=Decimal(0);fees=Decimal(0);realized=Decimal(0)
         peak=config.initial_cash;drawdown=Decimal(0)
-        pending=None;fills=[];orders=[];equity=[];signals=[];market_states=[];indicator=IndicatorEngine(period=config.period)
+        pending=None;fills=[];orders=[];equity=[];signals=[];market_states=[];indicator=IndicatorEngine(period=config.period);strategy=EmaLongFlat()
         for index,bar in enumerate(bars):
             if checkpoint is not None and index%25==0:checkpoint(index,len(bars))
             if pending is not None:

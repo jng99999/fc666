@@ -77,3 +77,24 @@ def test_export_reproduction_and_tamper_detection():
     with pytest.raises(ValueError,match='differs'):reproduce(tampered)
     tampered=copy.deepcopy(result);tampered['dataset'][0]['volume']='1'
     with pytest.raises(ValueError,match='differs'):reproduce(tampered)
+
+
+def test_sma_next_open_and_independent_signal_reference():
+    from fractions import Fraction
+    series=liquid([10,12,14,10,9,15,16])
+    result=simulate(series,rules(),cfg(),strategy_id='sma_long_flat_v1',parameters={'fast':2,'slow':3})
+    expected=[]
+    for index in range(2,len(series)):
+        fast=sum(Fraction(b.close) for b in series[index-1:index+1])/2
+        slow=sum(Fraction(b.close) for b in series[index-2:index+1])/3
+        expected.append({'target':'LONG' if fast>slow else 'FLAT','available_at':series[index].close_time.isoformat()})
+    assert result['signals']==expected
+    assert result['fills'][0]['execution_at']==series[3].open_time.isoformat()
+    prefix=simulate(series[:5],rules(),cfg(),strategy_id='sma_long_flat_v1',parameters={'fast':2,'slow':3})
+    assert prefix['equity']==result['equity'][:5]
+    assert reproduce_sma(result)==result['run_id']
+
+
+def reproduce_sma(result):
+    from scripts.reproduce_backtest import reproduce
+    return reproduce(result)

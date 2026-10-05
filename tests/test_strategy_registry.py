@@ -43,7 +43,7 @@ def test_versions_immutable_and_capability_explicit():
     with pytest.raises(ValueError): resolve('sma_long_flat_v2')
     with pytest.raises(TypeError): DEFINITIONS['custom'] = None
     assert resolve('ema_long_flat_v1').describe()['backtest_available'] is True
-    assert resolve('sma_long_flat_v1').describe()['backtest_available'] is False
+    assert resolve('sma_long_flat_v1').describe()['backtest_available'] is True
     _, parameters = resolve('ema_long_flat_v1').create({'period': 2})
     with pytest.raises(ValueError): parameters.period = 3
 
