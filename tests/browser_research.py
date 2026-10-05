@@ -33,7 +33,7 @@ if __name__=='__main__':
         page.wait_for_function(f"document.querySelectorAll('[data-testid=price-chart] canvas').length=={canvas_count}")
         checks.append('RSI/MACD/ATR pane creation/removal and live parameter/window query paths')
         page.goto('http://127.0.0.1:3000/research',wait_until='domcontentloaded')
-        with page.expect_response(lambda r:'/api/market/backtest' in r.url) as response:page.get_by_role('button',name='运行历史回测').click()
+        with page.expect_response(lambda r:'/api/research/jobs/' in r.url and r.url.endswith('/result')) as response:page.get_by_role('button',name='运行历史回测').click()
         assert response.value.status==200
         data=response.value.json();run_id=reproduce(data)
         assert data['manifest']['engine_version']=='spot-next-open-v2'
@@ -47,7 +47,7 @@ if __name__=='__main__':
         expect(page.get_by_test_id('risk-analysis')).to_contain_text('Sharpe')
         assert 'NaN' not in page.get_by_test_id('risk-analysis').inner_text()
         page.get_by_label('截止时间（含时区，可空）').fill(data['manifest']['end'])
-        with page.expect_response(lambda r:'/api/market/backtest' in r.url) as response:page.get_by_role('button',name='运行历史回测').click()
+        with page.expect_response(lambda r:'/api/research/jobs/' in r.url and r.url.endswith('/result')) as response:page.get_by_role('button',name='运行历史回测').click()
         assert response.value.json()['run_id']==run_id
         with page.expect_download() as download:page.get_by_role('button',name='下载结果与清单').click()
         exported=ROOT/'.runtime/browser-backtest-export.json';download.value.save_as(str(exported))

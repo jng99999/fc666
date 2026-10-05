@@ -119,3 +119,34 @@ def test_real_database_research_repeat_and_invalid_inputs(database):
         for change in ({'limit':1001},{'symbol':'SOLUSDT'},{'as_of':'2026-01-01T00:00:00'},{'config':{'period':True}},{'config':{'initial_cash':1000.01}},{'config':{'leverage':10}}):
             assert client.post('/api/v1/research/backtest',json={**request,**change}).status_code==422
         assert client.post('/api/v1/research/backtest',json={**request,'symbol':'ETHUSDT'}).status_code==409
+
+def test_confirmed_rest_revision_is_audited_repeatable_and_not_silent(database):
+    from datetime import timedelta
+    from core.market_data.storage import reconcile_confirmed_rest
+    from core.storage.models import CandleRevisionRecord
+    from sqlalchemy import select
+    from sqlalchemy.orm import Session
+    engine,_,_=database;seed(engine);original=candle();save_candles(engine,[original])
+    corrected=original.model_copy(update={'close':Decimal('100.5')})
+    with pytest.raises(DataConflict):save_candles(engine,[corrected])
+    with pytest.raises(DataConflict):reconcile_confirmed_rest(engine,[corrected],[original],observed_at=original.close_time+timedelta(minutes=2))
+    with pytest.raises(DataConflict):reconcile_confirmed_rest(engine,[corrected],[corrected],observed_at=original.close_time)
+    assert reconcile_confirmed_rest(engine,[corrected],[corrected],observed_at=original.close_time+timedelta(minutes=2))==1
+    assert save_candles(engine,[corrected])==0
+    assert reconcile_confirmed_rest(engine,[corrected],[corrected],observed_at=original.close_time+timedelta(minutes=2))==0
+    with Session(engine) as session:
+        revisions=list(session.scalars(select(CandleRevisionRecord)))
+        assert len(revisions)==1 and Decimal(revisions[0].previous['close'])==100 and Decimal(revisions[0].revised['close'])==Decimal('100.5')
+
+def test_rest_revision_batch_rolls_back_when_any_candidate_is_unconfirmed(database):
+    from datetime import timedelta
+    from core.market_data.storage import reconcile_confirmed_rest
+    from core.storage.models import CandleRevisionRecord,CandleRecord
+    from sqlalchemy import select,func
+    from sqlalchemy.orm import Session
+    engine,_,_=database;seed(engine);first=candle();second=first.model_copy(update={'open_time':first.open_time+timedelta(minutes=1),'close_time':first.close_time+timedelta(minutes=1)})
+    save_candles(engine,[first,second]);corrected=[b.model_copy(update={'close':Decimal('100.5')}) for b in (first,second)]
+    with pytest.raises(DataConflict):reconcile_confirmed_rest(engine,corrected,corrected,observed_at=second.close_time+timedelta(seconds=30))
+    with Session(engine) as session:
+        assert session.scalar(select(func.count()).select_from(CandleRevisionRecord))==0
+        assert session.get(CandleRecord,(first.instrument_id,first.timeframe,first.open_time)).close==first.close

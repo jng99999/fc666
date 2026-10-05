@@ -50,3 +50,44 @@ class CandleRecord(Base):
 
 # TimescaleDB creates this descending time index for the hypertable.
 Index("candles_open_time_idx", CandleRecord.open_time.desc())
+
+from sqlalchemy import Integer, JSON
+
+class ResearchJobRecord(Base):
+    __tablename__='research_jobs'
+    job_id: Mapped[str]=mapped_column(String(36),primary_key=True)
+    created_at: Mapped[datetime]=mapped_column(DateTime(timezone=True))
+    updated_at: Mapped[datetime]=mapped_column(DateTime(timezone=True))
+    status: Mapped[str]=mapped_column(String(16))
+    progress: Mapped[int]=mapped_column(Integer,default=0)
+    cancel_requested: Mapped[bool]=mapped_column(Boolean,default=False)
+    attempts: Mapped[int]=mapped_column(Integer,default=0)
+    lease_owner: Mapped[str|None]=mapped_column(String(36))
+    lease_until: Mapped[datetime|None]=mapped_column(DateTime(timezone=True))
+    request: Mapped[dict]=mapped_column(JSON)
+    snapshot: Mapped[dict]=mapped_column(JSON)
+    result: Mapped[dict|None]=mapped_column(JSON(none_as_null=True),nullable=True)
+    error: Mapped[str|None]=mapped_column(String(160))
+    __table_args__=(
+        CheckConstraint("status IN ('QUEUED','RUNNING','SUCCEEDED','FAILED','CANCELLED')",name='ck_research_status'),
+        CheckConstraint('progress BETWEEN 0 AND 100 AND attempts BETWEEN 0 AND 3',name='ck_research_progress'),
+        CheckConstraint("(status = 'SUCCEEDED' AND result IS NOT NULL AND progress = 100) OR (status <> 'SUCCEEDED' AND result IS NULL AND progress < 100)",name='ck_research_result'),
+        Index('research_jobs_queue_idx','status','created_at'),
+    )
+
+class ResearchWorkerRecord(Base):
+    __tablename__='research_workers'
+    worker_id: Mapped[str]=mapped_column(String(36),primary_key=True)
+    heartbeat_at: Mapped[datetime]=mapped_column(DateTime(timezone=True))
+
+class CandleRevisionRecord(Base):
+    __tablename__='candle_revisions'
+    revision_id: Mapped[str]=mapped_column(String(36),primary_key=True)
+    instrument_id: Mapped[str]=mapped_column(String(160))
+    timeframe: Mapped[str]=mapped_column(String(4))
+    open_time: Mapped[datetime]=mapped_column(DateTime(timezone=True))
+    recorded_at: Mapped[datetime]=mapped_column(DateTime(timezone=True))
+    reason: Mapped[str]=mapped_column(String(160))
+    previous: Mapped[dict]=mapped_column(JSON)
+    revised: Mapped[dict]=mapped_column(JSON)
+    __table_args__=(Index('candle_revisions_lookup_idx','instrument_id','timeframe','open_time'),)

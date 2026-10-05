@@ -8,7 +8,7 @@
 cd /workspace/fc666
 bash scripts/install.sh
 ```
-停止本脚本拥有的 API/web/market 后冻结安装 uv.lock/package-lock.json，构建 web；完成后需运行 start.sh。缓存使用 /workspace/.cache，NEXT_TELEMETRY_DISABLED=1。本地 .env 只在不存在时以 0600 和随机数据库密码生成；不打印、不提交；已存在配置永不覆盖。
+停止本脚本拥有的 API/web/research/market 后冻结安装 uv.lock/package-lock.json，构建 web；完成后需运行 start.sh。缓存使用 /workspace/.cache，NEXT_TELEMETRY_DISABLED=1。本地 .env 只在不存在时以 0600 和随机数据库密码生成；不打印、不提交；已存在配置永不覆盖。
 
 ## 启动与检查
 ```bash
@@ -26,7 +26,7 @@ check 运行真实数据库/Redis integration 和模型测试、alembic check、
 ```bash
 .venv/bin/python scripts/dev_services.py stop
 ```
-只停止本脚本拥有的 API/web/market 进程，不停其他进程、不删除数据库 volume。需要关基础服务时使用同一个 compose 文件的 stop，不用 down -v。
+只停止本脚本拥有的 API/web/research/market 进程，不停其他进程、不删除数据库 volume。需要关基础服务时使用同一个 compose 文件的 stop，不用 down -v。
 开发 API：`.venv/bin/python -m uvicorn apps.api.main:create_app --factory --reload --host 127.0.0.1 --port 8000`。
 开发前端：在 apps/web 执行 `NEXT_TELEMETRY_DISABLED=1 npm run dev`。启动手动进程前先 stop 管理进程，避免端口冲突。
 
@@ -50,3 +50,10 @@ UV_CACHE_DIR=/workspace/.cache/uv uv run --frozen python -m tests.browser_resear
 UV_CACHE_DIR=/workspace/.cache/uv uv run --frozen python -m scripts.reproduce_backtest .runtime/browser-backtest-export.json
 ```
 浏览器研究测试使用真实数据库历史并下载完整结果；注入非法费率仅用于验证错误路径。离线复现不需要网络或数据库。研究页仅模拟，不开启下单。
+
+## 后台研究验证
+```bash
+UV_CACHE_DIR=/workspace/.cache/uv uv run --frozen python -m tests.browser_jobs
+UV_CACHE_DIR=/workspace/.cache/uv uv run --frozen python -m scripts.reproduce_backtest .runtime/browser-job-export.json
+```
+start.sh执行0004 schema并启动独立研究worker；研究health在/api/v1/research/status，进程日志.runtime/research.log。停止/恢复只作用自己拥有的进程，死任务租约30秒后可重领，结果与快照保存在PG。详细合同RESEARCH_JOBS.md；确认的官方REST修正保留candle_revisions审计，禁止用普通导入覆盖冲突。

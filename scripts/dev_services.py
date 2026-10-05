@@ -14,6 +14,7 @@ STATE = ROOT / ".runtime"
 SERVICES = {
     "api": ([str(ROOT / ".venv/bin/python"), "-m", "uvicorn", "apps.api.main:create_app", "--factory", "--host", "127.0.0.1", "--port", "8000"], ROOT, "http://127.0.0.1:8000/health/ready"),
     "web": (["node", str(ROOT / "apps/web/node_modules/next/dist/bin/next"), "start", "--hostname", "127.0.0.1", "--port", "3000"], ROOT / "apps/web", "http://127.0.0.1:3000/api/health"),
+    "research": ([str(ROOT / ".venv/bin/python"), "-m", "apps.worker.research"], ROOT, "http://127.0.0.1:8000/api/v1/research/status"),
     "market": ([str(ROOT / ".venv/bin/python"), "-m", "apps.worker.market"], ROOT, "http://127.0.0.1:8000/api/v1/market/status"),
 }
 
@@ -54,7 +55,7 @@ if __name__ == "__main__":
     STATE.mkdir(mode=0o700,exist_ok=True)
     if action == "stop":
         for name in reversed(SERVICES): stop(name)
-        print("Stopped owned FC666 API/web/market processes; database volumes preserved")
+        print("Stopped owned FC666 API/web/research/market processes; database volumes preserved")
     elif action == "status":
         for name, (_,_,url) in SERVICES.items(): print(name, "ready" if probe(url) else "not ready")
         if not all(probe(url) for _,_,url in SERVICES.values()): raise SystemExit(1)
@@ -65,7 +66,7 @@ if __name__ == "__main__":
                 if owned(name):
                     if not probe(url): raise RuntimeError(f"Owned {name} process is not ready; inspect .runtime/{name}.log")
                     print(name,"already ready"); continue
-                if probe(url): raise RuntimeError(f"Port for {name} is occupied by an unmanaged service")
+                if name in {"api","web"} and probe(url): raise RuntimeError(f"Port for {name} is occupied by an unmanaged service")
                 with (STATE / f"{name}.log").open("a") as log:
                     env = os.environ | {"NEXT_TELEMETRY_DISABLED":"1"}
                     proc = subprocess.Popen(command,cwd=cwd,env=env,stdout=log,stderr=log,start_new_session=True)

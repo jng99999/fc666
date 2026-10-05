@@ -33,7 +33,7 @@ def rounded(value, step, mode):
     return (value/step).to_integral_value(rounding=mode)*step
 
 
-def simulate(bars: list[Candle], instrument: Instrument, config: BacktestConfig):
+def simulate(bars: list[Candle], instrument: Instrument, config: BacktestConfig, *, checkpoint=None):
     if instrument.market_type!='SPOT': raise ValueError('Only Spot long/flat is implemented')
     if not 2<=len(bars)<=1000: raise ValueError('Require 2..1000 finalized bars')
     for i,bar in enumerate(bars):
@@ -53,6 +53,7 @@ def simulate(bars: list[Candle], instrument: Instrument, config: BacktestConfig)
         peak=config.initial_cash;drawdown=Decimal(0)
         pending=None;fills=[];orders=[];equity=[];signals=[];market_states=[];indicator=IndicatorEngine(period=config.period);strategy=EmaLongFlat()
         for index,bar in enumerate(bars):
+            if checkpoint is not None and index%25==0:checkpoint(index,len(bars))
             if pending is not None:
                 side='BUY' if pending.target=='LONG' and quantity==0 else 'SELL' if pending.target=='FLAT' and quantity>0 else None
                 if side:
@@ -85,6 +86,7 @@ def simulate(bars: list[Candle], instrument: Instrument, config: BacktestConfig)
             if pending:signals.append({'target':pending.target,'available_at':pending.available_at.isoformat()})
             value=cash+quantity*bar.close;peak=max(peak,value);drawdown=max(drawdown,(peak-value)/peak)
             equity.append({'as_of':bar.close_time.isoformat(),'cash':str(cash),'quantity':str(quantity),'equity':str(value)})
+        if checkpoint is not None:checkpoint(len(bars),len(bars))
         final=cash+quantity*bars[-1].close
         unrealized=quantity*bars[-1].close-cost
         if abs((final-config.initial_cash)-(realized+unrealized))>Decimal('1e-40'): raise ArithmeticError('PnL conservation violated')

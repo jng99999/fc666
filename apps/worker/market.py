@@ -17,7 +17,7 @@ from websockets.sync.client import connect
 from apps.api.settings import Settings
 from core.exchange.binance import BinancePublic,SYMBOLS,INTERVALS,MarketDataError,RateLimited,normalize_candle,stream_event,utc_ms
 from core.market_data.orderbook import OrderBook
-from core.market_data.storage import save_instruments,save_candles,gap_report
+from core.market_data.storage import save_instruments,save_candles,gap_report,DataConflict,reconcile_confirmed_rest
 
 log=logging.getLogger("fc666.market")
 TTL=15
@@ -59,7 +59,12 @@ def backfill_symbol(symbol,adapter,engine):
         candles=adapter.candles(symbol,interval,start,end,now)
         if gap_report(candles,interval,start,end)["missing_count"]:
             raise MarketDataError("Historical gap remains after backfill")
-        save_candles(engine,candles)
+        try:save_candles(engine,candles)
+        except DataConflict:
+            confirmation=adapter.candles(symbol,interval,start,end,now)
+            count=reconcile_confirmed_rest(engine,candles,confirmation,observed_at=utc_ms(adapter.server_time()))
+            log.warning('finalized_rest_revision_audited symbol=%s interval=%s count=%s',symbol,interval,count)
+            save_candles(engine,candles)
 
 
 def consume_symbol(symbol,adapter,engine,cache,stop):

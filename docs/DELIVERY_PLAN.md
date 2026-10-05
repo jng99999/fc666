@@ -14,6 +14,9 @@
 ## Phase 5 首片已交付
 Spot EMA Long/Flat回测、Decimal账本、真实数据API/研究页面、完整导出/离线复现已验证，见PHASE_5_REPORT.md。已追加v2成本/完整交易/风险收益分析及旧版本复现，见PHASE_5_ANALYTICS_REPORT.md。下一切片完善撮合语义与事件/向量对照；其余回测能力保留未实现。自主执行与发布边界见LONG_TASK_PLAN.md。
 
+## Phase 6 首片已交付
+固定版本策略catalog、PG后台研究任务、进度/取消/失败、快照/lease恢复、网页刷新及结果持久化已验证，见PHASE_6_REPORT.md。下一切片为策略扩展与更多撮合/独立对照；完整SDK/Lab仍未完成。
+
 ## 保留待办与后续阶段
 Phase 0 深入竞品交互研究、Phase 2b derivatives、Phase 3 指标/成交 overlays 与长时负载/深度导航性能验收继续保留，不将短时 smoke 宣称完整性能达标。
 Phase 5–15 按 ROADMAP.md：回测 → SDK/Lab → Replay → Paper → Portfolio/Risk → AI → OMS → Reconciliation → Live → Optimization → Hardening。
