@@ -42,7 +42,7 @@ export default function Research(){
  }
  async function cancel(){if(!job)return;try{const response=await fetch(`/api/research/jobs/${job.job_id}/cancel`,{method:'POST'});if(!response.ok)throw new Error('任务已结束或无法取消');setJob(JobSchema.parse(await response.json()));}catch(e){setError(e instanceof Error?e.message:'取消失败');}}
  function restore(item:Job){setRun(null);setError('');setJob(item);setBusy(!['SUCCEEDED','FAILED','CANCELLED'].includes(item.status));localStorage.setItem(ACTIVE_JOB,item.job_id);setActiveId(null);setTimeout(()=>setActiveId(item.job_id),0);}
- return <main className="research-page"><header><strong>FC666 · Research</strong><a href="/">行情终端</a><span className="badge">只读研究 · 实盘关闭</span></header><h1>现货历史回测</h1><p>EMA / SMA Long / Flat v1 内置基线策略；闭合柱决策，下一柱开盘模拟成交。仅支持现货做多/空仓，不含杠杆、卖空和真实下单。</p>
+ return <main className="research-page"><header><strong>FC666 · Research</strong><a href="/">行情终端</a><a href="/replay">回放</a><span className="badge">只读研究 · 实盘关闭</span></header><h1>现货历史回测</h1><p>EMA / SMA Long / Flat v1 内置基线策略；闭合柱决策，下一柱开盘模拟成交。仅支持现货做多/空仓，不含杠杆、卖空和真实下单。</p>
  <form onSubmit={submit} className="research-form">
  <label>策略<select aria-label="策略" value={strategy} onChange={e=>setStrategy(e.target.value)}><option value="ema_long_flat_v1">EMA Long / Flat v1</option><option value="sma_long_flat_v1">SMA Long / Flat v1</option></select></label>
  <label>交易对<select value={symbol} onChange={e=>setSymbol(e.target.value)}><option>BTCUSDT</option><option>ETHUSDT</option></select></label>

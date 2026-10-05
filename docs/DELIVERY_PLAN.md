@@ -29,3 +29,5 @@ Phase 6 两种内置策略执行已完成：EMA/SMA可在研究页面提交，v3
 Phase 6 参数批次研究已实现：最多8组同历史/规则/截止快照，整批原子提交，逐项失败/取消隔离，真实指标比较与完整导出。见RESEARCH_BATCHES.md及PHASE_6_BATCHES_REPORT.md。下一目标为明确数据隔离的样本内/样本外分段研究，仍不自动寻优或开放实盘。
 
 Phase 6 固定参数分段研究已实现：独立样本区间、冷启动资金/指标/信号，结果分别计算，不自动选参。见HOLDOUT_RESEARCH.md及PHASE_6_HOLDOUT_REPORT.md。下一目标为Phase7历史市场回放首片；完整SDK/代码沙箱/自动优化/滚动再训练仍保留待办。
+
+Phase7闭合柱回放首片已实现：固定PG快照、prefix-only API、时钟与CAS游标、播放控制/刷新恢复/因果指标，见REPLAY.md与PHASE_7_REPORT.md。下一目标为可审计回放策略决策事件；完整逐笔回放/撮合、Paper账户与Risk仍未实现。

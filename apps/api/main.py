@@ -7,6 +7,7 @@ from sqlalchemy import create_engine, text
 from core.storage.schema import SCHEMA_REVISION
 from apps.api.settings import Settings
 from apps.api.research import router_for as research_router
+from apps.api.replay import router_for as replay_router
 from apps.api.market import router_for, market_health
 
 logger = logging.getLogger("fc666.api")
@@ -28,6 +29,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.cache = cache
     app.include_router(router_for(engine,cache,config.redis_url))
     app.include_router(research_router(engine))
+    app.include_router(replay_router(engine))
 
     @app.get("/health/live")
     def live():
@@ -45,6 +47,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 conn.execute(text("SELECT revision_id FROM candle_revisions LIMIT 0"))
                 conn.execute(text("SELECT job_id FROM research_jobs LIMIT 0"))
                 conn.execute(text("SELECT worker_id FROM research_workers LIMIT 0"))
+                conn.execute(text("SELECT session_id FROM replay_sessions LIMIT 0"))
                 checks["schema"] = conn.execute(text("SELECT version_num FROM alembic_version")).scalar() == SCHEMA_REVISION
         except Exception:
             logger.warning("readiness_dependency_unavailable", extra={"dependency": "database"})

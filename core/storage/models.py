@@ -91,3 +91,16 @@ class CandleRevisionRecord(Base):
     previous: Mapped[dict]=mapped_column(JSON)
     revised: Mapped[dict]=mapped_column(JSON)
     __table_args__=(Index('candle_revisions_lookup_idx','instrument_id','timeframe','open_time'),)
+
+class ReplaySessionRecord(Base):
+    __tablename__='replay_sessions'
+    session_id: Mapped[str]=mapped_column(String(36),primary_key=True)
+    created_at: Mapped[datetime]=mapped_column(DateTime(timezone=True))
+    updated_at: Mapped[datetime]=mapped_column(DateTime(timezone=True))
+    snapshot: Mapped[dict]=mapped_column(JSON)
+    cursor: Mapped[int]=mapped_column(Integer)
+    revision: Mapped[int]=mapped_column(Integer)
+    __table_args__=(
+        CheckConstraint("cursor >= 0 AND cursor <= json_array_length(snapshot->'dataset')",name='ck_replay_cursor'),
+        CheckConstraint('revision >= 0',name='ck_replay_revision'),
+    )
