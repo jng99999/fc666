@@ -30,3 +30,5 @@ Phase 0 当前验证：仓库最初仅 README；Python 3.12.14、Node 24.19.0 �
 Phase9持久场景与估值历史：不可变账户选择/Decimal提示阈值，UUID幂等创建及保存，完整报告与输入原子持久化、数据库防修改、分页查询、刷新和丢响应后的原请求重试、完整导出与离线复算；schema0009。见PORTFOLIO_HISTORY.md。下一目标明确历史快照可比性、缺失区间及连续性，再实现组合历史分析；共享资金、完整Risk/OMS与Live保持未实现。
 
 Phase9历史可比性切片：最近最多8个持久快照，冻结输入离线重算，相邻分钟/读取时钟/账户定义/版本/观察和行情前缀/worker健康检查，缺口明确分段，区间内Decimal权益差，无插值、跨缺口累计或连续回撤。见PORTFOLIO_CONTINUITY.md；多阶段目标见AUTONOMOUS_EXECUTION_PLAN.md。下一目标先定义分段采样权益展示及观察点指标，再推进版本化组合风险可见性和Paper执行恢复；Live关闭。
+
+Phase9分段采样权益：独立sampled-v1接口/导出，沿用continuity-v1区间边界，Decimal观察点回撤金额/比例与各自峰谷编号，单点/零峰值明确缺失，SVG按区间断开、精确表格/焦点详情、完整离线复算。见PORTFOLIO_SAMPLED.md。下一目标冻结版本化组合风险提示策略与历史可见性，保持只读监控边界，再推进Paper执行恢复；实盘关闭。

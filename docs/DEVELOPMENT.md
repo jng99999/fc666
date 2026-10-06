@@ -133,3 +133,5 @@ UV_CACHE_DIR=/workspace/.cache/uv uv run --frozen python -m scripts.verify_portf
 Portfolio历史切片后当前迁移head为0009。`bash scripts/start.sh` 保留既有.env/数据卷并升级后启动五服务；`uv run --frozen python -m tests.browser_portfolio_history` 验证真实已停止账户、丢响应幂等、刷新及离线导出。测试前需至少一个真实已停止实时Paper账户。历史页路径 `/portfolio/history`；不启用实盘。
 
 历史分析不新增迁移，当前head仍0009。启动后运行 `uv run --frozen python -m tests.browser_portfolio_continuity`，要求已有真实持久场景快照；导出用 `uv run --frozen python -m scripts.verify_portfolio_continuity .runtime/browser-portfolio-continuity.json` 核对。场景分析是只读GET，有界窗口不会影响账户或历史原记录。
+
+采样权益切片无新迁移，head0009。运行 `uv run --frozen python -m tests.browser_portfolio_sampled` 需要已保存的多点真实场景；此测试只读现有快照，不新增记录。`uv run --frozen python -m scripts.verify_portfolio_sampled .runtime/browser-portfolio-sampled.json` 验证完整采样导出。旧continuity/history/valuation验证器继续适用。

@@ -14,6 +14,8 @@ Deliver a versioned, bounded analysis using only saved inputs, deterministic int
 
 ## Goal 3 — sampled visual analysis
 
+Implemented as sampled-v1; see PORTFOLIO_SAMPLED.md and PHASE_9_SAMPLED_REPORT.md for scope and acceptance.
+
 Next slice after Goal 2 passes: specify segment-scoped sampled equity display and metric denominators before implementation. Clearly distinguish observed-point drawdown from actual intraminute/continuous drawdown. Do not join segments, fill missing minutes, annualize sparse points, or infer results outside the bounded window. Gate: independent hand calculation, gap/zero-equity/duplicate cases, exact reproducible exports and browser labels.
 
 ## Goal 4 — portfolio risk observability
