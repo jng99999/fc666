@@ -1,6 +1,6 @@
 from uuid import UUID
 from fastapi import APIRouter, HTTPException, Query
-from core.portfolio import history
+from core.portfolio import history, continuity
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from core.portfolio.valuation import Limits, capture, MissingAccount
 
@@ -54,4 +54,7 @@ def router_for(engine):
         return checked(lambda:history.snapshots(engine,str(id),limit=limit,cursor=cursor,status=status))
     @router.get('/api/v1/portfolio/scenarios/{id}/snapshots/{snapshot_id}')
     def read_snapshot(id:UUID,snapshot_id:UUID):return checked(lambda:history.saved(engine,str(id),str(snapshot_id)))
+    @router.get('/api/v1/portfolio/scenarios/{id}/analysis')
+    def analyze_scenario(id:UUID,limit:int=Query(8,ge=1,le=8)):
+        return checked(lambda:continuity.capture(engine,str(id),limit=limit))
     return router

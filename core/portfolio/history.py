@@ -128,3 +128,29 @@ def snapshots(engine,id,*,limit=20,cursor=None,status=None):
                 'as_of':report['as_of'],'price_as_of':report['price_as_of'],'status':report['status'],
                 'totals':report['totals'],'alerts':report['alerts'],'report_sha256':row.report_sha256})
         return {'items':items,'next_cursor':next_cursor,'trading_enabled':False}
+
+
+def validate_scenario_export(value):
+    from types import SimpleNamespace
+    for key in ['scenario_id','request_id']:
+        if str(UUID(value[key]))!=value[key]:raise ValueError('Noncanonical identifier')
+    created=datetime.fromisoformat(value['created_at'])
+    if created.tzinfo is None:raise ValueError('Timezone required')
+    row=SimpleNamespace(**{**value,'created_at':created})
+    if scenario_visible(row)!=value:raise ValueError('Scenario envelope differs from canonical definition')
+    return row
+
+
+def verify_export(value):
+    from types import SimpleNamespace
+    if value['version']!=VERSION:raise ValueError('Unknown version')
+    scenario=validate_scenario_export(value['scenario'])
+    for key in ['scenario_id','snapshot_id','request_id']:
+        if str(UUID(value[key]))!=value[key]:raise ValueError('Noncanonical identifier')
+    created=datetime.fromisoformat(value['created_at'])
+    if created.tzinfo is None or created<scenario.created_at:raise ValueError('Invalid storage timestamp')
+    from core.portfolio.valuation import stamp
+    if stamp(value['report']['as_of'])>created:raise ValueError('Future report')
+    snapshot=SimpleNamespace(**{**value,'created_at':created})
+    if snapshot_visible(snapshot,scenario)!=value:raise ValueError('Envelope differs from reconstructed snapshot')
+    return {'status':value['report']['status'],'accounts':len(value['report']['rows']),'snapshot_id':value['snapshot_id']}

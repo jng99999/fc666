@@ -131,3 +131,5 @@ UV_CACHE_DIR=/workspace/.cache/uv uv run --frozen python -m scripts.verify_portf
 浏览器使用真实BTC/ETH公共数据，临时账户先停止并保留账本；报价陈旧UI路径只在测试浏览器中注入降级HTTP响应，不修改数据库或产品行情。离线核对不需要数据库/网络，只检查内部一致性。旧结果在更改选择/新请求失败/页面刷新时不会冒充本次估值。
 
 Portfolio历史切片后当前迁移head为0009。`bash scripts/start.sh` 保留既有.env/数据卷并升级后启动五服务；`uv run --frozen python -m tests.browser_portfolio_history` 验证真实已停止账户、丢响应幂等、刷新及离线导出。测试前需至少一个真实已停止实时Paper账户。历史页路径 `/portfolio/history`；不启用实盘。
+
+历史分析不新增迁移，当前head仍0009。启动后运行 `uv run --frozen python -m tests.browser_portfolio_continuity`，要求已有真实持久场景快照；导出用 `uv run --frozen python -m scripts.verify_portfolio_continuity .runtime/browser-portfolio-continuity.json` 核对。场景分析是只读GET，有界窗口不会影响账户或历史原记录。
