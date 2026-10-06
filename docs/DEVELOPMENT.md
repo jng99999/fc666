@@ -118,3 +118,14 @@ UV_CACHE_DIR=/workspace/.cache/uv uv run --frozen python -m tests.browser_paper_
 ```
 
 浏览器创建独立真实历史驱动的测试账户，检查选择、刷新、筛选、丢确认、冲突审计与移动端，并只停止其自身的临时实时账户。测试库清理仅针对当前唯一fc666_test_UUID：关闭新连接，终止残留会话；若Timescale启动中的后台连接造成明确55006错误，有限重试，其他错误直接失败。
+
+## 模拟场景估值
+
+`/portfolio`显式选择实时Paper账户，以共同已闭合分钟价格做只读场景估值，合同见PORTFOLIO_VALUATION.md。仍使用0008及五服务，无新依赖、密钥或网络域名。
+
+```bash
+UV_CACHE_DIR=/workspace/.cache/uv uv run --frozen python -m tests.browser_portfolio
+UV_CACHE_DIR=/workspace/.cache/uv uv run --frozen python -m scripts.verify_portfolio .runtime/browser-portfolio.json
+```
+
+浏览器使用真实BTC/ETH公共数据，临时账户先停止并保留账本；报价陈旧UI路径只在测试浏览器中注入降级HTTP响应，不修改数据库或产品行情。离线核对不需要数据库/网络，只检查内部一致性。旧结果在更改选择/新请求失败/页面刷新时不会冒充本次估值。

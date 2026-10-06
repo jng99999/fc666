@@ -39,3 +39,5 @@ Phase8历史Paper首片：独立Decimal资金/库存、下一柱开盘模拟成�
 Phase8实时闭合柱Paper首片：创建时仅历史预热、后台接受连续真实闭合柱、及时收盘参考成交、迟到/激活前拒绝、修正/规则变更阻断、缺口等待、独立worker与持久恢复；五服务/0007 head，见REALTIME_PAPER.md与PHASE_8_REALTIME_REPORT.md。下一目标：账户列表/状态可见性与可审计控制记录，明确停止账户保留/恢复边界，再推进Portfolio与完整Risk；实盘关闭。
 
 Phase8账户发现与控制审计：历史/实时账户状态筛选、分页、选择/刷新恢复和停止账户保留；事务内APPLIED/NOOP/CONFLICT记录，拒绝修改/删除，身份未验证。当前head0008，见PAPER_ACCOUNTS.md。下一目标先定义模拟Portfolio估值时钟与陈旧/缺失报价边界；完整Risk/OMS、用户鉴权及Live继续保留待办。
+
+Phase9模拟场景估值首片：显式1..8个独立实时账户，PG同快照/共同闭合分钟报价、Decimal现金/市值/盈亏/按币种敞口，账本/规则/数据/报价或到账异常时不汇总；风险阈值只提示，完整输入可离线核对。见PORTFOLIO_VALUATION.md。下一目标定义并实现版本化场景与持久估值快照/历史查询；共享资金账本、完整Risk/OMS、组合回撤和Live仍未完成。

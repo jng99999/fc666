@@ -9,6 +9,7 @@ from apps.api.settings import Settings
 from apps.api.research import router_for as research_router
 from apps.api.replay import router_for as replay_router
 from apps.api.paper import router_for as paper_router
+from apps.api.portfolio import router_for as portfolio_router
 from apps.api.market import router_for, market_health
 
 logger = logging.getLogger("fc666.api")
@@ -32,6 +33,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(research_router(engine))
     app.include_router(replay_router(engine))
     app.include_router(paper_router(engine))
+    app.include_router(portfolio_router(engine))
 
     @app.get("/health/live")
     def live():
