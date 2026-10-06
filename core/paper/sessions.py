@@ -1,6 +1,7 @@
 """Frozen historical paper accounts with transactional cursor and persisted ledger."""
 from datetime import datetime, timezone
 from uuid import uuid4
+from core.paper.accounts import record_control, state
 from sqlalchemy.orm import Session
 from core.models import Candle, Instrument
 from core.backtest.spot import BacktestConfig, digest
@@ -70,19 +71,24 @@ def command(engine, session_id, expected_revision, action, count=1):
         record = session.get(Paper, session_id, with_for_update=True)
         if record is None:
             raise KeyError(session_id)
-        if record.revision != expected_revision:
-            raise Conflict()
-        before = visible(record)
-        previous = (record.cursor, record.halt_at)
-        if action == 'step':
-            record.cursor = min(record.cursor + count, before['total'])
-        elif action == 'reset':
-            record.cursor = 0
-            record.halt_at = None
-        elif record.halt_at is None:
-            record.halt_at = record.cursor
-        if (record.cursor, record.halt_at) != previous:
-            record.ledger = computed(record)
-            record.revision += 1
-            record.updated_at = datetime.now(timezone.utc)
-        return visible(record)
+        before_revision = record.revision
+        before_state = state(record, 'sessions')
+        conflict = record.revision != expected_revision
+        if not conflict:
+            before = visible(record)
+            previous = (record.cursor, record.halt_at)
+            if action == 'step':
+                record.cursor = min(record.cursor + count, before['total'])
+            elif action == 'reset':
+                record.cursor = 0
+                record.halt_at = None
+            elif record.halt_at is None:
+                record.halt_at = record.cursor
+            if (record.cursor, record.halt_at) != previous:
+                record.ledger = computed(record)
+                record.revision += 1
+                record.updated_at = datetime.now(timezone.utc)
+            response = visible(record)
+        record_control(session, record, 'sessions', action, count, expected_revision, before_revision, before_state)
+    if conflict: raise Conflict()
+    return response

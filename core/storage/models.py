@@ -145,3 +145,25 @@ class PaperWorkerRecord(Base):
     __tablename__ = 'paper_workers'
     worker_id: Mapped[str] = mapped_column(String(36), primary_key=True)
     heartbeat_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+class PaperControlRecord(Base):
+    __tablename__ = 'paper_controls'
+    event_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    recorded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    kind: Mapped[str] = mapped_column(String(8))
+    session_id: Mapped[str] = mapped_column(String(36))
+    action: Mapped[str] = mapped_column(String(8))
+    count: Mapped[int] = mapped_column(Integer)
+    expected_revision: Mapped[int] = mapped_column(Integer)
+    before_revision: Mapped[int] = mapped_column(Integer)
+    after_revision: Mapped[int] = mapped_column(Integer)
+    outcome: Mapped[str] = mapped_column(String(8))
+    before: Mapped[dict] = mapped_column(JSON)
+    after: Mapped[dict] = mapped_column(JSON)
+    __table_args__ = (
+        CheckConstraint("kind IN ('sessions','streams')", name='ck_control_kind'),
+        CheckConstraint("outcome IN ('APPLIED','NOOP','CONFLICT')", name='ck_control_outcome'),
+        CheckConstraint("expected_revision >= 0 AND before_revision >= 0 AND after_revision >= 0 AND count BETWEEN 1 AND 10", name='ck_control_values'),
+        CheckConstraint("(outcome = 'APPLIED' AND expected_revision = before_revision AND after_revision = before_revision + 1) OR (outcome = 'NOOP' AND expected_revision = before_revision AND after_revision = before_revision) OR (outcome = 'CONFLICT' AND expected_revision <> before_revision AND after_revision = before_revision)", name='ck_control_revision'),
+        Index('paper_controls_account_idx', 'kind', 'session_id', 'recorded_at', 'event_id'),
+    )

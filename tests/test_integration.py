@@ -1,13 +1,14 @@
 """Requires real PostgreSQL/TimescaleDB and Redis; missing dependencies fail."""
 from decimal import Decimal
 from uuid import uuid4
+import time
 import pytest
 from alembic import command
 from alembic.config import Config
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import make_url
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, OperationalError
 from sqlalchemy.orm import Session
 from apps.api.main import create_app
 from apps.api.settings import Settings
@@ -34,7 +35,18 @@ def database(monkeypatch):
             # Fence new connections before FORCE terminates existing sessions;
             # extension/background reconnects must not race test-database removal.
             conn.execute(text(f'ALTER DATABASE "{name}" ALLOW_CONNECTIONS false'))
-            conn.execute(text(f'DROP DATABASE "{name}" WITH (FORCE)'))
+            # A Timescale worker already starting before the fence may appear
+            # after DROP's first termination scan. Terminate that database's
+            # remaining backends, then retry only the concrete ObjectInUse race.
+            for attempt in range(10):
+                conn.execute(text('SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname=:name AND pid <> pg_backend_pid()'), {'name': name})
+                try:
+                    conn.execute(text(f'DROP DATABASE "{name}" WITH (FORCE)'))
+                    break
+                except OperationalError as exception:
+                    if getattr(exception.orig, 'sqlstate', None) != '55006' or attempt == 9:
+                        raise
+                    time.sleep(.1)
         admin.dispose()
 
 def instrument():

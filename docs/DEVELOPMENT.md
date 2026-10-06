@@ -108,3 +108,13 @@ UV_CACHE_DIR=/workspace/.cache/uv uv run --frozen python -m scripts.verify_paper
 ```
 
 浏览器等待真实一分钟闭合柱，并短暂停止/恢复自己拥有的Paper worker验证断线；与其他会改变worker状态的套件顺序执行。契约及上限见REALTIME_PAPER.md。测试临时数据库删除前关闭自身新连接入口，避免扩展/后台重连与清理竞争，不改开发库。
+
+## 账户列表与控制记录验证
+
+当前head为0008，start.sh自动升级并保留已有账户；readiness增加paper_controls检查。安装依赖、网络域名及五服务不变。事务性记录、分页和身份限制见PAPER_ACCOUNTS.md。
+
+```bash
+UV_CACHE_DIR=/workspace/.cache/uv uv run --frozen python -m tests.browser_paper_accounts
+```
+
+浏览器创建独立真实历史驱动的测试账户，检查选择、刷新、筛选、丢确认、冲突审计与移动端，并只停止其自身的临时实时账户。测试库清理仅针对当前唯一fc666_test_UUID：关闭新连接，终止残留会话；若Timescale启动中的后台连接造成明确55006错误，有限重试，其他错误直接失败。

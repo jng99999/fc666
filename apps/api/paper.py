@@ -1,11 +1,11 @@
 from uuid import UUID
 from typing import Literal
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 from pydantic import Field, model_validator
 from apps.api.research import RunRequest, prepare
 from apps.api.replay import Command
 from core.paper.ledger import RiskLimits
-from core.paper import sessions, streams
+from core.paper import sessions, streams, accounts
 
 
 class PaperRequest(RunRequest):
@@ -96,4 +96,20 @@ def router_for(engine):
     def command_stream(session_id:UUID,request:StreamCommand):
         try:return streams.command(engine,str(session_id),request.expected_revision,request.action)
         except (KeyError,ValueError,streams.Conflict) as exception:error(exception)
+    @router.get('/api/v1/paper/{kind}')
+    def list_accounts(kind: Literal['sessions', 'streams'], limit: int = Query(20, ge=1, le=20), cursor: str | None = Query(None, max_length=256), status: str | None = None):
+        try:
+            return accounts.listing(engine, kind, limit=limit, cursor=cursor, status=status)
+        except ValueError as exception:
+            raise HTTPException(422, str(exception))
+
+    @router.get('/api/v1/paper/{kind}/{session_id}/controls')
+    def control_history(kind: Literal['sessions', 'streams'], session_id: UUID, limit: int = Query(20, ge=1, le=20), cursor: str | None = Query(None, max_length=256)):
+        try:
+            return accounts.controls(engine, kind, str(session_id), limit=limit, cursor=cursor)
+        except KeyError as exception:
+            error(exception)
+        except ValueError as exception:
+            raise HTTPException(422, str(exception))
+
     return router

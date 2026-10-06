@@ -1,6 +1,7 @@
 """Append-only closed-bar acceptance with transactional simulation and correction veto."""
 from datetime import datetime, timezone, timedelta
 from uuid import uuid4
+from core.paper.accounts import record_control, state
 from sqlalchemy import select, text, func
 from sqlalchemy.orm import Session
 from core.backtest.spot import digest, BacktestConfig
@@ -87,17 +88,23 @@ def command(engine,session_id,expected_revision,action):
     with Session(engine) as session,session.begin():
         record=session.get(Stream,session_id,with_for_update=True)
         if record is None:raise KeyError(session_id)
-        if record.revision!=expected_revision:raise Conflict()
-        visible(record);before=(record.status,record.halt_at)
-        if action=='stop':record.status='STOPPED'
-        elif action=='halt' and record.status in ['RUNNING','PAUSED']:
-            if record.halt_at is None:record.halt_at=len(record.observations)
-        elif action=='pause' and record.status=='RUNNING':record.status='PAUSED'
-        elif action=='resume' and record.status=='PAUSED':record.status='RUNNING'
-        elif action=='resume' and record.status!='RUNNING':raise ValueError('Terminal account cannot resume; create a new account')
-        if before!=(record.status,record.halt_at):
-            record.ledger=computed(record);record.revision+=1;record.updated_at=now()
-        return visible(record)
+        before_revision = record.revision
+        before_state = state(record, 'streams')
+        conflict = record.revision != expected_revision
+        if not conflict:
+            visible(record);before=(record.status,record.halt_at)
+            if action=='stop':record.status='STOPPED'
+            elif action=='halt' and record.status in ['RUNNING','PAUSED']:
+                if record.halt_at is None:record.halt_at=len(record.observations)
+            elif action=='pause' and record.status=='RUNNING':record.status='PAUSED'
+            elif action=='resume' and record.status=='PAUSED':record.status='RUNNING'
+            elif action=='resume' and record.status!='RUNNING':raise ValueError('Terminal account cannot resume; create a new account')
+            if before!=(record.status,record.halt_at):
+                record.ledger=computed(record);record.revision+=1;record.updated_at=now()
+            response = visible(record)
+        record_control(session, record, 'streams', action, 1, expected_revision, before_revision, before_state)
+    if conflict: raise Conflict()
+    return response
 
 
 def advance(engine,session_id,*,observed_at=None):
