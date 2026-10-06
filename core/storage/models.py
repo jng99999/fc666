@@ -167,3 +167,25 @@ class PaperControlRecord(Base):
         CheckConstraint("(outcome = 'APPLIED' AND expected_revision = before_revision AND after_revision = before_revision + 1) OR (outcome = 'NOOP' AND expected_revision = before_revision AND after_revision = before_revision) OR (outcome = 'CONFLICT' AND expected_revision <> before_revision AND after_revision = before_revision)", name='ck_control_revision'),
         Index('paper_controls_account_idx', 'kind', 'session_id', 'recorded_at', 'event_id'),
     )
+
+class PortfolioScenarioRecord(Base):
+    __tablename__ = 'portfolio_scenarios'
+    scenario_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    request_id: Mapped[str] = mapped_column(String(36), unique=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    definition: Mapped[dict] = mapped_column(JSON)
+    definition_sha256: Mapped[str] = mapped_column(String(64))
+    __table_args__ = (Index('portfolio_scenarios_created_idx','created_at','scenario_id'),)
+
+class PortfolioSnapshotRecord(Base):
+    __tablename__ = 'portfolio_snapshots'
+    snapshot_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    scenario_id: Mapped[str] = mapped_column(ForeignKey('portfolio_scenarios.scenario_id'))
+    request_id: Mapped[str] = mapped_column(String(36))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    report: Mapped[dict] = mapped_column(JSON)
+    report_sha256: Mapped[str] = mapped_column(String(64))
+    __table_args__ = (
+        UniqueConstraint('scenario_id','request_id',name='uq_portfolio_snapshot_request'),
+        Index('portfolio_snapshots_created_idx','scenario_id','created_at','snapshot_id'),
+    )

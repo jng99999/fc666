@@ -26,3 +26,5 @@ SDK 的最小 typed port 在 Phase 5 为依赖提供，Phase 6 才完成用户�
 Phase 0 当前验证：仓库最初仅 README；Python 3.12.14、Node 24.19.0 存在（兼容性未验收）；文档检查结果见 [PHASE_0_REPORT](PHASE_0_REPORT.md)。后续继续补足研究；当前工程运行兼容性与验证记录见 Phase 1–3 报告。
 
 当前执行目标与范围见 [DELIVERY_PLAN](DELIVERY_PLAN.md)，已测试开发指令见 [DEVELOPMENT](DEVELOPMENT.md)。Phase 0 竞品交互研究仍待补充，不阻塞独立工程建设。
+
+Phase9持久场景与估值历史：不可变账户选择/Decimal提示阈值，UUID幂等创建及保存，完整报告与输入原子持久化、数据库防修改、分页查询、刷新和丢响应后的原请求重试、完整导出与离线复算；schema0009。见PORTFOLIO_HISTORY.md。下一目标明确历史快照可比性、缺失区间及连续性，再实现组合历史分析；共享资金、完整Risk/OMS与Live保持未实现。
