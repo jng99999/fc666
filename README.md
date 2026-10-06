@@ -41,3 +41,5 @@ bash scripts/start.sh
 - [完整路线图](docs/ROADMAP.md)
 
 云任务使用现有隔离 checkout，无需额外 worktree。当前为只读研究终端，不具备下单能力。
+
+`/paper/realtime` 已接入公共实时闭合柱、独立模拟 worker、延迟/激活前拒绝、修正/缺口保护及暂停/停止控制。模拟成交采用及时闭合柱收盘参考价，区别于历史下一柱开盘模型；详见 [实时 Paper 契约](docs/REALTIME_PAPER.md)。

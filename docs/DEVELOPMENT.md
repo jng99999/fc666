@@ -8,7 +8,7 @@
 cd /workspace/fc666
 bash scripts/install.sh
 ```
-停止本脚本拥有的 API/web/research/market 后冻结安装 uv.lock/package-lock.json，构建 web；完成后需运行 start.sh。缓存使用 /workspace/.cache，NEXT_TELEMETRY_DISABLED=1。本地 .env 只在不存在时以 0600 和随机数据库密码生成；不打印、不提交；已存在配置永不覆盖。
+停止本脚本拥有的 API/web/research/market/paper 后冻结安装 uv.lock/package-lock.json，构建 web；完成后需运行 start.sh。缓存使用 /workspace/.cache，NEXT_TELEMETRY_DISABLED=1。本地 .env 只在不存在时以 0600 和随机数据库密码生成；不打印、不提交；已存在配置永不覆盖。
 
 ## 启动与检查
 ```bash
@@ -18,7 +18,7 @@ python3 scripts/dev_services.py stop
 bash scripts/check.sh
 bash scripts/start.sh
 ```
-启动 TimescaleDB/Redis，等待健康，执行 Alembic upgrade，再启动 API、生产 web 和公共行情 worker。status 实际请求 API 和 web 的 readiness 链路；ready 表示工程依赖就绪，交易始终关闭；行情健康另看 /api/v1/market/status，不能用工程 readiness 替代行情有效性。
+启动 TimescaleDB/Redis，等待健康，执行 Alembic upgrade，再启动 API、生产 web、research、market 和 paper worker。status 实际请求 API 和 web 的 readiness 链路；ready 表示工程依赖就绪，交易始终关闭；行情健康另看 /api/v1/market/status，不能用工程 readiness 替代行情有效性。
 check 运行真实数据库/Redis integration 和模型测试、alembic check、前端 typecheck/build。测试创建并销毁唯一 fc666_test_* 数据库，不 downgrade 开发数据库。
 生产构建前先停止 web，避免读写同一 .next；重新安装脚本只作用依赖/构建及未存在的本地配置。首次无 .next 类型时先 build 再 typecheck。
 
@@ -26,7 +26,7 @@ check 运行真实数据库/Redis integration 和模型测试、alembic check、
 ```bash
 .venv/bin/python scripts/dev_services.py stop
 ```
-只停止本脚本拥有的 API/web/research/market 进程，不停其他进程、不删除数据库 volume。需要关基础服务时使用同一个 compose 文件的 stop，不用 down -v。
+只停止本脚本拥有的 API/web/research/market/paper 进程，不停其他进程、不删除数据库 volume。需要关基础服务时使用同一个 compose 文件的 stop，不用 down -v。
 开发 API：`.venv/bin/python -m uvicorn apps.api.main:create_app --factory --reload --host 127.0.0.1 --port 8000`。
 开发前端：在 apps/web 执行 `NEXT_TELEMETRY_DISABLED=1 npm run dev`。启动手动进程前先 stop 管理进程，避免端口冲突。
 
@@ -56,7 +56,7 @@ UV_CACHE_DIR=/workspace/.cache/uv uv run --frozen python -m scripts.reproduce_ba
 UV_CACHE_DIR=/workspace/.cache/uv uv run --frozen python -m tests.browser_jobs
 UV_CACHE_DIR=/workspace/.cache/uv uv run --frozen python -m scripts.reproduce_backtest .runtime/browser-job-export.json
 ```
-start.sh执行最新0006 schema并启动独立研究worker；研究health在/api/v1/research/status，进程日志.runtime/research.log。停止/恢复只作用自己拥有的进程，死任务租约30秒后可重领，结果与快照保存在PG。详细合同RESEARCH_JOBS.md；确认的官方REST修正保留candle_revisions审计，禁止用普通导入覆盖冲突。
+start.sh执行最新0007 schema并启动独立研究worker；研究health在/api/v1/research/status，进程日志.runtime/research.log。停止/恢复只作用自己拥有的进程，死任务租约30秒后可重领，结果与快照保存在PG。详细合同RESEARCH_JOBS.md；确认的官方REST修正保留candle_revisions审计，禁止用普通导入覆盖冲突。
 
 参数批次研究验证（真实服务启动后，测试会停止/恢复自己的research进程）：
 ```bash
@@ -69,10 +69,10 @@ UV_CACHE_DIR=/workspace/.cache/uv uv run --frozen python -m tests.browser_batche
 UV_CACHE_DIR=/workspace/.cache/uv uv run --frozen python -m tests.browser_holdout
 UV_CACHE_DIR=/workspace/.cache/uv uv run --frozen python -m scripts.reproduce_backtest .runtime/browser-holdout-export.json
 ```
-范围与冷启动边界见HOLDOUT_RESEARCH.md。安装、最新0006 schema和四服务启动保持现有流程。
+范围与冷启动边界见HOLDOUT_RESEARCH.md。安装、最新0007 schema和五服务启动保持现有流程。
 
 ## 历史回放验证
-start.sh自动迁移到最新0006（保留0005的replay_sessions），无需新服务或密钥。
+start.sh自动迁移到最新0007（保留0005的replay_sessions），无需新服务或密钥。
 ```bash
 UV_CACHE_DIR=/workspace/.cache/uv uv run --frozen python -m tests.browser_replay
 ```
@@ -89,7 +89,7 @@ UV_CACHE_DIR=/workspace/.cache/uv uv run --frozen python -m scripts.verify_repla
 
 ## 历史 Paper 验证
 
-start.sh自动迁移到0006，新增paper_sessions并保留已有回放、研究与行情数据。无新依赖、服务、密钥或域名。/health/ready验证paper_sessions与0006 head。
+start.sh自动迁移到最新0007，保留0006的paper_sessions及已有回放、研究与行情数据，新增paper_streams/paper_workers。历史Paper本身不增加进程；实时Paper增加独立paper worker，无新依赖、密钥或域名。/health/ready验证Paper三张表与0007 head。
 
 ```bash
 UV_CACHE_DIR=/workspace/.cache/uv uv run --frozen python -m tests.browser_paper
@@ -97,3 +97,14 @@ UV_CACHE_DIR=/workspace/.cache/uv uv run --frozen python -m scripts.verify_paper
 ```
 
 /paper只访问自身前缀API；真实历史驱动，当前不订阅实时行情。资金/库存、风险限额和恢复边界见PAPER_TRADING.md。
+
+## 实时闭合柱 Paper 验证
+
+start.sh升级0007并启动独立apps.worker.paper，第五个进程。/api/v1/paper/status验证其心跳，行情有效性与每账户feed另查。日志.runtime/paper.log。
+
+```bash
+UV_CACHE_DIR=/workspace/.cache/uv uv run --frozen python -m tests.browser_paper_streams
+UV_CACHE_DIR=/workspace/.cache/uv uv run --frozen python -m scripts.verify_paper_stream .runtime/browser-paper-stream.json
+```
+
+浏览器等待真实一分钟闭合柱，并短暂停止/恢复自己拥有的Paper worker验证断线；与其他会改变worker状态的套件顺序执行。契约及上限见REALTIME_PAPER.md。测试临时数据库删除前关闭自身新连接入口，避免扩展/后台重连与清理竞争，不改开发库。

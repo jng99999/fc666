@@ -120,3 +120,28 @@ class PaperSessionRecord(Base):
         CheckConstraint('revision >= 0', name='ck_paper_revision'),
         CheckConstraint('halt_at IS NULL OR (halt_at >= 0 AND halt_at <= cursor)', name='ck_paper_halt'),
     )
+
+class PaperStreamRecord(Base):
+    __tablename__ = 'paper_streams'
+    session_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    snapshot: Mapped[dict] = mapped_column(JSON)
+    observations: Mapped[list] = mapped_column(JSON)
+    ledger: Mapped[dict] = mapped_column(JSON)
+    revision: Mapped[int] = mapped_column(Integer)
+    status: Mapped[str] = mapped_column(String(16))
+    halt_at: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    feed: Mapped[dict] = mapped_column(JSON)
+    __table_args__ = (
+        CheckConstraint("json_array_length(snapshot->'dataset') + json_array_length(observations) <= 1000", name='ck_stream_size'),
+        CheckConstraint('revision >= 0', name='ck_stream_revision'),
+        CheckConstraint("status IN ('RUNNING','PAUSED','STOPPED','BLOCKED','LIMIT_REACHED')", name='ck_stream_status'),
+        CheckConstraint('halt_at IS NULL OR (halt_at >= 0 AND halt_at <= json_array_length(observations))', name='ck_stream_halt'),
+        Index('paper_streams_active_idx','status','created_at'),
+    )
+
+class PaperWorkerRecord(Base):
+    __tablename__ = 'paper_workers'
+    worker_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    heartbeat_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))

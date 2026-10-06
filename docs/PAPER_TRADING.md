@@ -40,4 +40,4 @@ UV_CACHE_DIR=/workspace/.cache/uv uv run --frozen python -m scripts.verify_paper
 
 最多4MiB；验证时钟、游标、连续闭合历史、Spot规则与整个资金/风险/成交重构一致。它验证前缀内部一致性，不验证未导出历史的完整快照SHA、来源真实性或手动停止操作真实性；不替代签名审计或实盘对账。
 
-下一阶段为公共实时闭合柱驱动的Paper扩展，先定义断线补数、重复/修正数据、订单状态与持久恢复边界，再实现。完整Phase8及Phase9/OMS仍待完成。
+实时闭合柱Paper首片已追加，使用独立版本与页面，见REALTIME_PAPER.md；本历史模型不变。完整Phase8及Phase9/OMS仍待完成。

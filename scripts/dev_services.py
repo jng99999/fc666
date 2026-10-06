@@ -16,6 +16,7 @@ SERVICES = {
     "web": (["node", str(ROOT / "apps/web/node_modules/next/dist/bin/next"), "start", "--hostname", "127.0.0.1", "--port", "3000"], ROOT / "apps/web", "http://127.0.0.1:3000/api/health"),
     "research": ([str(ROOT / ".venv/bin/python"), "-m", "apps.worker.research"], ROOT, "http://127.0.0.1:8000/api/v1/research/status"),
     "market": ([str(ROOT / ".venv/bin/python"), "-m", "apps.worker.market"], ROOT, "http://127.0.0.1:8000/api/v1/market/status"),
+    "paper": ([str(ROOT / ".venv/bin/python"), "-m", "apps.worker.paper"], ROOT, "http://127.0.0.1:8000/api/v1/paper/status"),
 }
 
 def start_time(pid):
@@ -55,7 +56,7 @@ if __name__ == "__main__":
     STATE.mkdir(mode=0o700,exist_ok=True)
     if action == "stop":
         for name in reversed(SERVICES): stop(name)
-        print("Stopped owned FC666 API/web/research/market processes; database volumes preserved")
+        print("Stopped owned FC666 API/web/research/market/paper processes; database volumes preserved")
     elif action == "status":
         for name, (_,_,url) in SERVICES.items(): print(name, "ready" if probe(url) else "not ready")
         if not all(probe(url) for _,_,url in SERVICES.values()): raise SystemExit(1)

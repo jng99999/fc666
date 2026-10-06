@@ -30,7 +30,11 @@ def database(monkeypatch):
         yield engine, config, Settings()
     finally:
         engine.dispose()
-        with admin.connect() as conn: conn.execute(text(f'DROP DATABASE "{name}" WITH (FORCE)'))
+        with admin.connect() as conn:
+            # Fence new connections before FORCE terminates existing sessions;
+            # extension/background reconnects must not race test-database removal.
+            conn.execute(text(f'ALTER DATABASE "{name}" ALLOW_CONNECTIONS false'))
+            conn.execute(text(f'DROP DATABASE "{name}" WITH (FORCE)'))
         admin.dispose()
 
 def instrument():

@@ -51,6 +51,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 conn.execute(text("SELECT worker_id FROM research_workers LIMIT 0"))
                 conn.execute(text("SELECT session_id FROM replay_sessions LIMIT 0"))
                 conn.execute(text("SELECT session_id FROM paper_sessions LIMIT 0"))
+                conn.execute(text("SELECT session_id FROM paper_streams LIMIT 0"))
+                conn.execute(text("SELECT worker_id FROM paper_workers LIMIT 0"))
                 checks["schema"] = conn.execute(text("SELECT version_num FROM alembic_version")).scalar() == SCHEMA_REVISION
         except Exception:
             logger.warning("readiness_dependency_unavailable", extra={"dependency": "database"})
@@ -70,6 +72,6 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return {"phase": 8, "mode": config.trading_mode, "live_trading": False,
                 "market_data": market_health(cache), "execution": "not_implemented",
                 "strategy": "builtin_ema_sma_v1", "risk": "historical_paper_entry_limits_v1",
-                "paper": "historical_spot_next_open_v1"}
+                "paper": "historical_next_open_and_realtime_closed_close_v1"}
 
     return app
