@@ -173,3 +173,7 @@ Current head0016 supersedes earlier schema notes. Read PAPER_REQUESTED_CONTROLS.
 ## Unsubmitted finalization — current schema0017
 
 Current head0017 supersedes earlier schema notes. Read PAPER_REQUESTED_FINALIZATION.md and its acceptance report. Internal local finalization requires zero durable source events and releases only the current reservation; submitted/unknown outcomes retain holds. STOP stays permanent. GET exports and offline verifiers support v2 only for accounts with void facts; v1 captures remain valid. Run bash scripts/start.sh to preserve .env/volumes, upgrade head and restore five services. No new dependencies, hosts, secrets or services; no fixture records in main. Live stays disabled.
+
+## Default-disabled local control commands
+
+Read PAPER_REQUESTED_COMMANDS.md and PHASE_9_REQUESTED_COMMANDS_REPORT.md. The new POST control-commands endpoint is disabled unless a secure server token and explicit account/action grants are configured together. Main remains disabled; no production token or fixture account is installed. Existing startup and schema0017 are unchanged. Control commands carry both financial/control revision fences; no order submit/finalization API or scheduler. Live stays disabled.

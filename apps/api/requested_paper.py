@@ -5,7 +5,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from core.paper import requested_inspection as inspection, requested_journal as journal, requested_controls as controls
 
 
-def router_for(engine):
+def router_for(engine,settings=None):
     router=APIRouter()
 
     @router.get('/api/v1/paper-requested/journal')
@@ -31,4 +31,6 @@ def router_for(engine):
             raise HTTPException(503,'Explicit Paper controls temporarily unavailable',headers={'Cache-Control':'no-store'})
         return JSONResponse(content=report,headers={'Cache-Control':'no-store'})
 
+    from apps.api.requested_commands import add_commands
+    add_commands(router,engine,settings)
     return router

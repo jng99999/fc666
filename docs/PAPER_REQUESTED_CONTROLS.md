@@ -1,6 +1,6 @@
 # Controlled local Paper accounts and request-risk gates
 
-Schema0016 adds `paper-requested-controls-v1` and immutable `paper-requested-risk-v1` policies to the independent explicit-quantity engine. Enrollment is explicit and opt-in through the internal library. Existing un-enrolled v1 accounts keep their former behavior and report `LEGACY_UNMANAGED`; this is not coverage for every Paper account. Closed-bar engines and historical records remain separate. No mutation API, UI, scheduler, human identity permissions or exchange transport is added.
+Schema0016 adds `paper-requested-controls-v1` and immutable `paper-requested-risk-v1` policies to the independent explicit-quantity engine. Enrollment is explicit and opt-in through the internal library. Existing un-enrolled v1 accounts keep their former behavior and report `LEGACY_UNMANAGED`; this is not coverage for every Paper account. Closed-bar engines and historical records remain separate. A default-disabled scoped local control-command endpoint is available; see PAPER_REQUESTED_COMMANDS.md. No order mutation API, UI, scheduler, human identity permissions or exchange transport is added.
 
 ## Enrollment, state and atomicity
 
@@ -38,3 +38,5 @@ GET `/api/v1/paper-requested/controls?account_id=...` returns `paper-requested-c
 Run `.venv/bin/python -m scripts.verify_requested_controls FILE` offline. It first verifies the entire financial journal, then reconstructs control checkpoints/transitions and every PREPARE/SUBMIT decision. Altering and rehashing decisions cannot bypass replay. Hashes establish internal consistency, not source authenticity, identity permissions, external finality or freshness. CLI opens no database and rejects duplicate JSON object keys and oversized files. Original financial export v1 remains unchanged and valid.
 
 Tests use isolated PostgreSQL fixtures only. Main tables remain empty; no fabricated product balances/trades. Startup remains `bash scripts/start.sh`, preserving .env/volumes and upgrading head0017 before starting all five services. No dependencies, secrets, domains or extra services. Live stays disabled.
+
+Current access boundary: PAPER_REQUESTED_COMMANDS.md describes the opt-in local control-command capability and its limitations. Local finalization and economic/source operations still have no HTTP write routes.

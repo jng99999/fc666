@@ -34,7 +34,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(research_router(engine))
     app.include_router(replay_router(engine))
     app.include_router(paper_router(engine))
-    app.include_router(requested_paper_router(engine))
+    app.include_router(requested_paper_router(engine,config))
     app.include_router(portfolio_router(engine))
 
     @app.get("/health/live")

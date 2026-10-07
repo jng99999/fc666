@@ -80,3 +80,7 @@ Explicit opt-in immutable policies, PAUSED/ACTIVE/HALTED/STOPPED controls and PR
 ### Goal7/8 progress — safe unsubmitted finalization
 
 Schema0017 adds immutable local VOID_UNSUBMITTED evidence and atomic release only for a request with zero durable source events; see PAPER_REQUESTED_FINALIZATION.md and PHASE_9_REQUESTED_FINALIZATION_REPORT.md. Submitted/unknown outcomes retain their holds. Financial/control v2 exports replay local closures while old captures remain v1. Next: specify explicit permission, idempotency and fencing for controlled Paper mutation interfaces before exposing writes or scheduling. Identity/shared capital, private connectors and Live remain incomplete.
+
+### Goal7/8 progress — explicit local control capability
+
+A default-disabled local operator control-command endpoint now requires an explicit server token, exact account/action grants and both control/financial revisions under the account lock. See PAPER_REQUESTED_COMMANDS.md and PHASE_9_REQUESTED_COMMANDS_REPORT.md. This is single-operator access, not multiuser identity/audit, and grants no order/source write capability. Schema stays0017. Next: extend the boundary to local unsubmitted finalization using a separate explicit action grant; then account preparation/dispatch contracts. Live remains disabled.

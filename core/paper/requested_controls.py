@@ -166,16 +166,19 @@ def enroll(engine,account_id,approved,command_id,created_at):
         return check(db,row,financial)
 
 
-def command(engine,account_id,command_id,expected_revision,action,created_at):
+def command(engine,account_id,command_id,expected_revision,action,created_at,*,expected_financial_revision=None):
     with journal.transaction(engine) as db:
+        if expected_financial_revision is not None:db.execute(text("SELECT set_config('lock_timeout', '2000ms', true)"))
         row=journal.lock(db,account_id);financial=journal.audit(db,row);view=check(db,row,financial)
         if view['coverage']!='CONTROLLED':raise ValueError('Explicit policy enrollment required')
         existing=next((r for r in view['records'] if r['command_id']==command_id),None)
         if existing is not None:
-            if existing['expected_revision']!=expected_revision or existing['action']!=action or existing['created_at']!=created_at or type(expected_revision) is not int:
+            if (existing['expected_revision']!=expected_revision or existing['action']!=action or existing['created_at']!=created_at or type(expected_revision) is not int or
+                (expected_financial_revision is not None and (type(expected_financial_revision) is not int or existing['journal_revision']!=expected_financial_revision))):
                 raise ValueError('Conflicting command retry')
             return view
         if type(expected_revision) is not int or expected_revision!=view['revision']:raise ValueError('Control revision conflict')
+        if expected_financial_revision is not None and (type(expected_financial_revision) is not int or expected_financial_revision!=financial['revision']):raise ValueError('Financial revision conflict')
         if len(view['records'])>=CONTROL_LIMIT or (action!='STOP' and len(view['records'])>=CONTROL_LIMIT-1):
             raise ValueError('Control history capacity reached; last slot reserved for STOP')
         value=record(account_id,len(view['records']),command_id,action,financial['revision'],created_at,sha(view['policy']),view['state'])
