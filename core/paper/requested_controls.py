@@ -148,16 +148,19 @@ def gate(db,row,financial,value,phase,observed_at):
     return Gate(request_id=value['request_id'],phase=phase,payload=payload,payload_sha256=sha(payload))
 
 
-def enroll(engine,account_id,approved,command_id,created_at):
+def enroll(engine,account_id,approved,command_id,created_at,*,expected_financial_revision=None):
     approved=validate_policy(approved)
     with journal.transaction(engine) as db:
+        if expected_financial_revision is not None:db.execute(text("SELECT set_config('lock_timeout', '2000ms', true)"))
         row=journal.lock(db,account_id);financial=journal.audit(db,row)
         if approved['account_id']!=account_id:raise ValueError('Policy account mismatch')
         old=check(db,row,financial)
         if old['coverage']=='CONTROLLED':
-            if encoded(old['policy'])!=encoded(approved) or old['records'][0]['command_id']!=command_id or old['records'][0]['created_at']!=created_at:
+            if (encoded(old['policy'])!=encoded(approved) or old['records'][0]['command_id']!=command_id or old['records'][0]['created_at']!=created_at or
+                (expected_financial_revision is not None and (type(expected_financial_revision) is not int or old['records'][0]['journal_revision']!=expected_financial_revision))):
                 raise ValueError('Conflicting enrollment retry')
             return old
+        if expected_financial_revision is not None and (type(expected_financial_revision) is not int or financial['revision']!=expected_financial_revision):raise ValueError('Financial revision conflict')
         if financial['active_request_id'] is not None:raise ValueError('Cannot enroll an unsealed legacy request')
         value=record(account_id,0,command_id,'ENROLL',financial['revision'],created_at,sha(approved),None)
         db.add(Policy(account_id=account_id,payload=approved,payload_sha256=sha(approved)));db.flush()

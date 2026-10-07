@@ -88,3 +88,7 @@ A default-disabled local operator control-command endpoint now requires an expli
 ### Goal7/8 progress — independently granted local finalization
 
 The default-disabled finalization-commands route now requires exact account and VOID_UNSUBMITTED grants, explicit controlled coverage and the financial revision under the shared account lock. See PAPER_REQUESTED_FINALIZATION_API.md and PHASE_9_REQUESTED_FINALIZATION_API_REPORT.md. No source/venue cancellation evidence is invented. Main remains empty and disabled; schema0017 and all existing export versions remain unchanged. Next: explicit enrollment/preparation permission and funding-preview contracts before submission or source-ingestion interfaces. Multiuser actor identity, shared capital, exchange reconciliation and Live remain incomplete.
+
+### Goal7/8 progress — scoped enrollment and auditable funding preview
+
+Default-disabled ENROLL/PREVIEW_PREPARE grants now protect immutable policy registration and non-persisting full-quantity previews; see PAPER_REQUESTED_ONBOARDING.md and PHASE_9_REQUESTED_ONBOARDING_REPORT.md. Enrollment starts PAUSED and fences the financial checkpoint atomically; preview uses both revisions and the audited server base, with complete offline replay. Schema0017 unchanged. Next: separately granted atomic request preparation that rechecks both versions, policy and funding; a preview never authorizes submission. Account creation, shared capital, actor identity, private reconciliation and Live remain incomplete.

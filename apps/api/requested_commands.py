@@ -70,3 +70,6 @@ def add_commands(router,engine,settings):
         return JSONResponse({'version':'paper-requested-finalization-command-result-v1','request_id':value.request_id,
                              'command_id':value.command_id,'finalized_request_summary':result,'external_submission_allowed':False},
                             headers={'Cache-Control':'no-store'})
+
+    from apps.api.requested_onboarding import add_onboarding
+    add_onboarding(router,engine,settings,authenticate)

@@ -181,3 +181,7 @@ Read PAPER_REQUESTED_COMMANDS.md and PHASE_9_REQUESTED_COMMANDS_REPORT.md. The n
 ## Separately granted local finalization API
 
 PAPER_REQUESTED_FINALIZATION_API.md describes the default-disabled finalization-commands POST route. VOID_UNSUBMITTED is an independent grant, not implied by control permissions. Requires controlled enrollment and a transactional financial fence; preserves old internal unmanaged behavior. Existing startup, .env/volumes, dependency locks and schema0017 are unchanged. No production token/grant is installed. Live stays disabled.
+
+## Scoped enrollment and read-only funding preview
+
+Read PAPER_REQUESTED_ONBOARDING.md and PHASE_9_REQUESTED_ONBOARDING_REPORT.md. Optional ENROLL/PREVIEW_PREPARE actions do not inherit other permissions. Main remains disabled/empty; no secret or grant is installed. Preview uses server balances and both version fences, and persists no request or reservation. Offline verification: .venv/bin/python -m scripts.verify_requested_preview FILE. Existing startup and schema0017 are unchanged; Live remains off.
