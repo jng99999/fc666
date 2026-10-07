@@ -47,3 +47,8 @@ The user explicitly renews ongoing autonomous execution: do not request routine 
 11. Research expansion: strategy SDK/sandbox, additional matching and data coverage, optimization, then reproducible AI intelligence. Each ships with explicit unsupported capabilities and original-data provenance.
 
 Next work is chosen automatically from dependencies and verified failures. Passing a test gate requires evidence; broad authorization is not a substitute for passing it.
+
+
+### Goal6 progress — durable isolated fault laboratory
+
+Pure cumulative contract and dedicated immutable SQLite request/event/evidence storage implemented; see PAPER_RECONCILIATION.md. Genuine process SIGKILL before commit rolls back; after commit/lost reply retains one result under reopen/retry. Full-capacity duplicates, concurrent deliveries and corrupted/missing evidence fail safely. This lab has no product economic effects, API/UI or external transport. Production schema remains0013. Next dependency: durable simulated submission ownership/fencing and query-before-retry for unknown outcomes, then a separately versioned account/economic integration. Full OMS remains incomplete.
