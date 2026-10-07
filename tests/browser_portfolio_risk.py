@@ -61,6 +61,13 @@ if __name__=='__main__':
         page.reload(wait_until='domcontentloaded')
         page.get_by_role('button',name=scene['definition']['name'],exact=True).click()
         expect(result).to_have_count(0)
+        other=next((item for item in scenes if item['scenario_id']!=id),None)
+        if other:
+            page.get_by_role('button',name=other['definition']['name'],exact=True).first.click()
+            expect(page.get_by_test_id('portfolio-continuity')).to_have_count(1)
+            expect(page.get_by_test_id('portfolio-sampled')).to_have_count(1)
+            expect(page.get_by_test_id('portfolio-risk')).to_have_count(1)
+            expect(result).to_have_count(0)
         assert not errors,errors
         print('PASS: real saved risk observations; frozen policy and exact offline export; no storage mutation; missing quote is UNKNOWN; failed refresh clears stale metrics; 393px; no JS errors')
         browser.close()

@@ -5,7 +5,7 @@ from pydantic import Field, model_validator
 from apps.api.research import RunRequest, prepare
 from apps.api.replay import Command
 from core.paper.ledger import RiskLimits
-from core.paper import sessions, streams, accounts
+from core.paper import sessions, streams, accounts, recovery
 
 
 class PaperRequest(RunRequest):
@@ -112,4 +112,9 @@ def router_for(engine):
         except ValueError as exception:
             raise HTTPException(422, str(exception))
 
+    @router.get('/api/v1/paper/streams/{session_id}/recovery')
+    def inspect_recovery(session_id:UUID):
+        try:return recovery.capture(engine,str(session_id))
+        except recovery.MissingAccount:raise HTTPException(404,'Paper account not found')
+        except (ValueError,ArithmeticError,TypeError,KeyError):raise HTTPException(409,'Paper recovery state cannot be verified')
     return router
