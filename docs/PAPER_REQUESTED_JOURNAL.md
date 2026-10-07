@@ -1,6 +1,6 @@
 # Durable explicit-quantity Paper journal
 
-`paper-requested-journal-v1` in `core/paper/requested_journal.py` persists the independent requested-quantity contract using PostgreSQL schema0015. It uses three new tables and a separate account namespace. It never imports balances, fills or ownership from existing closed-bar accounts, never dual-writes SQLite and never submits external orders. A read-only complete-journal API and offline verifier are available; see PAPER_REQUESTED_INSPECTION.md. No mutation API, UI or scheduler exposes this engine.
+`paper-requested-journal-v1` in `core/paper/requested_journal.py` persists the independent requested-quantity contract using the financial tables introduced at PostgreSQL schema0015. Current head0016 adds explicit opt-in controls; see PAPER_REQUESTED_CONTROLS.md. It uses three new tables and a separate account namespace. It never imports balances, fills or ownership from existing closed-bar accounts, never dual-writes SQLite and never submits external orders. A read-only complete-journal API and offline verifier are available; see PAPER_REQUESTED_INSPECTION.md. No mutation API, UI or scheduler exposes this engine.
 
 ## Account and transaction boundaries
 
@@ -20,6 +20,6 @@ At most 100 requests and 1,000 unique retained events per account are supported;
 
 `read(engine, account_id)` returns verified opening, current account, active request, revision and bounded complete request transcripts/summaries. This library read is transactionally coherent. Complete exports and offline chain verification are implemented in requested_inspection; see PAPER_REQUESTED_INSPECTION.md. The standalone request verifier remains compatible.
 
-Tests create only isolated fixture databases. No demonstration account or fabricated trade is inserted into the main database. Current startup applies schema0015 and restarts the existing five services, which keep using their existing engines. Dependencies, hosts and credentials are unchanged. Live remains disabled.
+Tests create only isolated fixture databases. No demonstration account or fabricated trade is inserted into the main database. Current startup applies head0016 and restarts the existing five services, which keep using their existing engines. Dependencies, hosts and credentials are unchanged. Live remains disabled.
 
-Next work: versioned explicit control/risk gates and ownership acceptance before exposing commands or scheduling this new engine. Shared capital, human identity authorization, external reconciliation, authenticated finality and Live remain incomplete.
+Explicit opt-in control/risk gates are implemented; see PAPER_REQUESTED_CONTROLS.md. Next work: local unsubmitted finalization and ownership acceptance before exposing commands or scheduling this new engine. Shared capital, human identity authorization, external reconciliation, authenticated finality and Live remain incomplete.

@@ -165,3 +165,7 @@ Current head0015 supersedes older schema notes. Read PAPER_REQUESTED_JOURNAL.md 
 ## Complete requested-quantity inspection — schema unchanged0015
 
 Read PAPER_REQUESTED_INSPECTION.md and PHASE_9_REQUESTED_INSPECTION_REPORT.md. GET /api/v1/paper-requested/journal?account_id=... exports complete verified retained history, at most100 requests/1,000 events/32MiB. Missing404, corrupt409 and database/lock timeout503 return no partial report. Offline: .venv/bin/python -m scripts.verify_requested_journal FILE. No mutation route, UI or scheduling. Existing scripts/start.sh and all five services remain sufficient; no installation/startup configuration changes. Live remains disabled.
+
+## Controlled explicit-quantity accounts — current schema0016
+
+Current head0016 supersedes earlier schema notes. Read PAPER_REQUESTED_CONTROLS.md and PHASE_9_REQUESTED_CONTROLS_REPORT.md. Explicit library enrollment starts PAUSED with immutable full-request limits; controls share the account lock and gate preparation/first submission atomically. Existing un-enrolled journals show LEGACY_UNMANAGED and retain v1 behavior. GET /api/v1/paper-requested/controls is read-only; offline verification uses .venv/bin/python -m scripts.verify_requested_controls FILE. No mutation API/UI/scheduler. scripts/start.sh preserves .env/volumes, upgrades head and restores all five services. No dependency/credential/host changes; no fixture records in main. Stopping an unsubmitted prepared request retains its hold until a separately versioned local finalization protocol exists. Live remains disabled.

@@ -40,7 +40,7 @@ def lock(db,account_id):
     return row
 
 
-def audit(db,row):
+def _financial_audit(db,row):
     seed=row.opening
     expected=opening(*(seed[k] for k in ['account_id','instrument_id','base','created_at']))
     if encoded(seed)!=encoded(expected) or seed['account_id']!=row.account_id or row.opening_sha256!=sha(seed):
@@ -80,6 +80,13 @@ def audit(db,row):
     return result
 
 
+def audit(db,row):
+    financial=_financial_audit(db,row)
+    from core.paper import requested_controls
+    requested_controls.check(db,row,financial)
+    return financial
+
+
 def create(engine,account_id,instrument_id,base,created_at):
     value=opening(account_id,instrument_id,base,created_at)
     with transaction(engine) as db:
@@ -113,8 +120,12 @@ def prepare(engine,value):
         if encoded(value['base'])!=encoded(view['account']) or contract.clock(value['created_at'])<contract.clock(view['last_clock']):
             raise ValueError('Stale account base or creation clock')
         summary=contract.reduce(value,[])
+        from core.paper import requested_controls
+        admitted=requested_controls.gate(db,row,view,value,'PREPARE',value['created_at'])
         db.add(Request(request_id=value['request_id'],account_id=row.account_id,client_request_id=value['client_request_id'],
                        ordinal=len(view['requests']),payload=deepcopy(value),payload_sha256=sha(value)))
+        db.flush()  # Parent request must exist before its FK admission row; same transaction.
+        if admitted is not None:db.add(admitted)
         row.current=summary['account'];row.active_request_id=value['request_id'];row.revision+=1
         db.flush();audit(db,row)
         return summary
@@ -134,6 +145,10 @@ def accept(engine,account_id,request_id,event):
         summary=contract.reduce(entry['request'],events+[event])
         if row.active_request_id!=request_id:raise ValueError('Request is not the active account request')
         if view['total_events']>=TOTAL_EVENTS:raise ValueError('Event history capacity reached')
+        if event['kind']=='SUBMIT':
+            from core.paper import requested_controls
+            admitted=requested_controls.gate(db,row,view,entry['request'],'SUBMIT',event['received_at'])
+            if admitted is not None:db.add(admitted)
         db.add(Event(request_id=request_id,sequence=event['sequence'],event_id=event['event_id'],payload=deepcopy(event),
                      payload_sha256=sha(event),summary=deepcopy(summary),summary_sha256=sha(summary)))
         row.current=summary['account'];row.active_request_id=None if summary['local_source_sealed'] else request_id;row.revision+=1

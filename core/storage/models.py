@@ -290,6 +290,7 @@ class RequestedPaperAccountRecord(Base):
     current: Mapped[dict]=mapped_column(JSON)
     active_request_id: Mapped[str|None]=mapped_column(String(64),nullable=True)
     revision: Mapped[int]=mapped_column(Integer)
+    control_version: Mapped[str|None]=mapped_column(String(64),nullable=True)
 
 class RequestedPaperRequestRecord(Base):
     __tablename__='requested_paper_requests'
@@ -312,3 +313,26 @@ class RequestedPaperEventRecord(Base):
     summary: Mapped[dict]=mapped_column(JSON)
     summary_sha256: Mapped[str]=mapped_column(String(64))
     __table_args__=(UniqueConstraint('request_id','event_id',name='uq_requested_paper_event'),)
+
+class RequestedPaperPolicyRecord(Base):
+    __tablename__='requested_paper_policies'
+    account_id: Mapped[str]=mapped_column(ForeignKey('requested_paper_accounts.account_id'),primary_key=True)
+    payload: Mapped[dict]=mapped_column(JSON)
+    payload_sha256: Mapped[str]=mapped_column(String(64))
+
+class RequestedPaperControlRecord(Base):
+    __tablename__='requested_paper_controls'
+    account_id: Mapped[str]=mapped_column(ForeignKey('requested_paper_policies.account_id'),primary_key=True)
+    sequence: Mapped[int]=mapped_column(Integer,primary_key=True)
+    command_id: Mapped[str]=mapped_column(String(128))
+    payload: Mapped[dict]=mapped_column(JSON)
+    payload_sha256: Mapped[str]=mapped_column(String(64))
+    __table_args__=(UniqueConstraint('account_id','command_id',name='uq_requested_paper_command'),)
+
+class RequestedPaperGateRecord(Base):
+    __tablename__='requested_paper_gates'
+    request_id: Mapped[str]=mapped_column(ForeignKey('requested_paper_requests.request_id'),primary_key=True)
+    phase: Mapped[str]=mapped_column(String(16),primary_key=True)
+    payload: Mapped[dict]=mapped_column(JSON)
+    payload_sha256: Mapped[str]=mapped_column(String(64))
+    __table_args__=(CheckConstraint("phase IN ('PREPARE','SUBMIT')",name='ck_requested_paper_gate_phase'),)

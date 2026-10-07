@@ -72,3 +72,7 @@ Independent local Paper opening evidence, requested-quantity reservations and im
 ### Goal7 progress — complete journal inspection and offline replay
 
 The independent requested-quantity PostgreSQL engine now has a read-only complete single-account export API and bounded offline verifier; see PAPER_REQUESTED_INSPECTION.md and PHASE_9_REQUESTED_INSPECTION_REPORT.md. Reconstruction verifies chained bases, clocks, identities, every request settlement and final account/revision; immutable database prefix evidence is verified before export. No mutation API/UI or scheduler. Next: immutable versioned account controls and explicit execution-risk gates before commands or continuous scheduling. Schema stays0015; shared capital, external ownership/private reconciliation/human identity and Live remain incomplete.
+
+### Goal7/8 progress — controlled-account admission
+
+Explicit opt-in immutable policies, PAUSED/ACTIVE/HALTED/STOPPED controls and PREPARE/SUBMIT risk evidence now persist atomically at schema0016; see PAPER_REQUESTED_CONTROLS.md and PHASE_9_REQUESTED_CONTROLS_REPORT.md. Commands share the economic account lock; control and financial revisions remain separate. Late receipts continue after pause/stop and retain cancellation holds until local source sealing. Un-enrolled v1 accounts remain explicitly LEGACY_UNMANAGED. Next: a separately versioned local finalization protocol for an unsubmitted request, before mutation endpoints or scheduling. Shared capital, health/identity gates and private reconciliation remain incomplete; Live stays disabled.

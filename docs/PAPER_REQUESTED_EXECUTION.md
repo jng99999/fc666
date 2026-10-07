@@ -1,6 +1,6 @@
 # Explicit requested-quantity Paper contract
 
-`paper-requested-execution-v1` is an independent, deterministic economic contract in `core/paper/requested_execution.py`. It performs no I/O, persists no account changes and submits no orders. Existing closed-bar engines, preparation records and projected-funding formulas remain unchanged; production schema remains 0014.
+`paper-requested-execution-v1` is an independent, deterministic economic contract in `core/paper/requested_execution.py`. It performs no I/O, persists no account changes and submits no orders. Existing closed-bar engines, preparation records and projected-funding formulas remain unchanged; the pure contract itself changes no schema; separate persistence/control versions are documented below.
 
 A request freezes an explicit full quantity, protective limit, maximum fee rate, market rules, account base and stable content identity. The entire quantity must be funded before submission. BUY reserves quantity × limit plus a fee ceiling; SELL reserves inventory. Initial requests must meet minimum quantity/notional and price/quantity grids. Component partial fills may be smaller than the initial order minima, but must satisfy the grids, protective price, fee cap and cumulative requested quantity.
 

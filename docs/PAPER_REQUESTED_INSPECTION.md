@@ -1,6 +1,6 @@
 # Complete local Paper journal inspection
 
-`paper-requested-journal-export-v1` exports the complete retained history of one independent requested-quantity Paper account. It is separate from closed-bar stream inspections. Current schema remains0015. No execution command, account creation endpoint, scheduler or frontend has been added.
+`paper-requested-journal-export-v1` exports the complete retained history of one independent requested-quantity Paper account. It is separate from closed-bar stream inspections. Current schema head is0016; the financial export version remains unchanged. No execution command, account creation endpoint, scheduler or frontend has been added.
 
 ## Read-only API
 
@@ -30,4 +30,4 @@ The checksum establishes internal consistency, not origin authenticity. Offline 
 
 Fixtures use only isolated databases and temporary exports. Main requested-quantity tables stay empty; no demonstration balance or fabricated product trade is created. Restart only the owned API for this Python API change, then run scripts/dev_services.py start/status to verify all five services. Existing install/start instructions remain sufficient; no new migration, dependency, credential, host or startup configuration is needed. No frontend build or browser claim applies.
 
-Next: versioned explicit account controls and execution-risk gates with immutable acceptance evidence before exposing mutation commands or scheduling. Shared capital, leased external dispatch ownership, private reconciliation and Live remain incomplete. Live stays disabled.
+Explicit opt-in account controls and request-risk gates are now available; see PAPER_REQUESTED_CONTROLS.md. Next: unsubmitted local finalization before exposing mutation commands or scheduling. Shared capital, leased external dispatch ownership, private reconciliation and Live remain incomplete. Live stays disabled.
