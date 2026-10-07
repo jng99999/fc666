@@ -123,28 +123,33 @@ def read(engine,account_id,*,lock_timeout_ms=None):
         return audit(db,lock(db,account_id))
 
 
+def _prepare(db,row,view,value):
+    existing=next((r for r in view['requests'] if r['request']['client_request_id']==value['client_request_id']),None)
+    if existing is not None:
+        if encoded(existing['request'])!=encoded(value):raise ValueError('Conflicting client request retry')
+        return deepcopy(existing['summary'])
+    if view['active_request_id'] is not None:raise ValueError('Account already has an unsealed request')
+    if len(view['requests'])>=REQUEST_LIMIT:raise ValueError('Request history capacity reached')
+    if encoded(value['base'])!=encoded(view['account']) or contract.clock(value['created_at'])<contract.clock(view['last_clock']):
+        raise ValueError('Stale account base or creation clock')
+    summary=contract.reduce(value,[])
+    from core.paper import requested_controls
+    admitted=requested_controls.gate(db,row,view,value,'PREPARE',value['created_at'])
+    db.add(Request(request_id=value['request_id'],account_id=row.account_id,client_request_id=value['client_request_id'],
+                   ordinal=len(view['requests']),payload=deepcopy(value),payload_sha256=sha(value)))
+    db.flush()  # Parent request must exist before its FK admission row; same transaction.
+    if admitted is not None:db.add(admitted)
+    row.current=summary['account'];row.active_request_id=value['request_id'];row.revision+=1
+    db.flush();audit(db,row)
+    return summary
+
+
+
 def prepare(engine,value):
     value=contract.validate(value)
     with transaction(engine) as db:
         row=lock(db,value['account_id']);view=audit(db,row)
-        existing=next((r for r in view['requests'] if r['request']['client_request_id']==value['client_request_id']),None)
-        if existing is not None:
-            if encoded(existing['request'])!=encoded(value):raise ValueError('Conflicting client request retry')
-            return deepcopy(existing['summary'])
-        if view['active_request_id'] is not None:raise ValueError('Account already has an unsealed request')
-        if len(view['requests'])>=REQUEST_LIMIT:raise ValueError('Request history capacity reached')
-        if encoded(value['base'])!=encoded(view['account']) or contract.clock(value['created_at'])<contract.clock(view['last_clock']):
-            raise ValueError('Stale account base or creation clock')
-        summary=contract.reduce(value,[])
-        from core.paper import requested_controls
-        admitted=requested_controls.gate(db,row,view,value,'PREPARE',value['created_at'])
-        db.add(Request(request_id=value['request_id'],account_id=row.account_id,client_request_id=value['client_request_id'],
-                       ordinal=len(view['requests']),payload=deepcopy(value),payload_sha256=sha(value)))
-        db.flush()  # Parent request must exist before its FK admission row; same transaction.
-        if admitted is not None:db.add(admitted)
-        row.current=summary['account'];row.active_request_id=value['request_id'];row.revision+=1
-        db.flush();audit(db,row)
-        return summary
+        return _prepare(db,row,view,value)
 
 
 def accept(engine,account_id,request_id,event):

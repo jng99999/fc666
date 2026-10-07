@@ -1,4 +1,4 @@
-"""Read-only complete explicit-request Paper journal; no execution commands."""
+"""Explicit Paper inspection and scoped local commands; no venue execution."""
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import SQLAlchemyError

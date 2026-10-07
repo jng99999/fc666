@@ -92,3 +92,7 @@ The default-disabled finalization-commands route now requires exact account and 
 ### Goal7/8 progress — scoped enrollment and auditable funding preview
 
 Default-disabled ENROLL/PREVIEW_PREPARE grants now protect immutable policy registration and non-persisting full-quantity previews; see PAPER_REQUESTED_ONBOARDING.md and PHASE_9_REQUESTED_ONBOARDING_REPORT.md. Enrollment starts PAUSED and fences the financial checkpoint atomically; preview uses both revisions and the audited server base, with complete offline replay. Schema0017 unchanged. Next: separately granted atomic request preparation that rechecks both versions, policy and funding; a preview never authorizes submission. Account creation, shared capital, actor identity, private reconciliation and Live remain incomplete.
+
+### Goal7/8 progress — atomic scoped preparation
+
+PREPARE is an independent default-disabled grant. A new request re-evaluates the server preview, financial/control checkpoints and risk/funding inside the existing account transaction. Immutable financial/control prefixes reconstruct exact retries after later activity, without a second hold. See PAPER_REQUESTED_PREPARATION_API.md and PHASE_9_REQUESTED_PREPARATION_API_REPORT.md. Schema0017 and original versions remain unchanged. Next: source-provenance/ingestion contracts and unknown-outcome handling before submission transport; shared capital, actor identity and Live remain incomplete.

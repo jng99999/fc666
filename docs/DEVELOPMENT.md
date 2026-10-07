@@ -185,3 +185,7 @@ PAPER_REQUESTED_FINALIZATION_API.md describes the default-disabled finalization-
 ## Scoped enrollment and read-only funding preview
 
 Read PAPER_REQUESTED_ONBOARDING.md and PHASE_9_REQUESTED_ONBOARDING_REPORT.md. Optional ENROLL/PREVIEW_PREPARE actions do not inherit other permissions. Main remains disabled/empty; no secret or grant is installed. Preview uses server balances and both version fences, and persists no request or reservation. Offline verification: .venv/bin/python -m scripts.verify_requested_preview FILE. Existing startup and schema0017 are unchanged; Live remains off.
+
+## Atomic local preparation interface
+
+PAPER_REQUESTED_PREPARATION_API.md documents the default-disabled PREPARE route, strict proposal/preview digest and transactional dual-version/risk/funding checks. Exact retries reconstruct historical proof without new reservations. Main remains empty/disabled; no production token or grant is installed. Original library callers, startup and schema0017 remain unchanged. No submission/source route, scheduler or Live capability.

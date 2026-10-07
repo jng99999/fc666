@@ -1,6 +1,6 @@
 # Complete local Paper journal inspection
 
-`paper-requested-journal-export-v1` exports the complete retained history of one independent requested-quantity Paper account. It is separate from closed-bar stream inspections. Current schema head is0017. Accounts with local void facts use financial export v2; other accounts and existing captures retain v1. See PAPER_REQUESTED_FINALIZATION.md. The separate default-disabled local control-command endpoint is described in PAPER_REQUESTED_COMMANDS.md. Scoped policy enrollment and read-only funding preview are available separately; see PAPER_REQUESTED_ONBOARDING.md. No order preparation/submission command, account creation endpoint, scheduler or frontend has been added.
+`paper-requested-journal-export-v1` exports the complete retained history of one independent requested-quantity Paper account. It is separate from closed-bar stream inspections. Current schema head is0017. Accounts with local void facts use financial export v2; other accounts and existing captures retain v1. See PAPER_REQUESTED_FINALIZATION.md. The separate default-disabled local control-command endpoint is described in PAPER_REQUESTED_COMMANDS.md. Scoped policy enrollment and read-only funding preview are available separately; see PAPER_REQUESTED_ONBOARDING.md. Separately granted preparation is described in PAPER_REQUESTED_PREPARATION_API.md. No order submission command, account creation endpoint, scheduler or frontend has been added.
 
 ## Read-only API
 
