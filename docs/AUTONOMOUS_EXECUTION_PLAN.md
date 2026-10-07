@@ -96,3 +96,7 @@ Default-disabled ENROLL/PREVIEW_PREPARE grants now protect immutable policy regi
 ### Goal7/8 progress — atomic scoped preparation
 
 PREPARE is an independent default-disabled grant. A new request re-evaluates the server preview, financial/control checkpoints and risk/funding inside the existing account transaction. Immutable financial/control prefixes reconstruct exact retries after later activity, without a second hold. See PAPER_REQUESTED_PREPARATION_API.md and PHASE_9_REQUESTED_PREPARATION_API_REPORT.md. Schema0017 and original versions remain unchanged. Next: source-provenance/ingestion contracts and unknown-outcome handling before submission transport; shared capital, actor identity and Live remain incomplete.
+
+### Goal7 progress — scoped source input forecast
+
+Independent PREVIEW_EVENT protects a read-only, complete offline-replayable local event forecast; see PAPER_REQUESTED_EVENT_PREVIEW.md and PHASE_9_REQUESTED_EVENT_PREVIEW_REPORT.md. Source labels explicitly identify proposed local input, never authenticated venue origin. Unknown outcomes keep holds; exact duplicates preserve current account/later request. No economic/provenance writes and schema0017 unchanged. Next: immutable local source receipt/provenance evidence and transaction fault acceptance before exposing ingestion. Venue authentication, ownership, private reconciliation and Live remain incomplete.

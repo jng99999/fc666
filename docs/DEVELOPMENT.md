@@ -189,3 +189,7 @@ Read PAPER_REQUESTED_ONBOARDING.md and PHASE_9_REQUESTED_ONBOARDING_REPORT.md. O
 ## Atomic local preparation interface
 
 PAPER_REQUESTED_PREPARATION_API.md documents the default-disabled PREPARE route, strict proposal/preview digest and transactional dual-version/risk/funding checks. Exact retries reconstruct historical proof without new reservations. Main remains empty/disabled; no production token or grant is installed. Original library callers, startup and schema0017 remain unchanged. No submission/source route, scheduler or Live capability.
+
+## Read-only local source-event preview
+
+PAPER_REQUESTED_EVENT_PREVIEW.md documents the default-disabled PREVIEW_EVENT route and explicit LOCAL_PAPER_OPERATOR_INPUT source labels. Recomputes unknown/late/cumulative/duplicate forecasts from both version checkpoints and full snapshots; persists no source event or funds. CLI: .venv/bin/python -m scripts.verify_requested_event_preview FILE. Existing startup and schema0017 unchanged; main has no token/grant/test data, source ingestion and Live remain disabled.
