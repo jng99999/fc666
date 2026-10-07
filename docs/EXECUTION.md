@@ -1,6 +1,6 @@
 # Execution / OMS / Reconciliation
 
-状态：设计，Not Implemented；LIVE_TRADING=false。
+状态：实盘 OMS 仍为设计，Not Implemented；LIVE_TRADING=false。Paper 已实现独立持久化的完成态模拟意图、同事务状态路径与只读核对，见 PAPER_ORDER_INTENTS.md；不是执行前持久队列或交易所提交状态机。
 
 Signal -> RiskDecision -> OrderIntent -> OMS -> ExchangeAdapter -> OrderUpdate -> Fill -> Position -> Portfolio。
 状态：CREATED -> VALIDATED -> SUBMITTED -> ACKNOWLEDGED -> PARTIALLY_FILLED -> FILLED；未成交订单可进入 CANCEL_PENDING -> CANCELLED，或 REJECTED/EXPIRED。PARTIALLY_FILLED 可继续成交或取消余量。cancel acknowledgement 与 fill 乱序需按累计成交量对账，CANCEL_PENDING 期间仍可能成交。禁止用几个 boolean 代替状态机。

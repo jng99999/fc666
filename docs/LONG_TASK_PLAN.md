@@ -45,3 +45,5 @@ Phase9分段采样权益：独立sampled-v1接口/导出，沿用continuity-v1�
 Phase9只读风险历史：版本化冻结gross/BTC/ETH敞口提示策略及哈希，UNKNOWN/HINTS_PRESENT/NO_CONFIGURED_HINTS区分，原始worker/停止买入提示与报价账本时钟，相邻可比观察才记录阈值进入/退出，缺口重置不假称风险解除，完整导出与离线复算。见PORTFOLIO_RISK_HISTORY.md。下一目标为Paper执行和恢复基础：先定义订单意图、幂等、丢确认与重启对账验收边界，再实现故障测试；交易执行门控、完整Risk/OMS、共享资金、认证和Live仍未完成。
 
 Paper执行恢复基础首片：只读repeatable-read账本/来源/规则/worker检查，稳定模拟订单及成交关联回执、暂停/终止/阻断状态保留、来源不一致需核对；完整离线核对。并行故障验收覆盖提交后丢确认、SQL flush后提交前回滚、重建连接与并发重复接受。见PAPER_RECOVERY.md。下一目标先定义独立订单意图/幂等键和状态机，再实施持久模拟执行日志；现有公式与账户保持兼容，不自动修复或补单，Live关闭。
+
+Paper 独立完成态订单意图切片：schema0010，账户命名空间确定性ID，原账本和不可变意图同事务保存，保留 FILLED/PARTIAL_CANCELLED/REJECTED 路径，旧账户显式未物化覆盖、只读核对和离线导出。下一目标是执行前独立提交与恢复的待执行意图；实盘 OMS、共享资金与 Live 仍未实现。见 PAPER_ORDER_INTENTS.md。

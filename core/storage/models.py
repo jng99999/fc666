@@ -133,6 +133,7 @@ class PaperStreamRecord(Base):
     status: Mapped[str] = mapped_column(String(16))
     halt_at: Mapped[int | None] = mapped_column(Integer, nullable=True)
     feed: Mapped[dict] = mapped_column(JSON)
+    intent_version: Mapped[str | None] = mapped_column(String(64), nullable=True)
     __table_args__ = (
         CheckConstraint("json_array_length(snapshot->'dataset') + json_array_length(observations) <= 1000", name='ck_stream_size'),
         CheckConstraint('revision >= 0', name='ck_stream_revision'),
@@ -145,6 +146,25 @@ class PaperWorkerRecord(Base):
     __tablename__ = 'paper_workers'
     worker_id: Mapped[str] = mapped_column(String(36), primary_key=True)
     heartbeat_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+class PaperOrderIntentRecord(Base):
+    __tablename__ = 'paper_order_intents'
+    intent_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    session_id: Mapped[str] = mapped_column(ForeignKey('paper_streams.session_id'))
+    order_id: Mapped[str] = mapped_column(String(64))
+    version: Mapped[str] = mapped_column(String(64))
+    recorded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    origin: Mapped[str] = mapped_column(String(32))
+    status: Mapped[str] = mapped_column(String(24))
+    payload: Mapped[dict] = mapped_column(JSON)
+    payload_sha256: Mapped[str] = mapped_column(String(64))
+    transitions: Mapped[list] = mapped_column(JSON)
+    __table_args__ = (
+        UniqueConstraint('session_id','order_id',name='uq_paper_intent_order'),
+        CheckConstraint("status IN ('FILLED','PARTIAL_CANCELLED','REJECTED')",name='ck_paper_intent_status'),
+        CheckConstraint("origin IN ('BAR_ACCEPTANCE','HISTORICAL_MATERIALIZATION')",name='ck_paper_intent_origin'),
+        Index('paper_intents_account_idx','session_id','order_id'),
+    )
 
 class PaperControlRecord(Base):
     __tablename__ = 'paper_controls'

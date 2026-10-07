@@ -5,6 +5,7 @@ from pathlib import Path
 from playwright.sync_api import sync_playwright,expect
 from scripts.dev_services import ROOT
 from core.paper.recovery import verify
+from core.paper import intents
 from tests.browser_terminal import ARGS
 
 if __name__=='__main__':
@@ -47,6 +48,23 @@ if __name__=='__main__':
         with page.expect_download() as download:page.get_by_role('button',name='下载执行恢复检查',exact=True).click()
         path=ROOT/'.runtime/browser-paper-recovery.json';download.value.save_as(str(path))
         assert json.loads(path.read_text())==report;verify(json.loads(path.read_text()))
+        expect(page.get_by_test_id('paper-intents')).to_have_count(1)
+        with page.expect_response(lambda response:response.url.endswith('/intents')) as intent_response:
+            page.get_by_role('button',name='核对独立模拟订单',exact=True).click()
+        assert intent_response.value.status==200,intent_response.value.text()
+        intent_report=intent_response.value.json();intents.verify(intent_report)
+        intent_result=page.get_by_test_id('intent-result');expect(intent_result).to_be_visible()
+        assert intent_report['ledger_orders']==len(chosen['orders'])
+        expect(intent_result).to_have_attribute('data-coverage',intent_report['coverage'])
+        with page.expect_download() as intent_download:page.get_by_role('button',name='下载独立模拟订单',exact=True).click()
+        intent_path=ROOT/'.runtime/browser-paper-intents.json';intent_download.value.save_as(str(intent_path))
+        assert json.loads(intent_path.read_text())==intent_report;intents.verify(json.loads(intent_path.read_text()))
+        intent_pattern='**/api/paper/streams/'+id+'/intents'
+        page.route(intent_pattern,lambda route:route.fulfill(status=409,json={'detail':'Intent mismatch'}))
+        page.get_by_role('button',name='核对独立模拟订单',exact=True).click()
+        expect(intent_result).to_have_count(0)
+        expect(page.get_by_test_id('paper-intents').get_by_role('alert')).to_contain_text('订单意图核对未确认 (409)')
+        page.unroute(intent_pattern)
         assert page.request.get(root+'/api/paper/streams/'+id).json()==chosen
         assert page.evaluate('document.documentElement.scrollWidth<=innerWidth')
         page.screenshot(path=str(ROOT/'.runtime/paper-recovery-mobile.png'),full_page=True)
@@ -60,5 +78,5 @@ if __name__=='__main__':
         expect(page.get_by_test_id('paper-stream-state')).to_have_attribute('data-status','STOPPED')
         expect(result).to_have_count(0)
         assert not errors,errors
-        print('PASS: real stopped account with fills; stable receipts; coherent offline export; no account mutation; failed inspection clears confirmation; refresh retains account; 393px; no JS errors')
+        print('PASS: real stopped account with fills; stable receipts; independent intent coverage and offline export; coherent recovery export; no account mutation; failed inspection clears confirmation; refresh retains account; 393px; no JS errors')
         browser.close()

@@ -8,6 +8,7 @@ from core.backtest.spot import digest, BacktestConfig
 from core.models import Candle, Instrument
 from core.replay.sessions import validate, Conflict
 from core.paper.ledger import RiskLimits
+from core.paper import intents
 from core.paper.stream_ledger import VERSION, evaluate
 from core.storage.models import PaperStreamRecord as Stream, PaperWorkerRecord as Worker, CandleRecord, InstrumentRecord
 
@@ -72,6 +73,7 @@ def create(engine,request,bars,instrument):
         session.execute(text('SELECT pg_advisory_xact_lock(6660801)'))
         if session.scalar(select(func.count()).select_from(Stream).where(Stream.status.in_(['RUNNING','PAUSED'])))>=ACTIVE_LIMIT:raise Capacity()
         record=Stream(session_id=str(uuid4()),created_at=activation,updated_at=activation,snapshot=snapshot,observations=[],revision=0,status='RUNNING',halt_at=None,feed={'state':'WAITING','expected_open':bars[-1].close_time.isoformat(),'checked_at':None})
+        record.intent_version=intents.VERSION
         record.ledger=computed(record);response=visible(record);session.add(record);return response
 
 
@@ -92,7 +94,7 @@ def command(engine,session_id,expected_revision,action):
         before_state = state(record, 'streams')
         conflict = record.revision != expected_revision
         if not conflict:
-            visible(record);before=(record.status,record.halt_at)
+            visible(record);intents.synchronize(session,record);before=(record.status,record.halt_at)
             if action=='stop':record.status='STOPPED'
             elif action=='halt' and record.status in ['RUNNING','PAUSED']:
                 if record.halt_at is None:record.halt_at=len(record.observations)
@@ -101,6 +103,7 @@ def command(engine,session_id,expected_revision,action):
             elif action=='resume' and record.status!='RUNNING':raise ValueError('Terminal account cannot resume; create a new account')
             if before!=(record.status,record.halt_at):
                 record.ledger=computed(record);record.revision+=1;record.updated_at=now()
+            intents.synchronize(session,record)
             response = visible(record)
         record_control(session, record, 'streams', action, 1, expected_revision, before_revision, before_state)
     if conflict: raise Conflict()
@@ -115,6 +118,7 @@ def advance(engine,session_id,*,observed_at=None):
         if record is None or record.status not in ['RUNNING','PAUSED']:return False
         # This verifies durable state before any mutation; failure rolls back the account.
         visible(record)
+        intents.synchronize(session,record)
         seed,observations,instrument,_,_=inputs(record)
         accepted=[*seed,*[Candle.model_validate(row['candle']) for row in observations]]
         expected=accepted[-1].close_time
@@ -137,6 +141,7 @@ def advance(engine,session_id,*,observed_at=None):
             added.append({'candle':bar.model_dump(mode='json'),'observed_at':stamp.isoformat(),'gate':gate});expected=bar.close_time
         if added:
             record.observations=[*observations,*added];record.ledger=computed(record);record.revision+=1;record.updated_at=stamp
+            intents.synchronize(session,record,new=True)
         if len(accepted)+len(added)==1000:
             record.status='LIMIT_REACHED'
         overdue=stamp>expected+(accepted[-1].close_time-accepted[-1].open_time)+timedelta(seconds=record.snapshot['request']['max_lag_seconds'])

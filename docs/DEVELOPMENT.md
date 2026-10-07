@@ -139,3 +139,5 @@ Portfolio历史切片后当前迁移head为0009。`bash scripts/start.sh` 保留
 风险历史无新迁移，head0009。`uv run --frozen python -m tests.browser_portfolio_risk` 使用已有真实多点场景且不写记录；导出用 `uv run --frozen python -m scripts.verify_portfolio_risk .runtime/browser-portfolio-risk.json` 复算。该接口和页面仅提示，不触发交易或改动账户风控。
 
 执行恢复检查无新迁移，head0009。`uv run --frozen python -m tests.browser_paper_recovery` 需要真实已停止且有模拟成交的账户；测试只读，导出用 `uv run --frozen python -m scripts.verify_paper_recovery .runtime/browser-paper-recovery.json` 核对。GET streams/{id}/recovery 不重放成交、不改账户。
+
+当前迁移 head 更新为0010（前文0009为此前切片）。`bash scripts/start.sh` 保留既有.env/卷，升级后启动五服务。GET `/api/v1/paper/streams/{id}/intents` 只读核对独立订单；旧账户可能为 LEGACY_UNMATERIALIZED，读取不补写。实时Paper页可检查与下载。`uv run --frozen python -m tests.browser_paper_recovery` 同时验证意图显示与下载，要求已有真实停止账户和模拟成交；不修改该账户。离线核验：`uv run --frozen python -m scripts.verify_paper_intents .runtime/browser-paper-intents.json`。
