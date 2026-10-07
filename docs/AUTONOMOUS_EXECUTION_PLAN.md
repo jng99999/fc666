@@ -33,3 +33,17 @@ Specify order lifecycle, idempotent intent, acknowledgement loss, reconciliation
 ## Delivery rule for every goal
 
 Read current state; implement one coherent reviewable slice; verify meaningful backend/database/browser behavior; stop only owned services for production build; restore and functionally check; document outcomes and outstanding scope; save tested startup changes when needed; commit and push the feature branch. Investigate failures and fix causes before declaring completion. No extra approval is needed for authorized routine work. Fresh-task restoration and environment publication are reported only with actual evidence.
+
+
+## Continuing mandate and remaining acceptance goals
+
+The user explicitly renews ongoing autonomous execution: do not request routine confirmation between goals. Continue implementation, necessary installation, meaningful checks, fixes, commits and feature-branch pushes. Report actual progress and blockers. A finite chat turn is not an unattended scheduler; do not claim background execution after the turn ends.
+
+6. Paper reconciliation: bounded, versioned cumulative fill/cancel transcripts; duplicates, source ordering, late fills, unknown submission and exact fees/notional. Start with an isolated pure contract, then durable fault-adapter evidence and restart acceptance. No product ledger mutation from fixture transcripts.
+7. OMS: independently durable requested quantity, stable submission identity, unknown outcome, cancellation, fencing and reconciled terminal state. Gate: transactional faults, concurrent ownership, lost replies and process restart.
+8. Execution risk: shared-capital ledger and atomic reservations, aggregate exposure, freshness/health gates and kill switch. Gate: concurrent accounts and denied side effects.
+9. Private connectors and identity: typed capabilities, protected credentials, permission isolation, balance/orders/fills reconciliation. Test without real order placement first.
+10. Production acceptance: operational monitoring, backups/restore, long-load and infrastructure faults, deployment and rollback. Live readiness requires concrete completed gates and actual account/risk configuration.
+11. Research expansion: strategy SDK/sandbox, additional matching and data coverage, optimization, then reproducible AI intelligence. Each ships with explicit unsupported capabilities and original-data provenance.
+
+Next work is chosen automatically from dependencies and verified failures. Passing a test gate requires evidence; broad authorization is not a substitute for passing it.

@@ -1,0 +1,11 @@
+# Paper cumulative reconciliation: isolated contract v1
+
+core/paper/reconciliation.py implements paper-fault-reconciliation-v1 for isolated complete transcripts. It has no exchange adapter, persistence, API, account ledger effect or execution permission. Existing local lifecycle/engine versions remain unchanged. This is the first acceptance contract for the next autonomous goal, not a completed OMS.
+
+Requested quantity is explicitly supplied as a positive finite Decimal string, not inferred from prior projected fills. Events carry order/event identity, contiguous source sequence, kind and exact payload. Arrival order is irrelevant. Identical redelivery is idempotent; conflicting event identity, sequence or fill identity fails. At most1000 delivered events; bounded decimal digits/exponents protect exact260-digit arithmetic. Different delivery events with the same exact fill identity count once.
+
+SUBMIT precedes all updates. UNKNOWN_SUBMISSION remains unresolved without evidence; it never enables retry submission. ACK or a fill resolves submission uncertainty. CANCEL_ACK requires CANCEL_REQUEST but does not prove the absence of a delayed fill. Late unique fills remain economic facts, with positive quantity/price and nonnegative fees. Cumulative quantity cannot exceed the explicit request. Full quantity reports FILLED even when cancellation was acknowledged; partial quantity plus cancellation reports PARTIAL_CANCELLED.
+
+RECEIPT supplies exact cumulative quantity, fees and notional matching known unique fills at that source sequence. A later new fill invalidates old receipt confirmation until a new matching receipt arrives. Receipt confirmation describes the supplied transcript only; no exchange authenticity, final watermark, independent durable request, process restart or external exactly-once property is established. Every output keeps execution_enabled=false and external_reconciliation_supported=false.
+
+Tests use isolated synthetic transcripts only. Existing database lifecycle tests verify unchanged production paths. Next slice: persist separate fault-adapter requests/events and immutable reconciliation evidence, preserving atomic economics and original local lifecycle compatibility, then test actual process interruption and lost replies. Do not feed these fixtures into product market/account data.
