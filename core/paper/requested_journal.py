@@ -104,6 +104,8 @@ def audit(db,row):
     requested_sources.check(db,row,financial,controlled)
     from core.paper import requested_ownership
     requested_ownership.check(db,row,financial,controlled)
+    from core.paper import requested_dispatch
+    requested_dispatch.check(db,row,financial,controlled)
     return financial
 
 
@@ -157,7 +159,7 @@ def prepare(engine,value):
 
 
 def _accept(db,row,view,request_id,event,*,source_receipt=None,ownership_token=None):
-    from core.paper import requested_ownership
+    from core.paper import requested_ownership,requested_dispatch
     requested_ownership.guard(db,request_id,ownership_token)
     entry=next((r for r in view['requests'] if r['request']['request_id']==request_id),None)
     if entry is None:raise ValueError('Request does not belong to account')
@@ -174,12 +176,15 @@ def _accept(db,row,view,request_id,event,*,source_receipt=None,ownership_token=N
         from core.paper import requested_controls
         admitted=requested_controls.gate(db,row,view,entry['request'],'SUBMIT',event['received_at'])
         if admitted is not None:db.add(admitted)
-    db.add(Event(request_id=request_id,sequence=event['sequence'],event_id=event['event_id'],payload=deepcopy(event),
-                 payload_sha256=sha(event),summary=deepcopy(summary),summary_sha256=sha(summary),ownership_token=ownership_token,ownership_accepted_us=requested_ownership.clock(db) if ownership_token is not None else None,source_version=source_receipt.payload['version'] if source_receipt is not None else None))
+    stored_event=Event(request_id=request_id,sequence=event['sequence'],event_id=event['event_id'],payload=deepcopy(event),
+                 payload_sha256=sha(event),summary=deepcopy(summary),summary_sha256=sha(summary),ownership_token=ownership_token,ownership_accepted_us=requested_ownership.clock(db) if ownership_token is not None else None,source_version=source_receipt.payload['version'] if source_receipt is not None else None,dispatch_version=requested_dispatch.declare(event,ownership_token))
+    db.add(stored_event)
     row.current=summary['account'];row.active_request_id=None if summary['local_source_sealed'] else request_id;row.revision+=1
     db.flush()
     if source_receipt is not None:
         db.add(source_receipt);db.flush()
+    if stored_event.dispatch_version is not None:
+        requested_dispatch.record(db,row,entry['request'],stored_event,source_receipt)
     audit(db,row)
     return summary
 

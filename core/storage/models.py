@@ -305,6 +305,7 @@ class RequestedPaperRequestRecord(Base):
 
 class RequestedPaperEventRecord(Base):
     __tablename__='requested_paper_events'
+    dispatch_version: Mapped[str|None]=mapped_column(String(64),nullable=True)
     ownership_accepted_us: Mapped[int|None]=mapped_column(BigInteger,nullable=True)
     ownership_token: Mapped[int|None]=mapped_column(Integer,nullable=True)
     source_version: Mapped[str|None]=mapped_column(String(64),nullable=True)
@@ -369,3 +370,15 @@ class RequestedPaperClaimRecord(Base):
     payload: Mapped[dict]=mapped_column(JSON)
     payload_sha256: Mapped[str]=mapped_column(String(64))
     __table_args__=(CheckConstraint('token>0',name='ck_requested_paper_claim_token'),)
+
+
+class RequestedPaperDispatchRecord(Base):
+    __tablename__='requested_paper_dispatches'
+    request_id: Mapped[str]=mapped_column(ForeignKey('requested_paper_requests.request_id'),primary_key=True)
+    account_id: Mapped[str]=mapped_column(ForeignKey('requested_paper_accounts.account_id'))
+    token: Mapped[int]=mapped_column(Integer)
+    client_id: Mapped[str]=mapped_column(String(64))
+    payload: Mapped[dict]=mapped_column(JSON)
+    payload_sha256: Mapped[str]=mapped_column(String(64))
+    __table_args__=(ForeignKeyConstraint(['request_id','token'],['requested_paper_claims.request_id','requested_paper_claims.token']),
+                   UniqueConstraint('client_id',name='uq_requested_paper_dispatch_client'))

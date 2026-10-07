@@ -2,7 +2,7 @@
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import SQLAlchemyError
-from core.paper import requested_inspection as inspection, requested_journal as journal, requested_controls as controls,requested_sources as sources, requested_recovery as recovery, requested_ownership as ownership
+from core.paper import requested_inspection as inspection, requested_journal as journal, requested_controls as controls,requested_sources as sources, requested_recovery as recovery, requested_ownership as ownership, requested_dispatch as dispatch
 
 
 def router_for(engine,settings=None):
@@ -62,6 +62,17 @@ def router_for(engine,settings=None):
             raise HTTPException(409,'Explicit Paper ownership evidence cannot be verified',headers={'Cache-Control':'no-store'})
         except SQLAlchemyError:
             raise HTTPException(503,'Explicit Paper ownership temporarily unavailable',headers={'Cache-Control':'no-store'})
+        return JSONResponse(report,headers={'Cache-Control':'no-store'})
+
+    @router.get('/api/v1/paper-requested/dispatches')
+    def inspect_dispatches(account_id:str=Query(...,min_length=1,max_length=128)):
+        try:report=dispatch.capture(engine,account_id)
+        except journal.MissingAccount:
+            raise HTTPException(404,'Explicit Paper account not found',headers={'Cache-Control':'no-store'})
+        except (ValueError,ArithmeticError,TypeError,KeyError):
+            raise HTTPException(409,'Explicit Paper dispatch evidence cannot be verified',headers={'Cache-Control':'no-store'})
+        except SQLAlchemyError:
+            raise HTTPException(503,'Explicit Paper dispatch temporarily unavailable',headers={'Cache-Control':'no-store'})
         return JSONResponse(report,headers={'Cache-Control':'no-store'})
 
     from apps.api.requested_commands import add_commands

@@ -213,3 +213,8 @@ Read PAPER_REQUESTED_OWNERSHIP.md and PHASE_9_REQUESTED_OWNERSHIP_REPORT.md. Imm
 ## Independently scoped local ownership commands — head0019 unchanged
 
 Read PAPER_REQUESTED_OWNERSHIP_API.md and PHASE_9_REQUESTED_OWNERSHIP_API_REPORT.md. CLAIM_OWNERSHIP and DELIVER_OWNED_EVENT are independent default-disabled actions with exact account/bearer scope. Claims check both revisions and prior token; active exact retries preserve the original lease without renewal. Owned source acceptance preserves preview/risk/funding and current owner/token/expiry checks atomically. Main remains empty/default-disabled, no dependencies/hosts/credentials/frontend changes. Restore via existing startup and readiness checks. Next: uniquely durable local dispatch evidence and unknown-result query-before-retry before transport integration. Live remains disabled.
+
+
+## Current head0020 — unique local dispatch and recovery evidence
+
+Read PAPER_REQUESTED_DISPATCH.md and PHASE_9_REQUESTED_DISPATCH_REPORT.md. New owned SUBMIT commits exactly one immutable original-client/request/source/claim/fence record atomically with the event and account transaction. Older NULL events remain explicitly unavailable and cannot gain retrospective identity. GET dispatches and its verifier reconstruct complete evidence and deny all remote retries/queries. Head0020 supersedes prior schema notes; restore bash scripts/start.sh, preserve .env/volumes/proxy/CA and verify all five services. Main remains empty/default-disabled. No dependencies/hosts/credentials/frontend changes or real venue transport. Next: controlled request-scoped recovery by original client identity before transport. Live stays disabled.

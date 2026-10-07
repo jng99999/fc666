@@ -116,10 +116,11 @@ os.kill(os.getpid(),signal.SIGKILL)
 def test_missing_or_rehashed_claims_block_financial_reads(database):
     engine,_,_=database;req=prepared(engine);own.claim(engine,'account',req['request_id'],'first')
     value,_=reviewed(engine,req,event(req,0,'SUBMIT'));deliver(engine,value,'first',1)
+    # Privileged isolated corruption bypasses the new dispatch->claim FK as well as immutability.
     with engine.begin() as conn:
-        conn.execute(text('ALTER TABLE requested_paper_claims DISABLE TRIGGER USER'))
+        conn.execute(text('ALTER TABLE requested_paper_claims DISABLE TRIGGER ALL'))
         conn.execute(text('DELETE FROM requested_paper_claims'))
-        conn.execute(text('ALTER TABLE requested_paper_claims ENABLE TRIGGER USER'))
+        conn.execute(text('ALTER TABLE requested_paper_claims ENABLE TRIGGER ALL'))
     with pytest.raises(ValueError):journal.read(engine,'account')
 
 
@@ -159,10 +160,11 @@ def test_claim_insert_expiry_and_capacity_fail_without_financial_changes(databas
 
 def test_populated_ownership_downgrade_refused_and_history_preserved(database):
     from alembic import command
+    from core.storage.schema import SCHEMA_REVISION
     engine,config,_=database;req=prepared(engine);own.claim(engine,'account',req['request_id'],'first')
     before=journal.read(engine,'account')
     with pytest.raises(RuntimeError,match='Cannot downgrade persisted ownership evidence'):command.downgrade(config,'0018')
-    with engine.connect() as conn:assert conn.scalar(text('SELECT version_num FROM alembic_version'))=='0019'
+    with engine.connect() as conn:assert conn.scalar(text('SELECT version_num FROM alembic_version'))==SCHEMA_REVISION
     assert journal.read(engine,'account')==before
 
 
