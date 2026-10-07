@@ -29,7 +29,7 @@ All values use the explicit execution contract's bounded decimal strings and260-
 
 Once submission has been durably accepted, pause/stop cannot suppress UNKNOWN, ACK, cancel or fill evidence. Partial and late fills still settle exactly against the original request; cancellation acknowledgement retains remaining funding until a local source seal. Stopping does not claim venue cancellation or release funds. Exact SUBMIT redelivery after stopping returns the existing result without submitting again.
 
-Stopping an unsubmitted prepared request likewise preserves its hold and prevents SUBMIT. There is currently no local-void terminal receipt for that request, and STOP cannot resume it. A separately versioned unsubmitted-finalization protocol is the next dependency; do not invent SUBMIT/REJECT/cancel evidence or clear reservations to bypass it.
+Stopping an unsubmitted prepared request likewise preserves its hold and prevents SUBMIT. Schema0017 now permits explicit local VOID_UNSUBMITTED finalization only with zero durable source events; see PAPER_REQUESTED_FINALIZATION.md. STOP remains permanent and cannot resume. No submission, rejection or exchange cancellation is invented.
 
 ## Read-only export and offline replay
 
@@ -37,4 +37,4 @@ GET `/api/v1/paper-requested/controls?account_id=...` returns `paper-requested-c
 
 Run `.venv/bin/python -m scripts.verify_requested_controls FILE` offline. It first verifies the entire financial journal, then reconstructs control checkpoints/transitions and every PREPARE/SUBMIT decision. Altering and rehashing decisions cannot bypass replay. Hashes establish internal consistency, not source authenticity, identity permissions, external finality or freshness. CLI opens no database and rejects duplicate JSON object keys and oversized files. Original financial export v1 remains unchanged and valid.
 
-Tests use isolated PostgreSQL fixtures only. Main tables remain empty; no fabricated product balances/trades. Startup remains `bash scripts/start.sh`, preserving .env/volumes and upgrading head0016 before starting all five services. No dependencies, secrets, domains or extra services. Live stays disabled.
+Tests use isolated PostgreSQL fixtures only. Main tables remain empty; no fabricated product balances/trades. Startup remains `bash scripts/start.sh`, preserving .env/volumes and upgrading head0017 before starting all five services. No dependencies, secrets, domains or extra services. Live stays disabled.

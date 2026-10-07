@@ -336,3 +336,12 @@ class RequestedPaperGateRecord(Base):
     payload: Mapped[dict]=mapped_column(JSON)
     payload_sha256: Mapped[str]=mapped_column(String(64))
     __table_args__=(CheckConstraint("phase IN ('PREPARE','SUBMIT')",name='ck_requested_paper_gate_phase'),)
+
+class RequestedPaperVoidRecord(Base):
+    __tablename__='requested_paper_voids'
+    request_id: Mapped[str]=mapped_column(ForeignKey('requested_paper_requests.request_id'),primary_key=True)
+    account_id: Mapped[str]=mapped_column(ForeignKey('requested_paper_accounts.account_id'))
+    command_id: Mapped[str]=mapped_column(String(128))
+    payload: Mapped[dict]=mapped_column(JSON)
+    payload_sha256: Mapped[str]=mapped_column(String(64))
+    __table_args__=(UniqueConstraint('account_id','command_id',name='uq_requested_paper_void_command'),)

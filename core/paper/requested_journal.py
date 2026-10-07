@@ -6,9 +6,10 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 from core.paper import requested_execution as contract
 from core.paper.fault_adapter import encoded, sha
-from core.storage.models import RequestedPaperAccountRecord as Account, RequestedPaperRequestRecord as Request, RequestedPaperEventRecord as Event
+from core.storage.models import RequestedPaperAccountRecord as Account, RequestedPaperRequestRecord as Request, RequestedPaperEventRecord as Event, RequestedPaperVoidRecord as Void
 
 VERSION='paper-requested-journal-v1'
+VERSION_V2='paper-requested-journal-v2'
 REQUEST_LIMIT=100
 TOTAL_EVENTS=1000
 
@@ -47,6 +48,9 @@ def _financial_audit(db,row):
         raise ValueError('Opening evidence mismatch')
     requests=list(db.scalars(select(Request).where(Request.account_id==row.account_id).order_by(Request.ordinal).limit(REQUEST_LIMIT+1)))
     if len(requests)>REQUEST_LIMIT:raise ValueError('Request history exceeds account capacity')
+    voids=list(db.scalars(select(Void).where(Void.account_id==row.account_id).limit(REQUEST_LIMIT+1)))
+    if len(voids)>REQUEST_LIMIT:raise ValueError('Finalization capacity exceeded')
+    by_request={void.request_id:void for void in voids};void_commands=set()
     current=deepcopy(seed['base']);active=None;last_clock=seed['created_at'];revision=0;total=0;history=[]
     for ordinal,request in enumerate(requests):
         value=request.payload
@@ -67,13 +71,25 @@ def _financial_audit(db,row):
             events.append(payload);summary=contract.reduce(value,events)
             if encoded(summary)!=encoded(event.summary) or event.summary_sha256!=sha(summary):
                 raise ValueError('Event settlement evidence mismatch')
-        revision+=1+len(rows);current=summary['account']
-        active=None if summary['local_source_sealed'] else request.request_id
-        last_clock=events[-1]['received_at'] if events else value['created_at']
-        history.append({'request':deepcopy(value),'events':deepcopy(events),'summary':summary})
-    result={'version':VERSION,'opening':deepcopy(seed),'account':current,'active_request_id':active,
+        revision+=1+len(rows)
+        void=by_request.pop(request.request_id,None)
+        if void is not None:
+            from core.paper import requested_finalization
+            if (void.account_id!=row.account_id or void.command_id!=void.payload.get('command_id') or
+                void.payload_sha256!=sha(void.payload) or void.command_id in void_commands):raise ValueError('Finalization identity/hash conflict')
+            void_commands.add(void.command_id)
+            summary=requested_finalization.summary(value,void.payload,revision,events);revision+=1
+        current=summary['account']
+        active=None if summary['local_source_sealed'] or void is not None else request.request_id
+        last_clock=void.payload['created_at'] if void is not None else events[-1]['received_at'] if events else value['created_at']
+        entry={'request':deepcopy(value),'events':deepcopy(events),'summary':summary}
+        if voids:entry['void']=deepcopy(void.payload) if void is not None else None
+        history.append(entry)
+    if by_request:raise ValueError('Finalization lacks account request')
+    result={'version':VERSION_V2 if voids else VERSION,'opening':deepcopy(seed),'account':current,'active_request_id':active,
             'revision':revision,'last_clock':last_clock,'requests':history,'total_events':total,
             'external_submission_allowed':False}
+    if voids:result['total_finalizations']=len(voids)
     if len(encoded(result).encode())>contract.MAX_BYTES:raise ValueError('Journal exceeds 32 MiB')
     if row.revision!=revision or row.active_request_id!=active or encoded(row.current)!=encoded(current):
         raise ValueError('Account cache differs from immutable journal')

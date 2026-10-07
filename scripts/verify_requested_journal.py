@@ -22,7 +22,7 @@ def main():
     if len(raw)>MAX_BYTES:raise ValueError('Export exceeds 32 MiB')
     view=verify(json.loads(raw,object_pairs_hook=unique_object))
     print('Verified complete local Paper journal:',{'requests':len(view['requests']),'events':view['total_events'],
-                                                  'revision':view['revision'],'has_active_request':view['active_request_id'] is not None})
+                                                  'revision':view['revision'],'finalizations':view.get('total_finalizations',0),'has_active_request':view['active_request_id'] is not None})
 
 
 if __name__=='__main__':main()

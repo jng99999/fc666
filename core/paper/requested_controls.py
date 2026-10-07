@@ -9,6 +9,7 @@ from core.storage.models import RequestedPaperPolicyRecord as Policy, RequestedP
 VERSION='paper-requested-controls-v1'
 POLICY_VERSION='paper-requested-risk-v1'
 EXPORT_VERSION='paper-requested-controls-export-v1'
+EXPORT_VERSION_V2='paper-requested-controls-export-v2'
 CONTROL_LIMIT=1000
 LIMITS={'max_order_quantity','max_request_notional','max_buy_inventory_quantity','max_fee_rate','min_cash_after_buy','allowed_sides'}
 
@@ -42,6 +43,8 @@ def timeline(financial):
         for index,event in enumerate(entry['events']):
             revision+=1;summary=contract.reduce(value,entry['events'][:index+1])
             points[revision]={'active':None if summary['local_source_sealed'] else value['request_id'],'clock':event['received_at']}
+        if entry.get('void') is not None:
+            revision+=1;points[revision]={'active':None,'clock':entry['void']['created_at']}
         requests.append((entry,before))
     return points,requests
 
@@ -115,6 +118,10 @@ def replay(marker,approved,records,gates,financial):
             candidates=[control for control in records if control['journal_revision']<=point]
             if not candidates:raise ValueError('Request lacks control origin')
             expected_gates.append(decision(value,approved,candidates[-1],phase,point,observed))
+    for entry,before in requests:
+        if entry.get('void') is not None and before>=enrolled:
+            effective=[control for control in records if control['journal_revision']<=before+1][-1]
+            if contract.clock(entry['void']['created_at'])<contract.clock(effective['created_at']):raise ValueError('Finalization predates control')
     if encoded(gates)!=encoded(expected_gates):raise ValueError('Admission evidence missing or differs from replay')
     result={'version':VERSION,'coverage':'CONTROLLED','policy':deepcopy(approved),'records':deepcopy(records),'gates':deepcopy(gates),
             'state':state,'revision':len(records),'enrolled_journal_revision':enrolled}
@@ -185,19 +192,19 @@ def read(engine,account_id):
 
 def capture(engine,account_id):
     financial,view=read(engine,account_id)
-    body={'version':EXPORT_VERSION,'journal':inspection.seal(financial),'controls':view}
+    body={'version':EXPORT_VERSION_V2 if financial['version']==journal.VERSION_V2 else EXPORT_VERSION,'journal':inspection.seal(financial),'controls':view}
     report={**body,'sha256':sha(body)}
     if len(encoded(report).encode())>contract.MAX_BYTES:raise ValueError('Control export exceeds 32 MiB')
     return report
 
 
 def verify(report):
-    if not isinstance(report,dict) or set(report)!={'version','journal','controls','sha256'} or report['version']!=EXPORT_VERSION or len(encoded(report).encode())>contract.MAX_BYTES:
+    if not isinstance(report,dict) or set(report)!={'version','journal','controls','sha256'} or report['version'] not in [EXPORT_VERSION,EXPORT_VERSION_V2] or len(encoded(report).encode())>contract.MAX_BYTES:
         raise ValueError('Invalid control export envelope/bounds')
     financial=inspection.verify(report['journal']);view=report['controls']
     if not isinstance(view,dict):raise ValueError('Invalid control view')
     marker=VERSION if view.get('coverage')=='CONTROLLED' else None if view.get('coverage')=='LEGACY_UNMANAGED' else 'unsupported'
     expected=replay(marker,view.get('policy'),view.get('records'),view.get('gates'),financial)
-    body={'version':EXPORT_VERSION,'journal':report['journal'],'controls':expected}
+    body={'version':EXPORT_VERSION_V2 if financial['version']==journal.VERSION_V2 else EXPORT_VERSION,'journal':report['journal'],'controls':expected}
     if encoded(report)!=encoded({**body,'sha256':sha(body)}):raise ValueError('Control export differs from replay')
     return deepcopy(expected)

@@ -76,3 +76,7 @@ The independent requested-quantity PostgreSQL engine now has a read-only complet
 ### Goal7/8 progress — controlled-account admission
 
 Explicit opt-in immutable policies, PAUSED/ACTIVE/HALTED/STOPPED controls and PREPARE/SUBMIT risk evidence now persist atomically at schema0016; see PAPER_REQUESTED_CONTROLS.md and PHASE_9_REQUESTED_CONTROLS_REPORT.md. Commands share the economic account lock; control and financial revisions remain separate. Late receipts continue after pause/stop and retain cancellation holds until local source sealing. Un-enrolled v1 accounts remain explicitly LEGACY_UNMANAGED. Next: a separately versioned local finalization protocol for an unsubmitted request, before mutation endpoints or scheduling. Shared capital, health/identity gates and private reconciliation remain incomplete; Live stays disabled.
+
+### Goal7/8 progress — safe unsubmitted finalization
+
+Schema0017 adds immutable local VOID_UNSUBMITTED evidence and atomic release only for a request with zero durable source events; see PAPER_REQUESTED_FINALIZATION.md and PHASE_9_REQUESTED_FINALIZATION_REPORT.md. Submitted/unknown outcomes retain their holds. Financial/control v2 exports replay local closures while old captures remain v1. Next: specify explicit permission, idempotency and fencing for controlled Paper mutation interfaces before exposing writes or scheduling. Identity/shared capital, private connectors and Live remain incomplete.
