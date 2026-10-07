@@ -125,3 +125,7 @@ Read PAPER_REQUESTED_OWNERSHIP_API.md and PHASE_9_REQUESTED_OWNERSHIP_API_REPORT
 ## Current head0020 — unique local dispatch and recovery evidence
 
 Read PAPER_REQUESTED_DISPATCH.md and PHASE_9_REQUESTED_DISPATCH_REPORT.md. New owned SUBMIT commits exactly one immutable original-client/request/source/claim/fence record atomically with the event and account transaction. Older NULL events remain explicitly unavailable and cannot gain retrospective identity. GET dispatches and its verifier reconstruct complete evidence and deny all remote retries/queries. Head0020 supersedes prior schema notes; restore bash scripts/start.sh, preserve .env/volumes/proxy/CA and verify all five services. Main remains empty/default-disabled. No dependencies/hosts/credentials/frontend changes or real venue transport. Next: controlled request-scoped recovery by original client identity before transport. Live stays disabled.
+
+## Original-client scoped local query — head0020 unchanged
+
+QUERY_DISPATCH independently protects read-only dispatch-queries with exact account scope, original request/client identity and current lease checks before/after complete replay. Read PAPER_REQUESTED_DISPATCH_QUERY.md and PHASE_9_REQUESTED_DISPATCH_QUERY_REPORT.md. Takeover preserves original identity; unknown results retain holds and never authorize resubmission. Offline verification is available. Main remains empty/default-disabled and five services ready. Next: explicit local transport boundary and fault contracts before venue integration; Live disabled.

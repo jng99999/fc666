@@ -88,10 +88,14 @@ def capture(engine,account_id):
     with journal.transaction(engine) as db:
         db.execute(text("SELECT set_config('lock_timeout','2000ms',true)"))
         row=journal.lock(db,account_id);financial=journal.audit(db,row);controlled=ownership.controls.check(db,row,financial)
-        source_slots=sources.check(db,row,financial,controlled);claims,tokens=ownership.check(db,row,financial,controlled)
-        source={'version':sources.EXPORT_VERSION,'journal':sources.inspection.seal(financial),'controls':controlled,'sources':source_slots}
-        owned=ownership.evaluate({**source,'sha256':sha(source)},claims,tokens,ownership.clock(db))
-        return evaluate(owned,check(db,row,financial,controlled))
+        return snapshot(db,row,financial,controlled)
+
+
+def snapshot(db,row,financial,controlled):
+    source_slots=sources.check(db,row,financial,controlled);claims,tokens=ownership.check(db,row,financial,controlled)
+    source={'version':sources.EXPORT_VERSION,'journal':sources.inspection.seal(financial),'controls':controlled,'sources':source_slots}
+    owned=ownership.evaluate({**source,'sha256':sha(source)},claims,tokens,ownership.clock(db))
+    return evaluate(owned,check(db,row,financial,controlled))
 
 
 def verify(report):

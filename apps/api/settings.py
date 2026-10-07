@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     live_trading: bool = False
     paper_operator_token: SecretStr | None = None
     paper_operator_accounts: list[str] = Field(default_factory=list)
-    paper_operator_actions: list[Literal["PAUSE", "HALT", "STOP", "RESUME", "VOID_UNSUBMITTED", "ENROLL", "PREVIEW_PREPARE", "PREPARE", "PREVIEW_EVENT", "INGEST_EVENT", "CLAIM_OWNERSHIP", "DELIVER_OWNED_EVENT"]] = Field(default_factory=list)
+    paper_operator_actions: list[Literal["PAUSE", "HALT", "STOP", "RESUME", "VOID_UNSUBMITTED", "ENROLL", "PREVIEW_PREPARE", "PREPARE", "PREVIEW_EVENT", "INGEST_EVENT", "CLAIM_OWNERSHIP", "DELIVER_OWNED_EVENT", "QUERY_DISPATCH"]] = Field(default_factory=list)
 
     @model_validator(mode="after")
     def validate_paper_operator(self):

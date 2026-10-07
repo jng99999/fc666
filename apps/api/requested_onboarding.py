@@ -4,7 +4,7 @@ from fastapi import Depends,HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel,ConfigDict,Field,StrictInt
 from sqlalchemy.exc import SQLAlchemyError
-from core.paper import requested_controls as controls,requested_journal as journal,requested_preview as preview,requested_preparation as preparation,requested_event_preview as event_preview,requested_sources as sources,requested_ownership as ownership
+from core.paper import requested_controls as controls,requested_journal as journal,requested_preview as preview,requested_preparation as preparation,requested_event_preview as event_preview,requested_sources as sources,requested_ownership as ownership,requested_dispatch_query as dispatch_query
 
 
 class Rules(BaseModel):
@@ -94,6 +94,15 @@ class OwnershipCommand(BaseModel):
 
 
 class OwnedSourceCommand(SourceCommand):
+    owner:str=Field(min_length=1,max_length=128)
+    ownership_token:StrictInt=Field(ge=1,le=64)
+
+
+class DispatchQuery(BaseModel):
+    model_config=ConfigDict(extra='forbid',strict=True)
+    account_id:str=Field(min_length=1,max_length=128)
+    request_id:str=Field(pattern=r'^[0-9a-f]{64}$')
+    client_id:str=Field(pattern=r'^[0-9a-f]{64}$')
     owner:str=Field(min_length=1,max_length=128)
     ownership_token:StrictInt=Field(ge=1,le=64)
 
@@ -194,4 +203,16 @@ def add_onboarding(router,engine,settings,authenticate):
             raise HTTPException(409,'Explicit Paper owned source conflicts or cannot be verified',headers={'Cache-Control':'no-store'})
         except SQLAlchemyError:
             raise HTTPException(503,'Explicit Paper owned source temporarily unavailable',headers={'Cache-Control':'no-store'})
+        return JSONResponse(result,headers={'Cache-Control':'no-store'})
+
+    @router.post('/api/v1/paper-requested/dispatch-queries',dependencies=[Depends(authenticate)])
+    def query_dispatch(value:DispatchQuery):
+        grant(value.account_id,'QUERY_DISPATCH')
+        try:result=dispatch_query.capture(engine,**value.model_dump())
+        except journal.MissingAccount:
+            raise HTTPException(404,'Explicit Paper account not found',headers={'Cache-Control':'no-store'})
+        except (ValueError,ArithmeticError,TypeError,KeyError):
+            raise HTTPException(409,'Explicit Paper dispatch query conflicts or cannot be verified',headers={'Cache-Control':'no-store'})
+        except SQLAlchemyError:
+            raise HTTPException(503,'Explicit Paper dispatch query temporarily unavailable',headers={'Cache-Control':'no-store'})
         return JSONResponse(result,headers={'Cache-Control':'no-store'})
