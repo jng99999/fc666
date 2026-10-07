@@ -109,6 +109,20 @@ if __name__=='__main__':
         expect(life_result).to_have_count(0)
         expect(page.get_by_test_id('paper-lifecycle').get_by_role('alert')).to_contain_text('生命周期核对未确认 (409)')
         page.unroute(life_pattern)
+        expect(page.get_by_test_id('paper-funding')).to_have_count(1)
+        with page.expect_response(lambda response:response.url.endswith('/funding')) as funding_response:
+            page.get_by_role('button',name='核对模拟资金预留',exact=True).click()
+        assert funding_response.value.status==200,funding_response.value.text()
+        funding_report=funding_response.value.json();assert funding_report['session_id']==id
+        assert funding_report['trading_enabled'] is funding_report['external_submission_supported'] is False
+        assert funding_report['window_limit']==20 and len(funding_report['batches'])<=20
+        funding_result=page.get_by_test_id('funding-result');expect(funding_result).to_be_visible()
+        funding_pattern='**/api/paper/streams/'+id+'/funding'
+        page.route(funding_pattern,lambda route:route.fulfill(status=409,json={'detail':'Funding mismatch'}))
+        page.get_by_role('button',name='核对模拟资金预留',exact=True).click()
+        expect(funding_result).to_have_count(0)
+        expect(page.get_by_test_id('paper-funding').get_by_role('alert')).to_contain_text('资金预留核对未确认 (409)')
+        page.unroute(funding_pattern)
         assert page.request.get(root+'/api/paper/streams/'+id).json()==chosen
         assert page.evaluate('document.documentElement.scrollWidth<=innerWidth')
         page.screenshot(path=str(ROOT/'.runtime/paper-recovery-mobile.png'),full_page=True)
@@ -122,5 +136,5 @@ if __name__=='__main__':
         expect(page.get_by_test_id('paper-stream-state')).to_have_attribute('data-status','STOPPED')
         expect(result).to_have_count(0)
         assert not errors,errors
-        print('PASS: real stopped account with fills; stable receipts; independent intent coverage and offline export; preparation, authorization and lifecycle history; stopped gates and failure clearing; coherent recovery export; no account mutation; failed inspection clears confirmation; refresh retains account; 393px; no JS errors')
+        print('PASS: real stopped account with fills; stable receipts; independent intent coverage and offline export; preparation, authorization, lifecycle and funding history; stopped gates and failure clearing; coherent recovery export; no account mutation; failed inspection clears confirmation; refresh retains account; 393px; no JS errors')
         browser.close()

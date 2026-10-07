@@ -5,7 +5,7 @@ from pydantic import Field, model_validator
 from apps.api.research import RunRequest, prepare
 from apps.api.replay import Command
 from core.paper.ledger import RiskLimits
-from core.paper import sessions, streams, accounts, recovery, intents, preparation, authorization, lifecycle
+from core.paper import sessions, streams, accounts, recovery, intents, preparation, authorization, lifecycle, funding
 
 
 class PaperRequest(RunRequest):
@@ -137,4 +137,9 @@ def router_for(engine):
         try:return lifecycle.capture(engine,str(session_id))
         except intents.MissingAccount:raise HTTPException(404,'Paper account not found')
         except (ValueError,ArithmeticError,TypeError,KeyError):raise HTTPException(409,'Paper lifecycle cannot be verified')
+    @router.get('/api/v1/paper/streams/{session_id}/funding')
+    def inspect_funding(session_id:UUID):
+        try:return funding.capture(engine,str(session_id))
+        except intents.MissingAccount:raise HTTPException(404,'Paper account not found')
+        except (ValueError,ArithmeticError,TypeError,KeyError):raise HTTPException(409,'Paper funding cannot be verified')
     return router

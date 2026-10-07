@@ -177,6 +177,7 @@ class PaperPreparationRecord(Base):
     status: Mapped[str] = mapped_column(String(16))
     reason: Mapped[str | None] = mapped_column(String(32),nullable=True)
     authorization_version: Mapped[str | None] = mapped_column(String(64),nullable=True)
+    funding_version: Mapped[str | None] = mapped_column(String(64),nullable=True)
     __table_args__ = (
         CheckConstraint("status IN ('PREPARED','CONSUMED','CANCELLED')",name='ck_preparation_status'),
         CheckConstraint('finished_at IS NULL OR finished_at >= created_at',name='ck_preparation_clock'),
@@ -264,3 +265,18 @@ class PortfolioSnapshotRecord(Base):
         UniqueConstraint('scenario_id','request_id',name='uq_portfolio_snapshot_request'),
         Index('portfolio_snapshots_created_idx','scenario_id','created_at','snapshot_id'),
     )
+
+
+class PaperFundingReservationRecord(Base):
+    __tablename__ = 'paper_funding_reservations'
+    preparation_id: Mapped[str] = mapped_column(ForeignKey('paper_preparations.preparation_id'),primary_key=True)
+    recorded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    payload: Mapped[dict] = mapped_column(JSON)
+    payload_sha256: Mapped[str] = mapped_column(String(64))
+
+class PaperFundingOutcomeRecord(Base):
+    __tablename__ = 'paper_funding_outcomes'
+    preparation_id: Mapped[str] = mapped_column(ForeignKey('paper_funding_reservations.preparation_id'),primary_key=True)
+    recorded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    payload: Mapped[dict] = mapped_column(JSON)
+    payload_sha256: Mapped[str] = mapped_column(String(64))

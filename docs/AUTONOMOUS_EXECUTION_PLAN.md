@@ -56,3 +56,7 @@ Pure cumulative contract and dedicated immutable SQLite request/event/evidence s
 ### Goal7 progress — fenced simulated submission
 
 Isolated local leases, fencing tokens, one durable simulated dispatch, immutable initial-event evidence and query-only unknown-result recovery implemented; see PAPER_SUBMISSION.md and PHASE_9_SUBMISSION_REPORT.md. Actual process interruption, old owner rejection, concurrent selection/submission and expiry rollback are verified. This does not connect submission to product capital or exchange transport. Next: versioned economic integration contract including explicit requested quantity, reservation/authorization, partial and late fills and cancellation; preserve all original engine versions. Full OMS remains incomplete.
+
+### Goal7/8 progress — production projected funding
+
+New PostgreSQL preparation reservations and atomic account settlement integrate projected-fill funding into the existing real closed-bar Paper path at schema0014; see PAPER_FUNDING.md and PHASE_9_FUNDING_REPORT.md. No SQLite/PostgreSQL dual write. Account row locking, base revision/source/time gates and one pending batch remain the production fencing boundary. Local leased fault adapter remains separate. Next: a new explicit requested-quantity engine contract supporting asynchronous partial/late fills and capital reservations; preserve existing snapshots/formulas. Full OMS and shared-capital execution risk remain incomplete.

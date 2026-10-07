@@ -1,6 +1,6 @@
 # Execution / OMS / Reconciliation
 
-状态：实盘 OMS 仍为设计，Not Implemented；LIVE_TRADING=false。Paper 已实现独立持久化的完成态模拟意图、同事务状态路径与只读核对，见 PAPER_ORDER_INTENTS.md；进一步实现执行前独立提交的闭合柱模拟批次与复核消费，见 PAPER_PREPARATION.md；新增每笔预计模拟订单的不可变事前规则授权、方向门禁和消费前后效果核对，见 PAPER_AUTHORIZATION.md；独立本地 CREATED/FILL/OUTCOME 事件和累计数量、费用、名义金额核对已实现，见 PAPER_LIFECYCLE.md；交易所订单提交状态机、私有回调及用户身份授权仍未实现。
+状态：实盘 OMS 仍为设计，Not Implemented；LIVE_TRADING=false。Paper 已实现独立持久化的完成态模拟意图、同事务状态路径与只读核对，见 PAPER_ORDER_INTENTS.md；进一步实现执行前独立提交的闭合柱模拟批次与复核消费，见 PAPER_PREPARATION.md；新增每笔预计模拟订单的不可变事前规则授权、方向门禁和消费前后效果核对，见 PAPER_AUTHORIZATION.md；独立本地 CREATED/FILL/OUTCOME 事件和累计数量、费用、名义金额核对已实现，见 PAPER_LIFECYCLE.md；新增 PostgreSQL 账户级预计成交资金预留及原子结算，见 PAPER_FUNDING.md；完整需求量、异步回报、共享资金、交易所订单提交状态机及用户身份授权仍未实现。
 
 Signal -> RiskDecision -> OrderIntent -> OMS -> ExchangeAdapter -> OrderUpdate -> Fill -> Position -> Portfolio。
 状态：CREATED -> VALIDATED -> SUBMITTED -> ACKNOWLEDGED -> PARTIALLY_FILLED -> FILLED；未成交订单可进入 CANCEL_PENDING -> CANCELLED，或 REJECTED/EXPIRED。PARTIALLY_FILLED 可继续成交或取消余量。cancel acknowledgement 与 fill 乱序需按累计成交量对账，CANCEL_PENDING 期间仍可能成交。禁止用几个 boolean 代替状态机。
