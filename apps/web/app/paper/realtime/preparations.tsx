@@ -4,7 +4,7 @@ import {z} from 'zod';
 const schema=z.object({version:z.literal('paper-closed-bar-preparation-v1'),session_id:z.uuid(),revision:z.number().int(),trading_enabled:z.literal(false),automatic_replay:z.literal(false),external_submission_supported:z.literal(false),records:z.array(z.object({preparation_id:z.string(),created_at:z.string(),finished_at:z.string().nullable(),status:z.enum(['PREPARED','CONSUMED','CANCELLED']),reason:z.string().nullable(),payload:z.object({observations:z.array(z.unknown())})}))});
 type Report=z.infer<typeof schema>;
 const states={PREPARED:'已准备，等待再次核对',CONSUMED:'已原子接受',CANCELLED:'已取消，不重放'};
-const reasons:Record<string,string>={CONTROL_CHANGED:'账户控制或版本变化',EXPIRED:'及时闭合柱已超过允许延迟',SOURCE_CHANGED:'准备行情或已接受来源发生变化'};
+const reasons:Record<string,string>={CONTROL_CHANGED:'账户控制或版本变化',EXPIRED:'及时闭合柱已超过允许延迟',SOURCE_CHANGED:'准备行情或已接受来源发生变化',AUTHORIZATION_MISSING:'旧准备无事前逐单授权'};
 export default function Preparations({id,disabled}:{id:string;disabled:boolean}){
  const [value,setValue]=useState<Report|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState('');const request=useRef<AbortController|null>(null);
  useEffect(()=>()=>request.current?.abort(),[]);

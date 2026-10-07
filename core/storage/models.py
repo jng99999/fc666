@@ -176,6 +176,7 @@ class PaperPreparationRecord(Base):
     payload_sha256: Mapped[str] = mapped_column(String(64))
     status: Mapped[str] = mapped_column(String(16))
     reason: Mapped[str | None] = mapped_column(String(32),nullable=True)
+    authorization_version: Mapped[str | None] = mapped_column(String(64),nullable=True)
     __table_args__ = (
         CheckConstraint("status IN ('PREPARED','CONSUMED','CANCELLED')",name='ck_preparation_status'),
         CheckConstraint('finished_at IS NULL OR finished_at >= created_at',name='ck_preparation_clock'),
@@ -183,6 +184,16 @@ class PaperPreparationRecord(Base):
         Index('paper_preparation_pending_idx','session_id',unique=True,postgresql_where=text("status='PREPARED'")),
         Index('paper_preparation_history_idx','session_id','created_at','preparation_id'),
     )
+
+class PaperAuthorizationRecord(Base):
+    __tablename__ = 'paper_authorizations'
+    authorization_id: Mapped[str] = mapped_column(String(64),primary_key=True)
+    preparation_id: Mapped[str] = mapped_column(ForeignKey('paper_preparations.preparation_id'))
+    order_id: Mapped[str] = mapped_column(String(64))
+    recorded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    payload: Mapped[dict] = mapped_column(JSON)
+    payload_sha256: Mapped[str] = mapped_column(String(64))
+    __table_args__ = (UniqueConstraint('preparation_id','order_id',name='uq_paper_authorization_order'),)
 
 class PaperControlRecord(Base):
     __tablename__ = 'paper_controls'

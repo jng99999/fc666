@@ -79,6 +79,22 @@ if __name__=='__main__':
         expect(prep_result).to_have_count(0)
         expect(page.get_by_test_id('paper-preparations').get_by_role('alert')).to_contain_text('准备记录读取未确认 (409)')
         page.unroute(prep_pattern)
+        expect(page.get_by_test_id('paper-authorizations')).to_have_count(1)
+        with page.expect_response(lambda response:response.url.endswith('/authorizations')) as auth_response:
+            page.get_by_role('button',name='核对逐单模拟授权',exact=True).click()
+        assert auth_response.value.status==200,auth_response.value.text()
+        auth_report=auth_response.value.json();assert auth_report['session_id']==id
+        assert auth_report['trading_enabled'] is auth_report['external_submission_supported'] is False
+        assert auth_report['account_gate']['buy_allowed'] is auth_report['account_gate']['sell_allowed'] is False
+        assert auth_report['window_limit']==20 and len(auth_report['batches'])<=20
+        auth_result=page.get_by_test_id('authorization-result');expect(auth_result).to_be_visible()
+        expect(auth_result).to_contain_text('当前账户 STOPPED')
+        auth_pattern='**/api/paper/streams/'+id+'/authorizations'
+        page.route(auth_pattern,lambda route:route.fulfill(status=409,json={'detail':'Authorization mismatch'}))
+        page.get_by_role('button',name='核对逐单模拟授权',exact=True).click()
+        expect(auth_result).to_have_count(0)
+        expect(page.get_by_test_id('paper-authorizations').get_by_role('alert')).to_contain_text('逐单授权核对未确认 (409)')
+        page.unroute(auth_pattern)
         assert page.request.get(root+'/api/paper/streams/'+id).json()==chosen
         assert page.evaluate('document.documentElement.scrollWidth<=innerWidth')
         page.screenshot(path=str(ROOT/'.runtime/paper-recovery-mobile.png'),full_page=True)
@@ -92,5 +108,5 @@ if __name__=='__main__':
         expect(page.get_by_test_id('paper-stream-state')).to_have_attribute('data-status','STOPPED')
         expect(result).to_have_count(0)
         assert not errors,errors
-        print('PASS: real stopped account with fills; stable receipts; independent intent coverage and offline export; preparation history and failure clearing; coherent recovery export; no account mutation; failed inspection clears confirmation; refresh retains account; 393px; no JS errors')
+        print('PASS: real stopped account with fills; stable receipts; independent intent coverage and offline export; preparation and authorization history, stopped gates and failure clearing; coherent recovery export; no account mutation; failed inspection clears confirmation; refresh retains account; 393px; no JS errors')
         browser.close()
