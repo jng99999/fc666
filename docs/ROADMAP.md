@@ -32,3 +32,5 @@ Phase9持久场景与估值历史：不可变账户选择/Decimal提示阈值，
 Phase9历史可比性切片：最近最多8个持久快照，冻结输入离线重算，相邻分钟/读取时钟/账户定义/版本/观察和行情前缀/worker健康检查，缺口明确分段，区间内Decimal权益差，无插值、跨缺口累计或连续回撤。见PORTFOLIO_CONTINUITY.md；多阶段目标见AUTONOMOUS_EXECUTION_PLAN.md。下一目标先定义分段采样权益展示及观察点指标，再推进版本化组合风险可见性和Paper执行恢复；Live关闭。
 
 Phase9分段采样权益：独立sampled-v1接口/导出，沿用continuity-v1区间边界，Decimal观察点回撤金额/比例与各自峰谷编号，单点/零峰值明确缺失，SVG按区间断开、精确表格/焦点详情、完整离线复算。见PORTFOLIO_SAMPLED.md。下一目标冻结版本化组合风险提示策略与历史可见性，保持只读监控边界，再推进Paper执行恢复；实盘关闭。
+
+Phase9只读风险历史：版本化冻结gross/BTC/ETH敞口提示策略及哈希，UNKNOWN/HINTS_PRESENT/NO_CONFIGURED_HINTS区分，原始worker/停止买入提示与报价账本时钟，相邻可比观察才记录阈值进入/退出，缺口重置不假称风险解除，完整导出与离线复算。见PORTFOLIO_RISK_HISTORY.md。下一目标为Paper执行和恢复基础：先定义订单意图、幂等、丢确认与重启对账验收边界，再实现故障测试；交易执行门控、完整Risk/OMS、共享资金、认证和Live仍未完成。

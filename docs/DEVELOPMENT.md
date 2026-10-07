@@ -135,3 +135,5 @@ Portfolio历史切片后当前迁移head为0009。`bash scripts/start.sh` 保留
 历史分析不新增迁移，当前head仍0009。启动后运行 `uv run --frozen python -m tests.browser_portfolio_continuity`，要求已有真实持久场景快照；导出用 `uv run --frozen python -m scripts.verify_portfolio_continuity .runtime/browser-portfolio-continuity.json` 核对。场景分析是只读GET，有界窗口不会影响账户或历史原记录。
 
 采样权益切片无新迁移，head0009。运行 `uv run --frozen python -m tests.browser_portfolio_sampled` 需要已保存的多点真实场景；此测试只读现有快照，不新增记录。`uv run --frozen python -m scripts.verify_portfolio_sampled .runtime/browser-portfolio-sampled.json` 验证完整采样导出。旧continuity/history/valuation验证器继续适用。
+
+风险历史无新迁移，head0009。`uv run --frozen python -m tests.browser_portfolio_risk` 使用已有真实多点场景且不写记录；导出用 `uv run --frozen python -m scripts.verify_portfolio_risk .runtime/browser-portfolio-risk.json` 复算。该接口和页面仅提示，不触发交易或改动账户风控。

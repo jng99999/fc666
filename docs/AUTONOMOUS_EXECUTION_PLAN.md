@@ -20,6 +20,8 @@ Next slice after Goal 2 passes: specify segment-scoped sampled equity display an
 
 ## Goal 4 — portfolio risk observability
 
+First hint-only policy/history slice implemented; see PORTFOLIO_RISK_HISTORY.md and PHASE_9_RISK_REPORT.md. Full risk observability beyond this limited policy remains incomplete.
+
 Freeze risk policy versions and expose read-only breach histories with known account/rule/price clocks, degraded state and explicit scope. Preserve current hint-only behavior until a separate execution gate is specified and validated. Gate: correlated assets and duplicate account exclusion, Decimal arithmetic, stale/missing inputs, worker outage and state restoration. Full risk monitoring is not implied by a gross-weight hint.
 
 ## Goal 5 — execution and recovery foundations
