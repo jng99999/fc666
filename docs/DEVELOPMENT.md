@@ -177,3 +177,7 @@ Current head0017 supersedes earlier schema notes. Read PAPER_REQUESTED_FINALIZAT
 ## Default-disabled local control commands
 
 Read PAPER_REQUESTED_COMMANDS.md and PHASE_9_REQUESTED_COMMANDS_REPORT.md. The new POST control-commands endpoint is disabled unless a secure server token and explicit account/action grants are configured together. Main remains disabled; no production token or fixture account is installed. Existing startup and schema0017 are unchanged. Control commands carry both financial/control revision fences; no order submit/finalization API or scheduler. Live stays disabled.
+
+## Separately granted local finalization API
+
+PAPER_REQUESTED_FINALIZATION_API.md describes the default-disabled finalization-commands POST route. VOID_UNSUBMITTED is an independent grant, not implied by control permissions. Requires controlled enrollment and a transactional financial fence; preserves old internal unmanaged behavior. Existing startup, .env/volumes, dependency locks and schema0017 are unchanged. No production token/grant is installed. Live stays disabled.

@@ -1,6 +1,6 @@
 # Durable explicit-quantity Paper journal
 
-`paper-requested-journal-v1` in `core/paper/requested_journal.py` persists the independent requested-quantity contract using the financial tables introduced at PostgreSQL schema0015. Current head0017 adds local unsubmitted finalization alongside explicit opt-in controls; see PAPER_REQUESTED_CONTROLS.md. It uses three new tables and a separate account namespace. It never imports balances, fills or ownership from existing closed-bar accounts, never dual-writes SQLite and never submits external orders. A read-only complete-journal API and offline verifier are available; see PAPER_REQUESTED_INSPECTION.md. A default-disabled scoped local control-command endpoint is available; see PAPER_REQUESTED_COMMANDS.md. No order mutation API, UI or scheduler exposes this engine.
+`paper-requested-journal-v1` in `core/paper/requested_journal.py` persists the independent requested-quantity contract using the financial tables introduced at PostgreSQL schema0015. Current head0017 adds local unsubmitted finalization alongside explicit opt-in controls; see PAPER_REQUESTED_CONTROLS.md. It uses three new tables and a separate account namespace. It never imports balances, fills or ownership from existing closed-bar accounts, never dual-writes SQLite and never submits external orders. A read-only complete-journal API and offline verifier are available; see PAPER_REQUESTED_INSPECTION.md. A default-disabled scoped local control-command endpoint is available; see PAPER_REQUESTED_COMMANDS.md. No order preparation/submission API, UI or scheduler exposes this engine.
 
 ## Account and transaction boundaries
 
@@ -24,4 +24,4 @@ Tests create only isolated fixture databases. No demonstration account or fabric
 
 Explicit opt-in control/risk gates are implemented; see PAPER_REQUESTED_CONTROLS.md. Local unsubmitted finalization is implemented; see PAPER_REQUESTED_FINALIZATION.md. Next work: explicit permission and fencing contracts before exposing commands or scheduling this new engine. Shared capital, human identity authorization, external reconciliation, authenticated finality and Live remain incomplete.
 
-Current access boundary: PAPER_REQUESTED_COMMANDS.md describes the opt-in local control-command capability and its limitations. Local finalization and economic/source operations still have no HTTP write routes.
+Current access boundary: PAPER_REQUESTED_COMMANDS.md describes the opt-in local control-command capability and its limitations. Local finalization now has a separately granted endpoint; see PAPER_REQUESTED_FINALIZATION_API.md. Preparation/submission and source ingestion still have no HTTP write routes.

@@ -32,4 +32,4 @@ Fixtures use only isolated databases and temporary exports. Main requested-quant
 
 Explicit opt-in account controls and request-risk gates are now available; see PAPER_REQUESTED_CONTROLS.md. Local unsubmitted finalization is implemented; see PAPER_REQUESTED_FINALIZATION.md. Next: explicit permission and fencing contracts before exposing mutation commands or scheduling. Shared capital, leased external dispatch ownership, private reconciliation and Live remain incomplete. Live stays disabled.
 
-Current access boundary: PAPER_REQUESTED_COMMANDS.md describes the opt-in local control-command capability and its limitations. Local finalization and economic/source operations still have no HTTP write routes.
+Current access boundary: PAPER_REQUESTED_COMMANDS.md describes the opt-in local control-command capability and its limitations. Local finalization now has a separately granted endpoint; see PAPER_REQUESTED_FINALIZATION_API.md. Preparation/submission and source ingestion still have no HTTP write routes.

@@ -91,11 +91,11 @@ def test_stale_financial_and_control_revision_denied_without_effect(database):
 
 def test_two_concurrent_control_commands_have_one_revision_winner(database):
     engine,_,settings=database;setup(engine);barrier=Barrier(2)
-    def attempt(identity):
-        with TestClient(create_app(configured(settings))) as client:
+    with TestClient(create_app(configured(settings))) as client:
+        def attempt(identity):
             barrier.wait(timeout=5)
             return client.post(PATH,json=payload(command_id=identity),headers=HEADERS).status_code
-    with ThreadPoolExecutor(2) as pool:results=list(pool.map(attempt,['one','two']))
+        with ThreadPoolExecutor(2) as pool:results=list(pool.map(attempt,['one','two']))
     assert sorted(results)==[200,409]
     assert controls.verify(controls.capture(engine,'account'))['revision']==3
     assert journal.read(engine,'account')['revision']==0

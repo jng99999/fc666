@@ -1,6 +1,6 @@
 # Controlled local Paper accounts and request-risk gates
 
-Schema0016 adds `paper-requested-controls-v1` and immutable `paper-requested-risk-v1` policies to the independent explicit-quantity engine. Enrollment is explicit and opt-in through the internal library. Existing un-enrolled v1 accounts keep their former behavior and report `LEGACY_UNMANAGED`; this is not coverage for every Paper account. Closed-bar engines and historical records remain separate. A default-disabled scoped local control-command endpoint is available; see PAPER_REQUESTED_COMMANDS.md. No order mutation API, UI, scheduler, human identity permissions or exchange transport is added.
+Schema0016 adds `paper-requested-controls-v1` and immutable `paper-requested-risk-v1` policies to the independent explicit-quantity engine. Enrollment is explicit and opt-in through the internal library. Existing un-enrolled v1 accounts keep their former behavior and report `LEGACY_UNMANAGED`; this is not coverage for every Paper account. Closed-bar engines and historical records remain separate. A default-disabled scoped local control-command endpoint is available; see PAPER_REQUESTED_COMMANDS.md. No order preparation/submission API, UI, scheduler, human identity permissions or exchange transport is added.
 
 ## Enrollment, state and atomicity
 
@@ -39,4 +39,4 @@ Run `.venv/bin/python -m scripts.verify_requested_controls FILE` offline. It fir
 
 Tests use isolated PostgreSQL fixtures only. Main tables remain empty; no fabricated product balances/trades. Startup remains `bash scripts/start.sh`, preserving .env/volumes and upgrading head0017 before starting all five services. No dependencies, secrets, domains or extra services. Live stays disabled.
 
-Current access boundary: PAPER_REQUESTED_COMMANDS.md describes the opt-in local control-command capability and its limitations. Local finalization and economic/source operations still have no HTTP write routes.
+Current access boundary: PAPER_REQUESTED_COMMANDS.md describes the opt-in local control-command capability and its limitations. Local finalization now has a separately granted endpoint; see PAPER_REQUESTED_FINALIZATION_API.md. Preparation/submission and source ingestion still have no HTTP write routes.

@@ -84,3 +84,7 @@ Schema0017 adds immutable local VOID_UNSUBMITTED evidence and atomic release onl
 ### Goal7/8 progress — explicit local control capability
 
 A default-disabled local operator control-command endpoint now requires an explicit server token, exact account/action grants and both control/financial revisions under the account lock. See PAPER_REQUESTED_COMMANDS.md and PHASE_9_REQUESTED_COMMANDS_REPORT.md. This is single-operator access, not multiuser identity/audit, and grants no order/source write capability. Schema stays0017. Next: extend the boundary to local unsubmitted finalization using a separate explicit action grant; then account preparation/dispatch contracts. Live remains disabled.
+
+### Goal7/8 progress — independently granted local finalization
+
+The default-disabled finalization-commands route now requires exact account and VOID_UNSUBMITTED grants, explicit controlled coverage and the financial revision under the shared account lock. See PAPER_REQUESTED_FINALIZATION_API.md and PHASE_9_REQUESTED_FINALIZATION_API_REPORT.md. No source/venue cancellation evidence is invented. Main remains empty and disabled; schema0017 and all existing export versions remain unchanged. Next: explicit enrollment/preparation permission and funding-preview contracts before submission or source-ingestion interfaces. Multiuser actor identity, shared capital, exchange reconciliation and Live remain incomplete.

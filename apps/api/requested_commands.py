@@ -6,7 +6,7 @@ from fastapi.responses import JSONResponse
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, ConfigDict, Field, StrictInt
 from sqlalchemy.exc import SQLAlchemyError
-from core.paper import requested_controls as controls, requested_journal as journal
+from core.paper import requested_controls as controls, requested_journal as journal, requested_finalization as finalization
 
 VERSION='paper-requested-control-command-result-v1'
 
@@ -18,6 +18,15 @@ class ControlCommand(BaseModel):
     expected_control_revision:StrictInt=Field(ge=1)
     expected_financial_revision:StrictInt=Field(ge=0)
     action:Literal['PAUSE','HALT','STOP','RESUME']
+    created_at:str=Field(min_length=1,max_length=64)
+
+
+class FinalizationCommand(BaseModel):
+    model_config=ConfigDict(extra='forbid',strict=True)
+    account_id:str=Field(min_length=1,max_length=128)
+    request_id:str=Field(pattern=r'^[0-9a-f]{64}$')
+    command_id:str=Field(min_length=1,max_length=128)
+    expected_financial_revision:StrictInt=Field(ge=1)
     created_at:str=Field(min_length=1,max_length=64)
 
 
@@ -44,3 +53,20 @@ def add_commands(router,engine,settings):
             raise HTTPException(503,'Explicit Paper command temporarily unavailable',headers={'Cache-Control':'no-store'})
         accepted=next(record for record in view['records'] if record['command_id']==value.command_id)
         return JSONResponse({'version':VERSION,'accepted_command':accepted,'controls':view,'external_submission_allowed':False},headers={'Cache-Control':'no-store'})
+
+    @router.post('/api/v1/paper-requested/finalization-commands',dependencies=[Depends(authenticate)])
+    def finalization_command(value:FinalizationCommand):
+        if value.account_id not in settings.paper_operator_accounts or 'VOID_UNSUBMITTED' not in settings.paper_operator_actions:
+            raise HTTPException(403,'Paper operator grant denies this command',headers={'Cache-Control':'no-store'})
+        try:
+            result=finalization.finalize(engine,value.account_id,value.request_id,value.command_id,value.expected_financial_revision,value.created_at,
+                                         require_controlled=True)
+        except journal.MissingAccount:
+            raise HTTPException(404,'Explicit Paper account not found',headers={'Cache-Control':'no-store'})
+        except (ValueError,ArithmeticError,TypeError,KeyError):
+            raise HTTPException(409,'Explicit Paper finalization conflicts or cannot be verified',headers={'Cache-Control':'no-store'})
+        except SQLAlchemyError:
+            raise HTTPException(503,'Explicit Paper finalization temporarily unavailable',headers={'Cache-Control':'no-store'})
+        return JSONResponse({'version':'paper-requested-finalization-command-result-v1','request_id':value.request_id,
+                             'command_id':value.command_id,'finalized_request_summary':result,'external_submission_allowed':False},
+                            headers={'Cache-Control':'no-store'})

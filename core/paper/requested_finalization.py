@@ -28,12 +28,17 @@ def summary(value,void,before,events):
     return result
 
 
-def finalize(engine,account_id,request_id,command_id,expected_revision,created_at):
+def finalize(engine,account_id,request_id,command_id,expected_revision,created_at,*,require_controlled=False):
     from sqlalchemy import select
     from core.paper import requested_journal as journal, requested_controls as controls
     from core.storage.models import RequestedPaperVoidRecord as Void
     with journal.transaction(engine) as db:
+        if require_controlled:
+            from sqlalchemy import text
+            db.execute(text("SELECT set_config('lock_timeout', '2000ms', true)"))
         row=journal.lock(db,account_id);view=journal.audit(db,row)
+        controlled=controls.check(db,row,view)
+        if require_controlled and controlled['coverage']!='CONTROLLED':raise ValueError('Explicit policy enrollment required')
         entry=next((entry for entry in view['requests'] if entry['request']['request_id']==request_id),None)
         if entry is None:raise ValueError('Request does not belong to account')
         payload=record(entry['request'],command_id,expected_revision,created_at)
@@ -45,7 +50,6 @@ def finalize(engine,account_id,request_id,command_id,expected_revision,created_a
             raise ValueError('Only current undispatched request can be finalized')
         if db.scalar(select(Void).where(Void.account_id==account_id,Void.command_id==command_id)) is not None:
             raise ValueError('Finalization command belongs to another request')
-        controlled=controls.check(db,row,view)
         latest=controlled['records'][-1]['created_at'] if controlled['coverage']=='CONTROLLED' else view['last_clock']
         if contract.clock(created_at)<contract.clock(latest):raise ValueError('Finalization predates current control')
         result=summary(entry['request'],payload,view['revision'],[])
