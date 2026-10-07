@@ -60,3 +60,7 @@ Isolated local leases, fencing tokens, one durable simulated dispatch, immutable
 ### Goal7/8 progress — production projected funding
 
 New PostgreSQL preparation reservations and atomic account settlement integrate projected-fill funding into the existing real closed-bar Paper path at schema0014; see PAPER_FUNDING.md and PHASE_9_FUNDING_REPORT.md. No SQLite/PostgreSQL dual write. Account row locking, base revision/source/time gates and one pending batch remain the production fencing boundary. Local leased fault adapter remains separate. Next: a new explicit requested-quantity engine contract supporting asynchronous partial/late fills and capital reservations; preserve existing snapshots/formulas. Full OMS and shared-capital execution risk remain incomplete.
+
+### Goal7/8 progress — explicit quantity economic contract
+
+The independent `paper-requested-execution-v1` contract now freezes and funds the full requested quantity, folds asynchronous partial and late fills, retains reserves after cancellation acknowledgement and releases only after a local source seal. Exact offline replay and hand-calculated ledger tests are implemented; see PAPER_REQUESTED_EXECUTION.md and PHASE_9_REQUESTED_EXECUTION_REPORT.md. This does not yet mutate product accounts. Next: a separately versioned PostgreSQL request/event journal with atomic reservation, fill acceptance and settlement, transactional interruption and concurrent ownership tests. Existing engine records and schema0014 remain intact.
