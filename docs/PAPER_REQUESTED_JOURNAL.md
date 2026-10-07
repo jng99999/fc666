@@ -1,6 +1,6 @@
 # Durable explicit-quantity Paper journal
 
-`paper-requested-journal-v1` in `core/paper/requested_journal.py` persists the independent requested-quantity contract using PostgreSQL schema0015. It uses three new tables and a separate account namespace. It never imports balances, fills or ownership from existing closed-bar accounts, never dual-writes SQLite and never submits external orders. No API, UI or scheduler exposes this engine yet.
+`paper-requested-journal-v1` in `core/paper/requested_journal.py` persists the independent requested-quantity contract using PostgreSQL schema0015. It uses three new tables and a separate account namespace. It never imports balances, fills or ownership from existing closed-bar accounts, never dual-writes SQLite and never submits external orders. A read-only complete-journal API and offline verifier are available; see PAPER_REQUESTED_INSPECTION.md. No mutation API, UI or scheduler exposes this engine.
 
 ## Account and transaction boundaries
 
@@ -18,8 +18,8 @@ Exact retries return the current summary of the original request and do not incr
 
 At most 100 requests and 1,000 unique retained events per account are supported; the complete inspection is bounded to 32 MiB. Individual contract transcripts retain their delivered-event and financial bounds. Capacity failure rolls back; exact retained retries still work. There is no pruning, pagination or continuous scheduling. Inspection checks every prefix, so no production throughput or long-load claim is made.
 
-`read(engine, account_id)` returns verified opening, current account, active request, revision and bounded complete request transcripts/summaries. This library read is transactionally coherent. Existing offline request verifier can validate separately captured transcripts; no standalone full-journal export verifier is claimed.
+`read(engine, account_id)` returns verified opening, current account, active request, revision and bounded complete request transcripts/summaries. This library read is transactionally coherent. Complete exports and offline chain verification are implemented in requested_inspection; see PAPER_REQUESTED_INSPECTION.md. The standalone request verifier remains compatible.
 
 Tests create only isolated fixture databases. No demonstration account or fabricated trade is inserted into the main database. Current startup applies schema0015 and restarts the existing five services, which keep using their existing engines. Dependencies, hosts and credentials are unchanged. Live remains disabled.
 
-Next work: bounded read-only API/inspection and offline journal verification, then explicit control/risk gates and ownership acceptance before exposing commands or scheduling this new engine. Shared capital, human identity authorization, external reconciliation, authenticated finality and Live remain incomplete.
+Next work: versioned explicit control/risk gates and ownership acceptance before exposing commands or scheduling this new engine. Shared capital, human identity authorization, external reconciliation, authenticated finality and Live remain incomplete.

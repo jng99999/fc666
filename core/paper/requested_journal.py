@@ -1,7 +1,7 @@
 """PostgreSQL-only explicit Paper journal. Local simulation; no external transport."""
 from copy import deepcopy
 from contextlib import contextmanager
-from sqlalchemy import select
+from sqlalchemy import select, text
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 from core.paper import requested_execution as contract
@@ -11,6 +11,10 @@ from core.storage.models import RequestedPaperAccountRecord as Account, Requeste
 VERSION='paper-requested-journal-v1'
 REQUEST_LIMIT=100
 TOTAL_EVENTS=1000
+
+
+class MissingAccount(ValueError):
+    pass
 
 
 @contextmanager
@@ -32,7 +36,7 @@ def opening(account_id,instrument_id,base,created_at):
 
 def lock(db,account_id):
     row=db.scalar(select(Account).where(Account.account_id==account_id).with_for_update())
-    if row is None:raise ValueError('Unknown explicit Paper account')
+    if row is None:raise MissingAccount('Unknown explicit Paper account')
     return row
 
 
@@ -86,9 +90,14 @@ def create(engine,account_id,instrument_id,base,created_at):
         return audit(db,row)
 
 
-def read(engine,account_id):
+def read(engine,account_id,*,lock_timeout_ms=None):
     # Lock prevents READ COMMITTED from combining different account revisions.
-    with transaction(engine) as db:return audit(db,lock(db,account_id))
+    if lock_timeout_ms is not None and (type(lock_timeout_ms) is not int or not 1<=lock_timeout_ms<=5000):
+        raise ValueError('Bounded integer lock timeout required')
+    with transaction(engine) as db:
+        if lock_timeout_ms is not None:
+            db.execute(text("SELECT set_config('lock_timeout', :value, true)"),{'value':f'{lock_timeout_ms}ms'})
+        return audit(db,lock(db,account_id))
 
 
 def prepare(engine,value):

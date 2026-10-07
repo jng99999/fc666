@@ -161,3 +161,7 @@ Read PAPER_FUNDING.md and PHASE_9_FUNDING_REPORT.md. New preparation commits acc
 ## Explicit requested-quantity journal — schema0015
 
 Current head0015 supersedes older schema notes. Read PAPER_REQUESTED_JOURNAL.md and PHASE_9_REQUESTED_JOURNAL_REPORT.md. The new PostgreSQL-only library uses independent accounts and immutable request/event evidence, with row-locked atomic reservation and settlement. Existing stream engines and accounts remain unchanged; no new API/UI or automatic scheduling. Run bash scripts/start.sh to preserve .env/volumes, upgrade head and restart all five owned services. No dependencies, secrets, hosts or additional services. Tests use isolated databases; never seed fixture balances or markets in the main database. Live remains disabled.
+
+## Complete requested-quantity inspection — schema unchanged0015
+
+Read PAPER_REQUESTED_INSPECTION.md and PHASE_9_REQUESTED_INSPECTION_REPORT.md. GET /api/v1/paper-requested/journal?account_id=... exports complete verified retained history, at most100 requests/1,000 events/32MiB. Missing404, corrupt409 and database/lock timeout503 return no partial report. Offline: .venv/bin/python -m scripts.verify_requested_journal FILE. No mutation route, UI or scheduling. Existing scripts/start.sh and all five services remain sufficient; no installation/startup configuration changes. Live remains disabled.

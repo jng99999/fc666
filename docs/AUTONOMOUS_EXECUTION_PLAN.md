@@ -68,3 +68,7 @@ The independent `paper-requested-execution-v1` contract now freezes and funds th
 ### Goal7/8 progress — PostgreSQL explicit-quantity journal
 
 Independent local Paper opening evidence, requested-quantity reservations and immutable source-event settlement now persist atomically in PostgreSQL at schema0015; see PAPER_REQUESTED_JOURNAL.md and PHASE_9_REQUESTED_JOURNAL_REPORT.md. Account row locks serialize concurrent requests and duplicate fills. The new namespace preserves prior closed-bar account formulas and histories. Next: bounded read-only journal inspection/API and complete offline verification, followed by explicit control/risk gates before exposing commands or scheduling. Shared capital, external dispatch ownership, private reconciliation and Live remain incomplete.
+
+### Goal7 progress — complete journal inspection and offline replay
+
+The independent requested-quantity PostgreSQL engine now has a read-only complete single-account export API and bounded offline verifier; see PAPER_REQUESTED_INSPECTION.md and PHASE_9_REQUESTED_INSPECTION_REPORT.md. Reconstruction verifies chained bases, clocks, identities, every request settlement and final account/revision; immutable database prefix evidence is verified before export. No mutation API/UI or scheduler. Next: immutable versioned account controls and explicit execution-risk gates before commands or continuous scheduling. Schema stays0015; shared capital, external ownership/private reconciliation/human identity and Live remain incomplete.

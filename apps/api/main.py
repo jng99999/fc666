@@ -9,6 +9,7 @@ from apps.api.settings import Settings
 from apps.api.research import router_for as research_router
 from apps.api.replay import router_for as replay_router
 from apps.api.paper import router_for as paper_router
+from apps.api.requested_paper import router_for as requested_paper_router
 from apps.api.portfolio import router_for as portfolio_router
 from apps.api.market import router_for, market_health
 
@@ -33,6 +34,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(research_router(engine))
     app.include_router(replay_router(engine))
     app.include_router(paper_router(engine))
+    app.include_router(requested_paper_router(engine))
     app.include_router(portfolio_router(engine))
 
     @app.get("/health/live")
@@ -60,6 +62,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 conn.execute(text("SELECT snapshot_id FROM portfolio_snapshots LIMIT 0"))
                 conn.execute(text("SELECT preparation_id FROM paper_funding_reservations LIMIT 0"))
                 conn.execute(text("SELECT preparation_id FROM paper_funding_outcomes LIMIT 0"))
+                conn.execute(text("SELECT account_id FROM requested_paper_accounts LIMIT 0"))
+                conn.execute(text("SELECT request_id FROM requested_paper_requests LIMIT 0"))
+                conn.execute(text("SELECT request_id FROM requested_paper_events LIMIT 0"))
                 checks["schema"] = conn.execute(text("SELECT version_num FROM alembic_version")).scalar() == SCHEMA_REVISION
         except Exception:
             logger.warning("readiness_dependency_unavailable", extra={"dependency": "database"})
