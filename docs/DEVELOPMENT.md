@@ -157,3 +157,7 @@ Current head0013 supersedes earlier schema notes. Run bash scripts/start.sh to p
 ## Production projected funding — schema0014
 
 Read PAPER_FUNDING.md and PHASE_9_FUNDING_REPORT.md. New preparation commits account-specific projected-fill cash/inventory holds before economic acceptance. Original ledger, exact funded settlement, lifecycle and preparation outcome commit atomically; cancellation releases a hold without adding money. Legacy pending coverage stays unavailable with null available/reserved resources. GET funding and realtime widget are read-only, latest20 batches with older scope. Run scripts/start.sh for current head0014 and all five services; no dependency/secret/host additions. The SQLite leased submission laboratory remains separate; full requested quantity, asynchronous fills and shared-capital risk still require a new engine contract. Live remains disabled.
+
+## Explicit requested-quantity journal — schema0015
+
+Current head0015 supersedes older schema notes. Read PAPER_REQUESTED_JOURNAL.md and PHASE_9_REQUESTED_JOURNAL_REPORT.md. The new PostgreSQL-only library uses independent accounts and immutable request/event evidence, with row-locked atomic reservation and settlement. Existing stream engines and accounts remain unchanged; no new API/UI or automatic scheduling. Run bash scripts/start.sh to preserve .env/volumes, upgrade head and restart all five owned services. No dependencies, secrets, hosts or additional services. Tests use isolated databases; never seed fixture balances or markets in the main database. Live remains disabled.

@@ -64,3 +64,7 @@ New PostgreSQL preparation reservations and atomic account settlement integrate 
 ### Goal7/8 progress — explicit quantity economic contract
 
 The independent `paper-requested-execution-v1` contract now freezes and funds the full requested quantity, folds asynchronous partial and late fills, retains reserves after cancellation acknowledgement and releases only after a local source seal. Exact offline replay and hand-calculated ledger tests are implemented; see PAPER_REQUESTED_EXECUTION.md and PHASE_9_REQUESTED_EXECUTION_REPORT.md. This does not yet mutate product accounts. Next: a separately versioned PostgreSQL request/event journal with atomic reservation, fill acceptance and settlement, transactional interruption and concurrent ownership tests. Existing engine records and schema0014 remain intact.
+
+### Goal7/8 progress — PostgreSQL explicit-quantity journal
+
+Independent local Paper opening evidence, requested-quantity reservations and immutable source-event settlement now persist atomically in PostgreSQL at schema0015; see PAPER_REQUESTED_JOURNAL.md and PHASE_9_REQUESTED_JOURNAL_REPORT.md. Account row locks serialize concurrent requests and duplicate fills. The new namespace preserves prior closed-bar account formulas and histories. Next: bounded read-only journal inspection/API and complete offline verification, followed by explicit control/risk gates before exposing commands or scheduling. Shared capital, external dispatch ownership, private reconciliation and Live remain incomplete.

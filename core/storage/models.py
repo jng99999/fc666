@@ -280,3 +280,35 @@ class PaperFundingOutcomeRecord(Base):
     recorded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     payload: Mapped[dict] = mapped_column(JSON)
     payload_sha256: Mapped[str] = mapped_column(String(64))
+
+# Separate explicit-quantity Paper engine; never reused by closed-bar streams.
+class RequestedPaperAccountRecord(Base):
+    __tablename__='requested_paper_accounts'
+    account_id: Mapped[str]=mapped_column(String(128),primary_key=True)
+    opening: Mapped[dict]=mapped_column(JSON)
+    opening_sha256: Mapped[str]=mapped_column(String(64))
+    current: Mapped[dict]=mapped_column(JSON)
+    active_request_id: Mapped[str|None]=mapped_column(String(64),nullable=True)
+    revision: Mapped[int]=mapped_column(Integer)
+
+class RequestedPaperRequestRecord(Base):
+    __tablename__='requested_paper_requests'
+    request_id: Mapped[str]=mapped_column(String(64),primary_key=True)
+    account_id: Mapped[str]=mapped_column(ForeignKey('requested_paper_accounts.account_id'))
+    client_request_id: Mapped[str]=mapped_column(String(128))
+    ordinal: Mapped[int]=mapped_column(Integer)
+    payload: Mapped[dict]=mapped_column(JSON)
+    payload_sha256: Mapped[str]=mapped_column(String(64))
+    __table_args__=(UniqueConstraint('account_id','client_request_id',name='uq_requested_paper_client'),
+                   UniqueConstraint('account_id','ordinal',name='uq_requested_paper_ordinal'))
+
+class RequestedPaperEventRecord(Base):
+    __tablename__='requested_paper_events'
+    request_id: Mapped[str]=mapped_column(ForeignKey('requested_paper_requests.request_id'),primary_key=True)
+    sequence: Mapped[int]=mapped_column(Integer,primary_key=True)
+    event_id: Mapped[str]=mapped_column(String(128))
+    payload: Mapped[dict]=mapped_column(JSON)
+    payload_sha256: Mapped[str]=mapped_column(String(64))
+    summary: Mapped[dict]=mapped_column(JSON)
+    summary_sha256: Mapped[str]=mapped_column(String(64))
+    __table_args__=(UniqueConstraint('request_id','event_id',name='uq_requested_paper_event'),)
