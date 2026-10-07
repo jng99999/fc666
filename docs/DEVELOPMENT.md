@@ -141,3 +141,5 @@ Portfolio历史切片后当前迁移head为0009。`bash scripts/start.sh` 保留
 执行恢复检查无新迁移，head0009。`uv run --frozen python -m tests.browser_paper_recovery` 需要真实已停止且有模拟成交的账户；测试只读，导出用 `uv run --frozen python -m scripts.verify_paper_recovery .runtime/browser-paper-recovery.json` 核对。GET streams/{id}/recovery 不重放成交、不改账户。
 
 当前迁移 head 更新为0010（前文0009为此前切片）。`bash scripts/start.sh` 保留既有.env/卷，升级后启动五服务。GET `/api/v1/paper/streams/{id}/intents` 只读核对独立订单；旧账户可能为 LEGACY_UNMATERIALIZED，读取不补写。实时Paper页可检查与下载。`uv run --frozen python -m tests.browser_paper_recovery` 同时验证意图显示与下载，要求已有真实停止账户和模拟成交；不修改该账户。离线核验：`uv run --frozen python -m scripts.verify_paper_intents .runtime/browser-paper-intents.json`。
+
+当前迁移 head 为0011（前文为此前切片）。后台 streams.advance 已走 prepare/consume 两个独立事务，准备记录通过GET `/api/v1/paper/streams/{id}/preparations`及实时Paper页只读查看。`bash scripts/start.sh`保留既有.env与卷、升级并恢复五服务。`uv run --frozen python -m tests.browser_paper_recovery` 同时验证准备列表、409清除旧确认、旧账本和意图导出；要求已有真实已停止账户，不为测试补写市场或成交。专项 `uv run --frozen pytest -q tests/test_paper_preparation.py` 使用隔离数据库。准备列表不包含离线重建所需的完整旧输入，旧账本/意图离线工具保持适用。

@@ -26,7 +26,7 @@ Freeze risk policy versions and expose read-only breach histories with known acc
 
 ## Goal 5 — execution and recovery foundations
 
-First read-only recovery-inspection and transaction fault-acceptance slice implemented. See PAPER_RECOVERY.md and PHASE_9_RECOVERY_REPORT.md. Independent immutable completed Paper intents now persist atomically with accepted bars, with explicit terminal paths and legacy coverage; see PAPER_ORDER_INTENTS.md. Separately durable pre-execution pending intents and the full execution state machine remain next work.
+First read-only recovery-inspection and transaction fault-acceptance slice implemented. See PAPER_RECOVERY.md and PHASE_9_RECOVERY_REPORT.md. Independent immutable completed Paper intents now persist atomically with accepted bars, with explicit terminal paths and legacy coverage; see PAPER_ORDER_INTENTS.md. Two-phase closed-bar preparation now commits PREPARED independently before accepting the ledger, with recovery gates and cancellation; see PAPER_PREPARATION.md. This prepares a simulation batch, not a quantity-sized exchange order. Explicit per-order pre-execution authorization and a full exchange execution state machine remain next work.
 
 Specify order lifecycle, idempotent intent, acknowledgement loss, reconciliation, restart safety and per-account entry limits. Implement and fault-test these in Paper before evaluating exchange execution. Shared capital, multiuser authentication, live credentials, production rollout and real order placement remain separate incomplete goals. Do not represent absent integrations as working. Automated capture requires a separate capacity/retention policy before enabling continuous scheduling: current immutable storage caps are 100 scenarios and 200 snapshots.
 

@@ -86,8 +86,10 @@ def test_exception_after_flush_before_commit_rolls_back_entire_acceptance(databa
 
     def fail_after_flush(session):
         if session.get_bind() is engine:
-            session.flush()
             record = session.get(PaperStreamRecord, account['session_id'])
+            if record.revision == before['revision']:
+                return
+            session.flush()
             failures.append((record.revision, len(record.observations), len(record.ledger['fills'])))
             raise RuntimeError('Injected failure after SQL flush before commit')
 

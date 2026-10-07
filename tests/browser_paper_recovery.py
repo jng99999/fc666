@@ -65,6 +65,20 @@ if __name__=='__main__':
         expect(intent_result).to_have_count(0)
         expect(page.get_by_test_id('paper-intents').get_by_role('alert')).to_contain_text('订单意图核对未确认 (409)')
         page.unroute(intent_pattern)
+        expect(page.get_by_test_id('paper-preparations')).to_have_count(1)
+        with page.expect_response(lambda response:response.url.endswith('/preparations')) as prep_response:
+            page.get_by_role('button',name='读取模拟准备记录',exact=True).click()
+        assert prep_response.value.status==200,prep_response.value.text()
+        prep_report=prep_response.value.json();assert prep_report['session_id']==id
+        assert prep_report['trading_enabled'] is prep_report['external_submission_supported'] is False
+        prep_result=page.get_by_test_id('preparation-result');expect(prep_result).to_be_visible()
+        assert len(prep_report['records'])<=1000
+        prep_pattern='**/api/paper/streams/'+id+'/preparations'
+        page.route(prep_pattern,lambda route:route.fulfill(status=409,json={'detail':'Preparation mismatch'}))
+        page.get_by_role('button',name='读取模拟准备记录',exact=True).click()
+        expect(prep_result).to_have_count(0)
+        expect(page.get_by_test_id('paper-preparations').get_by_role('alert')).to_contain_text('准备记录读取未确认 (409)')
+        page.unroute(prep_pattern)
         assert page.request.get(root+'/api/paper/streams/'+id).json()==chosen
         assert page.evaluate('document.documentElement.scrollWidth<=innerWidth')
         page.screenshot(path=str(ROOT/'.runtime/paper-recovery-mobile.png'),full_page=True)
@@ -78,5 +92,5 @@ if __name__=='__main__':
         expect(page.get_by_test_id('paper-stream-state')).to_have_attribute('data-status','STOPPED')
         expect(result).to_have_count(0)
         assert not errors,errors
-        print('PASS: real stopped account with fills; stable receipts; independent intent coverage and offline export; coherent recovery export; no account mutation; failed inspection clears confirmation; refresh retains account; 393px; no JS errors')
+        print('PASS: real stopped account with fills; stable receipts; independent intent coverage and offline export; preparation history and failure clearing; coherent recovery export; no account mutation; failed inspection clears confirmation; refresh retains account; 393px; no JS errors')
         browser.close()

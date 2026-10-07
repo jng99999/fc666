@@ -1,6 +1,6 @@
 from datetime import datetime
 from decimal import Decimal
-from sqlalchemy import Boolean, CheckConstraint, DateTime, ForeignKey, Index, Numeric, String, UniqueConstraint
+from sqlalchemy import Boolean, CheckConstraint, DateTime, ForeignKey, Index, Numeric, String, UniqueConstraint, text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 class Base(DeclarativeBase):
@@ -164,6 +164,24 @@ class PaperOrderIntentRecord(Base):
         CheckConstraint("status IN ('FILLED','PARTIAL_CANCELLED','REJECTED')",name='ck_paper_intent_status'),
         CheckConstraint("origin IN ('BAR_ACCEPTANCE','HISTORICAL_MATERIALIZATION')",name='ck_paper_intent_origin'),
         Index('paper_intents_account_idx','session_id','order_id'),
+    )
+
+class PaperPreparationRecord(Base):
+    __tablename__ = 'paper_preparations'
+    preparation_id: Mapped[str] = mapped_column(String(64),primary_key=True)
+    session_id: Mapped[str] = mapped_column(ForeignKey('paper_streams.session_id'))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True),nullable=True)
+    payload: Mapped[dict] = mapped_column(JSON)
+    payload_sha256: Mapped[str] = mapped_column(String(64))
+    status: Mapped[str] = mapped_column(String(16))
+    reason: Mapped[str | None] = mapped_column(String(32),nullable=True)
+    __table_args__ = (
+        CheckConstraint("status IN ('PREPARED','CONSUMED','CANCELLED')",name='ck_preparation_status'),
+        CheckConstraint('finished_at IS NULL OR finished_at >= created_at',name='ck_preparation_clock'),
+        CheckConstraint("(status='PREPARED' AND finished_at IS NULL AND reason IS NULL) OR (status='CONSUMED' AND finished_at IS NOT NULL AND reason IS NULL) OR (status='CANCELLED' AND finished_at IS NOT NULL AND reason IS NOT NULL)",name='ck_preparation_outcome'),
+        Index('paper_preparation_pending_idx','session_id',unique=True,postgresql_where=text("status='PREPARED'")),
+        Index('paper_preparation_history_idx','session_id','created_at','preparation_id'),
     )
 
 class PaperControlRecord(Base):

@@ -103,6 +103,8 @@ def command(engine,session_id,expected_revision,action):
             elif action=='resume' and record.status!='RUNNING':raise ValueError('Terminal account cannot resume; create a new account')
             if before!=(record.status,record.halt_at):
                 record.ledger=computed(record);record.revision+=1;record.updated_at=now()
+                from core.paper.preparation import cancel_control
+                cancel_control(session,record)
             intents.synchronize(session,record)
             response = visible(record)
         record_control(session, record, 'streams', action, 1, expected_revision, before_revision, before_state)
@@ -110,44 +112,50 @@ def command(engine,session_id,expected_revision,action):
     return response
 
 
+def advance_locked(session,record,stamp,*,prepare_only=False,accepted_plan=None):
+    # This verifies durable state before any mutation; failure rolls back the account.
+    visible(record)
+    intents.synchronize(session,record)
+    seed,observations,instrument,_,_=inputs(record)
+    accepted=[*seed,*[Candle.model_validate(row['candle']) for row in observations]]
+    expected=accepted[-1].close_time
+    # Share locks make this check and new-bar acceptance coherent with corrections.
+    rules=session.get(InstrumentRecord,instrument.instrument_id,with_for_update={'read':True})
+    current=list(session.scalars(select(CandleRecord).where(CandleRecord.instrument_id==instrument.instrument_id,CandleRecord.timeframe==accepted[0].timeframe,CandleRecord.open_time>=accepted[0].open_time,CandleRecord.open_time<=accepted[-1].open_time).order_by(CandleRecord.open_time).with_for_update(read=True)))
+    failure=None
+    if rules is None or Instrument.model_validate(rules,from_attributes=True)!=instrument:failure='RULES_CHANGED'
+    elif len(current)!=len(accepted):failure='DATA_MISSING'
+    elif any(Candle.model_validate(a,from_attributes=True)!=b for a,b in zip(current,accepted)):failure='DATA_REVISED'
+    if failure:
+        record.status='BLOCKED';record.feed={'state':failure,'expected_open':expected.isoformat(),'checked_at':stamp.isoformat()}
+        record.revision+=1;record.updated_at=stamp;return False
+    batch_limit=len(accepted_plan) if accepted_plan is not None else min(10,1000-len(accepted))
+    new=list(session.scalars(select(CandleRecord).where(CandleRecord.instrument_id==instrument.instrument_id,CandleRecord.timeframe==accepted[0].timeframe,CandleRecord.open_time>=expected,CandleRecord.close_time<=stamp,CandleRecord.is_closed.is_(True)).order_by(CandleRecord.open_time).limit(batch_limit).with_for_update(read=True)))
+    added=[];gap=False
+    for row in new:
+        bar=Candle.model_validate(row,from_attributes=True)
+        if bar.open_time!=expected:gap=True;break
+        gate='PRE_ACTIVATION' if bar.close_time<=datetime.fromisoformat(record.snapshot['request']['as_of']) else 'PAUSED' if record.status=='PAUSED' else 'STALE_BAR' if stamp-bar.close_time>timedelta(seconds=record.snapshot['request']['max_lag_seconds']) else 'ELIGIBLE'
+        added.append({'candle':bar.model_dump(mode='json'),'observed_at':stamp.isoformat(),'gate':gate});expected=bar.close_time
+    if prepare_only and added:return added
+    if accepted_plan is not None and added!=accepted_plan:
+        record.status='BLOCKED';record.revision+=1;record.updated_at=stamp
+        record.feed={'state':'DATA_REVISED','expected_open':accepted[-1].close_time.isoformat(),'checked_at':stamp.isoformat()}
+        return False
+    if added:
+        record.observations=[*observations,*added];record.ledger=computed(record);record.revision+=1;record.updated_at=stamp
+        intents.synchronize(session,record,new=True)
+    if len(accepted)+len(added)==1000:
+        record.status='LIMIT_REACHED'
+    overdue=stamp>expected+(accepted[-1].close_time-accepted[-1].open_time)+timedelta(seconds=record.snapshot['request']['max_lag_seconds'])
+    state='GAP' if gap else 'STALE' if overdue and not new else 'CURRENT' if added else 'WAITING'
+    record.feed={'state':state,'expected_open':expected.isoformat(),'checked_at':stamp.isoformat()}
+    return bool(added)
+
+
 def advance(engine,session_id,*,observed_at=None):
-    stamp=observed_at or now()
-    if stamp.tzinfo is None:raise ValueError('Timezone required')
-    with Session(engine) as session,session.begin():
-        record=session.scalar(select(Stream).where(Stream.session_id==session_id).with_for_update(skip_locked=True))
-        if record is None or record.status not in ['RUNNING','PAUSED']:return False
-        # This verifies durable state before any mutation; failure rolls back the account.
-        visible(record)
-        intents.synchronize(session,record)
-        seed,observations,instrument,_,_=inputs(record)
-        accepted=[*seed,*[Candle.model_validate(row['candle']) for row in observations]]
-        expected=accepted[-1].close_time
-        # Share locks make this check and new-bar acceptance coherent with corrections.
-        rules=session.get(InstrumentRecord,instrument.instrument_id,with_for_update={'read':True})
-        current=list(session.scalars(select(CandleRecord).where(CandleRecord.instrument_id==instrument.instrument_id,CandleRecord.timeframe==accepted[0].timeframe,CandleRecord.open_time>=accepted[0].open_time,CandleRecord.open_time<=accepted[-1].open_time).order_by(CandleRecord.open_time).with_for_update(read=True)))
-        failure=None
-        if rules is None or Instrument.model_validate(rules,from_attributes=True)!=instrument:failure='RULES_CHANGED'
-        elif len(current)!=len(accepted):failure='DATA_MISSING'
-        elif any(Candle.model_validate(a,from_attributes=True)!=b for a,b in zip(current,accepted)):failure='DATA_REVISED'
-        if failure:
-            record.status='BLOCKED';record.feed={'state':failure,'expected_open':expected.isoformat(),'checked_at':stamp.isoformat()}
-            record.revision+=1;record.updated_at=stamp;return False
-        new=list(session.scalars(select(CandleRecord).where(CandleRecord.instrument_id==instrument.instrument_id,CandleRecord.timeframe==accepted[0].timeframe,CandleRecord.open_time>=expected,CandleRecord.close_time<=stamp,CandleRecord.is_closed.is_(True)).order_by(CandleRecord.open_time).limit(min(10,1000-len(accepted))).with_for_update(read=True)))
-        added=[];gap=False
-        for row in new:
-            bar=Candle.model_validate(row,from_attributes=True)
-            if bar.open_time!=expected:gap=True;break
-            gate='PRE_ACTIVATION' if bar.close_time<=datetime.fromisoformat(record.snapshot['request']['as_of']) else 'PAUSED' if record.status=='PAUSED' else 'STALE_BAR' if stamp-bar.close_time>timedelta(seconds=record.snapshot['request']['max_lag_seconds']) else 'ELIGIBLE'
-            added.append({'candle':bar.model_dump(mode='json'),'observed_at':stamp.isoformat(),'gate':gate});expected=bar.close_time
-        if added:
-            record.observations=[*observations,*added];record.ledger=computed(record);record.revision+=1;record.updated_at=stamp
-            intents.synchronize(session,record,new=True)
-        if len(accepted)+len(added)==1000:
-            record.status='LIMIT_REACHED'
-        overdue=stamp>expected+(accepted[-1].close_time-accepted[-1].open_time)+timedelta(seconds=record.snapshot['request']['max_lag_seconds'])
-        state='GAP' if gap else 'STALE' if overdue and not new else 'CURRENT' if added else 'WAITING'
-        record.feed={'state':state,'expected_open':expected.isoformat(),'checked_at':stamp.isoformat()}
-        return bool(added)
+    from core.paper.preparation import advance as prepared_advance
+    return prepared_advance(engine,session_id,observed_at=observed_at)
 
 
 def active(engine):

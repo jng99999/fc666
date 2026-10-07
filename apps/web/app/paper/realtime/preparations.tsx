@@ -1,0 +1,13 @@
+'use client';
+import {useEffect,useRef,useState} from 'react';
+import {z} from 'zod';
+const schema=z.object({version:z.literal('paper-closed-bar-preparation-v1'),session_id:z.uuid(),revision:z.number().int(),trading_enabled:z.literal(false),automatic_replay:z.literal(false),external_submission_supported:z.literal(false),records:z.array(z.object({preparation_id:z.string(),created_at:z.string(),finished_at:z.string().nullable(),status:z.enum(['PREPARED','CONSUMED','CANCELLED']),reason:z.string().nullable(),payload:z.object({observations:z.array(z.unknown())})}))});
+type Report=z.infer<typeof schema>;
+const states={PREPARED:'已准备，等待再次核对',CONSUMED:'已原子接受',CANCELLED:'已取消，不重放'};
+const reasons:Record<string,string>={CONTROL_CHANGED:'账户控制或版本变化',EXPIRED:'及时闭合柱已超过允许延迟',SOURCE_CHANGED:'准备行情或已接受来源发生变化'};
+export default function Preparations({id,disabled}:{id:string;disabled:boolean}){
+ const [value,setValue]=useState<Report|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState('');const request=useRef<AbortController|null>(null);
+ useEffect(()=>()=>request.current?.abort(),[]);
+ async function inspect(){request.current?.abort();const controller=new AbortController();request.current=controller;setBusy(true);setValue(null);setError('');try{const response=await fetch(`/api/paper/streams/${id}/preparations`,{cache:'no-store',signal:controller.signal});if(!response.ok)throw Error(`准备记录读取未确认 (${response.status})`);const parsed=schema.parse(await response.json());if(parsed.session_id!==id)throw Error('账户不一致');setValue(parsed);}catch(e){if(!controller.signal.aborted)setError(String(e));}finally{if(!controller.signal.aborted)setBusy(false);}}
+ return <section data-testid="paper-preparations"><h2>模拟消费准备记录</h2><p>后台先独立保存闭合柱准备，再核对来源、账户控制和允许延迟后接受。准备成功不表示已经成交；过期或控制变化会取消。此处只读，不触发消费。</p><button disabled={busy||disabled} onClick={()=>void inspect()}>读取模拟准备记录</button>{error?<p role="alert">{error}</p>:null}{value?<div data-testid="preparation-result"><p>共 {value.records.length} 条 · 账户版本 {value.revision}。最多保留1000条，达到容量后停止新增准备；旧账户没有记录不表示没有历史成交。</p>{value.records.length?<div className="research-table"><table><thead><tr><th>准备编号</th><th>状态 / 原因</th><th>闭合柱数量</th><th>实际保存 / 结束 UTC</th></tr></thead><tbody>{value.records.slice(-100).map(row=><tr key={row.preparation_id}><td style={{overflowWrap:'anywhere'}}>{row.preparation_id}</td><td>{states[row.status]}{row.reason?` · ${reasons[row.reason]??row.reason}`:''}</td><td>{row.payload.observations.length}</td><td>{row.created_at}<br/>{row.finished_at??'尚未结束'}</td></tr>)}</tbody></table></div>:<p>此账户尚无独立准备记录。</p>}<p>两阶段准备的是本地模拟消费批次；交易所提交、确认和私有对账尚未实现。</p></div>:null}</section>;
+}

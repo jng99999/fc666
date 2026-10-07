@@ -95,6 +95,8 @@ def test_flush_fault_rolls_back_intent_and_ledger_together(database):
     save_candles(engine, [bars[2]]); before = durable(engine, account); seen = []
     def fail(session):
         if session.get_bind() is engine:
+            if session.get(Stream, account['session_id']).revision == before['revision']:
+                return
             session.flush()
             seen.append(len(list(session.scalars(select(Intent)))))
             raise RuntimeError('Injected intent transaction commit failure')
