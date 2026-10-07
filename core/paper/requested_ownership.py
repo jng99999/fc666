@@ -99,9 +99,13 @@ def _owned(db, request_id, owner, token):
     return value.payload
 
 
-def claim(engine,account_id,request_id,owner,ttl_seconds=30):
+def claim(engine,account_id,request_id,owner,ttl_seconds=30,*,expected_financial_revision=None,expected_control_revision=None,expected_token=None):
     if not isinstance(owner,str) or not 1<=len(owner)<=128 or type(ttl_seconds) is not int or not 1<=ttl_seconds<=60:
         raise ValueError('Invalid owner/duration')
+    fences=(expected_financial_revision,expected_control_revision,expected_token)
+    fenced=any(value is not None for value in fences)
+    if fenced and (any(type(value) is not int for value in fences) or expected_financial_revision<1 or expected_control_revision<1 or not 0<=expected_token<=CLAIM_LIMIT):
+        raise ValueError('Complete strict claim fences required')
     with journal.transaction(engine) as db:
         db.execute(text("SELECT set_config('lock_timeout','2000ms',true)"))
         row=journal.lock(db,account_id); financial=journal.audit(db,row); controlled=controls.check(db,row,financial)
@@ -110,6 +114,18 @@ def claim(engine,account_id,request_id,owner,ttl_seconds=30):
         entry=next(value for value in financial['requests'] if value['request']['request_id']==request_id)
         saved,_=check(db,row,financial,controlled); history=[value for value in saved if value['request_id']==request_id]
         now=clock(db)
+        last=history[-1] if history else None
+        if fenced:
+            # Only an exact retry of the current unexpired claim may use original checkpoints.
+            retry=(last is not None and last['owner']==owner and last['acquired_us']<=now<last['expires_us']
+                   and expected_token+1==last['token'] and expected_financial_revision==last['journal_revision']
+                   and expected_control_revision==last['control_revision'] and ttl_seconds*1000000==last['expires_us']-last['acquired_us'])
+            if retry:return deepcopy(last)
+            if (expected_financial_revision!=financial['revision'] or expected_control_revision!=controlled['revision']
+                    or expected_token!=(last['token'] if last else 0)):
+                raise ValueError('Claim checkpoint/token conflict')
+            if last is not None and last['expires_us']>now and ttl_seconds*1000000!=last['expires_us']-last['acquired_us']:
+                raise ValueError('Active claim duration cannot change')
         if history and now < history[-1]['acquired_us']: raise ValueError('Database clock regressed')
         if history and history[-1]['expires_us'] > now:
             if history[-1]['owner'] != owner: raise ValueError('Request already owned')

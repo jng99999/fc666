@@ -1,10 +1,10 @@
-"""Scoped enrollment, preview and local preparation; no source/venue writes."""
+"""Scoped local Paper commands; no venue transport."""
 from typing import Literal
 from fastapi import Depends,HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel,ConfigDict,Field,StrictInt
 from sqlalchemy.exc import SQLAlchemyError
-from core.paper import requested_controls as controls,requested_journal as journal,requested_preview as preview,requested_preparation as preparation,requested_event_preview as event_preview,requested_sources as sources
+from core.paper import requested_controls as controls,requested_journal as journal,requested_preview as preview,requested_preparation as preparation,requested_event_preview as event_preview,requested_sources as sources,requested_ownership as ownership
 
 
 class Rules(BaseModel):
@@ -82,6 +82,22 @@ class SourceCommand(EventProposal):
     preview_sha256:str=Field(pattern=r"^[0-9a-f]{64}$")
 
 
+class OwnershipCommand(BaseModel):
+    model_config=ConfigDict(extra='forbid',strict=True)
+    account_id:str=Field(min_length=1,max_length=128)
+    request_id:str=Field(pattern=r'^[0-9a-f]{64}$')
+    owner:str=Field(min_length=1,max_length=128)
+    ttl_seconds:StrictInt=Field(ge=1,le=60)
+    expected_financial_revision:StrictInt=Field(ge=1)
+    expected_control_revision:StrictInt=Field(ge=1)
+    expected_token:StrictInt=Field(ge=0,le=64)
+
+
+class OwnedSourceCommand(SourceCommand):
+    owner:str=Field(min_length=1,max_length=128)
+    ownership_token:StrictInt=Field(ge=1,le=64)
+
+
 def add_onboarding(router,engine,settings,authenticate):
     def grant(account_id,action):
         if account_id not in settings.paper_operator_accounts or action not in settings.paper_operator_actions:
@@ -150,4 +166,32 @@ def add_onboarding(router,engine,settings,authenticate):
             raise HTTPException(409,'Explicit Paper source input conflicts or cannot be verified',headers={'Cache-Control':'no-store'})
         except SQLAlchemyError:
             raise HTTPException(503,'Explicit Paper source input temporarily unavailable',headers={'Cache-Control':'no-store'})
+        return JSONResponse(result,headers={'Cache-Control':'no-store'})
+
+    @router.post('/api/v1/paper-requested/ownership-commands',dependencies=[Depends(authenticate)])
+    def claim_ownership(value:OwnershipCommand):
+        grant(value.account_id,'CLAIM_OWNERSHIP')
+        try:result=ownership.claim(engine,value.account_id,value.request_id,value.owner,value.ttl_seconds,
+                                  expected_financial_revision=value.expected_financial_revision,
+                                  expected_control_revision=value.expected_control_revision,expected_token=value.expected_token)
+        except journal.MissingAccount:
+            raise HTTPException(404,'Explicit Paper account not found',headers={'Cache-Control':'no-store'})
+        except (ValueError,ArithmeticError,TypeError,KeyError):
+            raise HTTPException(409,'Explicit Paper ownership command conflicts or cannot be verified',headers={'Cache-Control':'no-store'})
+        except SQLAlchemyError:
+            raise HTTPException(503,'Explicit Paper ownership command temporarily unavailable',headers={'Cache-Control':'no-store'})
+        return JSONResponse({'version':'paper-requested-ownership-command-result-v1','accepted_claim':result,
+                             'claim_committed':True,'external_submission_allowed':False},headers={'Cache-Control':'no-store'})
+
+    @router.post('/api/v1/paper-requested/owned-source-commands',dependencies=[Depends(authenticate)])
+    def deliver_owned_source(value:OwnedSourceCommand):
+        grant(value.account_id,'DELIVER_OWNED_EVENT')
+        proposal=value.model_dump();digest=proposal.pop('preview_sha256');owner=proposal.pop('owner');token=proposal.pop('ownership_token')
+        try:result=ownership.deliver(engine,proposal,digest,owner,token)
+        except journal.MissingAccount:
+            raise HTTPException(404,'Explicit Paper account not found',headers={'Cache-Control':'no-store'})
+        except (ValueError,ArithmeticError,TypeError,KeyError):
+            raise HTTPException(409,'Explicit Paper owned source conflicts or cannot be verified',headers={'Cache-Control':'no-store'})
+        except SQLAlchemyError:
+            raise HTTPException(503,'Explicit Paper owned source temporarily unavailable',headers={'Cache-Control':'no-store'})
         return JSONResponse(result,headers={'Cache-Control':'no-store'})

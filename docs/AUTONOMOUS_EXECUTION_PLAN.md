@@ -115,3 +115,8 @@ Read PAPER_REQUESTED_RECOVERY.md and PHASE_9_REQUESTED_RECOVERY_REPORT.md. GET r
 ## Current head0019 — durable local ownership and event fencing
 
 Read PAPER_REQUESTED_OWNERSHIP.md and PHASE_9_REQUESTED_OWNERSHIP_REPORT.md. Immutable PostgreSQL claim history, database-clock expiry, token takeover and fenced source settlement share the account transaction. Claimed requests reject unfenced supported writes; no retrospectively claimed submissions. GET ownership and offline verification inspect complete evidence; original recovery-v1 retains its frozen unsupported-ownership view. No ownership HTTP writes, private transport or scheduler yet. Restore bash scripts/start.sh, preserve .env/volumes/proxy/CA and verify five services/current schema0019. Main remains empty/default-disabled; Live stays off. Next: explicitly scoped ownership claim/delivery capabilities, then uniquely durable dispatch integration.
+
+
+## Independently scoped local ownership commands — head0019 unchanged
+
+Read PAPER_REQUESTED_OWNERSHIP_API.md and PHASE_9_REQUESTED_OWNERSHIP_API_REPORT.md. CLAIM_OWNERSHIP and DELIVER_OWNED_EVENT are independent default-disabled actions with exact account/bearer scope. Claims check both revisions and prior token; active exact retries preserve the original lease without renewal. Owned source acceptance preserves preview/risk/funding and current owner/token/expiry checks atomically. Main remains empty/default-disabled, no dependencies/hosts/credentials/frontend changes. Restore via existing startup and readiness checks. Next: uniquely durable local dispatch evidence and unknown-result query-before-retry before transport integration. Live remains disabled.
