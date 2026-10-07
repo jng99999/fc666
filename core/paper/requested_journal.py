@@ -102,6 +102,8 @@ def audit(db,row):
     controlled=requested_controls.check(db,row,financial)
     from core.paper import requested_sources
     requested_sources.check(db,row,financial,controlled)
+    from core.paper import requested_ownership
+    requested_ownership.check(db,row,financial,controlled)
     return financial
 
 
@@ -154,7 +156,9 @@ def prepare(engine,value):
         return _prepare(db,row,view,value)
 
 
-def _accept(db,row,view,request_id,event,*,source_receipt=None):
+def _accept(db,row,view,request_id,event,*,source_receipt=None,ownership_token=None):
+    from core.paper import requested_ownership
+    requested_ownership.guard(db,request_id,ownership_token)
     entry=next((r for r in view['requests'] if r['request']['request_id']==request_id),None)
     if entry is None:raise ValueError('Request does not belong to account')
     events=entry['events']
@@ -171,7 +175,7 @@ def _accept(db,row,view,request_id,event,*,source_receipt=None):
         admitted=requested_controls.gate(db,row,view,entry['request'],'SUBMIT',event['received_at'])
         if admitted is not None:db.add(admitted)
     db.add(Event(request_id=request_id,sequence=event['sequence'],event_id=event['event_id'],payload=deepcopy(event),
-                 payload_sha256=sha(event),summary=deepcopy(summary),summary_sha256=sha(summary),source_version=source_receipt.payload['version'] if source_receipt is not None else None))
+                 payload_sha256=sha(event),summary=deepcopy(summary),summary_sha256=sha(summary),ownership_token=ownership_token,ownership_accepted_us=requested_ownership.clock(db) if ownership_token is not None else None,source_version=source_receipt.payload['version'] if source_receipt is not None else None))
     row.current=summary['account'];row.active_request_id=None if summary['local_source_sealed'] else request_id;row.revision+=1
     db.flush()
     if source_receipt is not None:

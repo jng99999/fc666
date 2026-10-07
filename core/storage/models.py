@@ -1,6 +1,6 @@
 from datetime import datetime
 from decimal import Decimal
-from sqlalchemy import Boolean, CheckConstraint, ForeignKeyConstraint, DateTime, ForeignKey, Index, Numeric, String, UniqueConstraint, text
+from sqlalchemy import Boolean, CheckConstraint, ForeignKeyConstraint, BigInteger, DateTime, ForeignKey, Index, Numeric, String, UniqueConstraint, text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 class Base(DeclarativeBase):
@@ -305,6 +305,8 @@ class RequestedPaperRequestRecord(Base):
 
 class RequestedPaperEventRecord(Base):
     __tablename__='requested_paper_events'
+    ownership_accepted_us: Mapped[int|None]=mapped_column(BigInteger,nullable=True)
+    ownership_token: Mapped[int|None]=mapped_column(Integer,nullable=True)
     source_version: Mapped[str|None]=mapped_column(String(64),nullable=True)
     request_id: Mapped[str]=mapped_column(ForeignKey('requested_paper_requests.request_id'),primary_key=True)
     sequence: Mapped[int]=mapped_column(Integer,primary_key=True)
@@ -357,3 +359,13 @@ class RequestedPaperSourceRecord(Base):
     payload: Mapped[dict]=mapped_column(JSON)
     payload_sha256: Mapped[str]=mapped_column(String(64))
     __table_args__=(ForeignKeyConstraint(['request_id','sequence'],['requested_paper_events.request_id','requested_paper_events.sequence']),)
+
+
+class RequestedPaperClaimRecord(Base):
+    __tablename__='requested_paper_claims'
+    request_id: Mapped[str]=mapped_column(ForeignKey('requested_paper_requests.request_id'),primary_key=True)
+    token: Mapped[int]=mapped_column(Integer,primary_key=True)
+    account_id: Mapped[str]=mapped_column(ForeignKey('requested_paper_accounts.account_id'))
+    payload: Mapped[dict]=mapped_column(JSON)
+    payload_sha256: Mapped[str]=mapped_column(String(64))
+    __table_args__=(CheckConstraint('token>0',name='ck_requested_paper_claim_token'),)

@@ -203,3 +203,8 @@ Read PAPER_REQUESTED_SOURCES.md and PHASE_9_REQUESTED_SOURCES_REPORT.md. Indepen
 ## Local submission attribution and read-only recovery
 
 Read PAPER_REQUESTED_RECOVERY.md and PHASE_9_REQUESTED_RECOVERY_REPORT.md. GET recovery and the offline verifier preserve original declared submission identity, current account state and unknown/cancel holds. Every action prohibits automatic submission/retry; ownership remains explicitly NOT_IMPLEMENTED. Schema0018, disabled operator defaults and existing startup are unchanged. Next: durable PostgreSQL owner claim/takeover/fencing before dispatch integration. SQLite laboratories remain isolated; Live stays disabled.
+
+
+## Current head0019 — durable local ownership and event fencing
+
+Read PAPER_REQUESTED_OWNERSHIP.md and PHASE_9_REQUESTED_OWNERSHIP_REPORT.md. Immutable PostgreSQL claim history, database-clock expiry, token takeover and fenced source settlement share the account transaction. Claimed requests reject unfenced supported writes; no retrospectively claimed submissions. GET ownership and offline verification inspect complete evidence; original recovery-v1 retains its frozen unsupported-ownership view. No ownership HTTP writes, private transport or scheduler yet. Restore bash scripts/start.sh, preserve .env/volumes/proxy/CA and verify five services/current schema0019. Main remains empty/default-disabled; Live stays off. Next: explicitly scoped ownership claim/delivery capabilities, then uniquely durable dispatch integration.

@@ -83,21 +83,27 @@ def accept(engine,proposal,preview_sha256):
         db.execute(text("SELECT set_config('lock_timeout', '2000ms', true)"))
         row=journal.lock(db,proposal['account_id']);financial=journal.audit(db,row);controlled=controls.check(db,row,financial)
         if controlled['coverage']!='CONTROLLED':raise ValueError('Controlled account required')
-        records=check(db,row,financial,controlled)
-        existing=next((slot for slot in records if slot['request_id']==proposal['request_id'] and slot['event_id']==proposal['event'].get('event_id')),None)
-        if existing is not None:
-            if existing['receipt'] is None:raise ValueError('Unlabeled event cannot acquire retrospective provenance')
-            index=next(index for index,entry in enumerate(financial['requests']) if entry['request']['request_id']==proposal['request_id'])
-            report=reconstruct(financial,controlled,index,existing['sequence'],existing['receipt']['source'])
-            if encoded(report['proposal'])!=encoded(proposal) or report['sha256']!=preview_sha256:raise ValueError('Conflicting source input retry')
-            value=existing['receipt']
-        else:
-            report=preview.evaluate(financial,controlled,proposal)
-            if report['sha256']!=preview_sha256:raise ValueError('Event preview differs from audited checkpoint')
-            value=receipt(report)
-            stored=Source(request_id=value['request_id'],sequence=value['sequence'],account_id=value['account_id'],event_id=value['event_id'],payload=value,payload_sha256=sha(value))
-            journal._accept(db,row,financial,value['request_id'],proposal['event'],source_receipt=stored)
-        return {'version':'paper-requested-source-command-result-v1','accepted_receipt':deepcopy(value),'event_committed':True,'external_submission_allowed':False}
+        return _accept(db,row,financial,controlled,proposal,preview_sha256)
+
+
+def _accept(db,row,financial,controlled,proposal,preview_sha256,*,ownership_token=None):
+    from core.paper import requested_ownership
+    requested_ownership.guard(db,proposal['request_id'],ownership_token)
+    records=check(db,row,financial,controlled)
+    existing=next((slot for slot in records if slot['request_id']==proposal['request_id'] and slot['event_id']==proposal['event'].get('event_id')),None)
+    if existing is not None:
+        if existing['receipt'] is None:raise ValueError('Unlabeled event cannot acquire retrospective provenance')
+        index=next(index for index,entry in enumerate(financial['requests']) if entry['request']['request_id']==proposal['request_id'])
+        report=reconstruct(financial,controlled,index,existing['sequence'],existing['receipt']['source'])
+        if encoded(report['proposal'])!=encoded(proposal) or report['sha256']!=preview_sha256:raise ValueError('Conflicting source input retry')
+        value=existing['receipt']
+    else:
+        report=preview.evaluate(financial,controlled,proposal)
+        if report['sha256']!=preview_sha256:raise ValueError('Event preview differs from audited checkpoint')
+        value=receipt(report)
+        stored=Source(request_id=value['request_id'],sequence=value['sequence'],account_id=value['account_id'],event_id=value['event_id'],payload=value,payload_sha256=sha(value))
+        journal._accept(db,row,financial,value['request_id'],proposal['event'],source_receipt=stored,ownership_token=ownership_token)
+    return {'version':'paper-requested-source-command-result-v1','accepted_receipt':deepcopy(value),'event_committed':True,'external_submission_allowed':False}
 
 
 def capture(engine,account_id):

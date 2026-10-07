@@ -209,7 +209,8 @@ def test_rehashed_persisted_receipt_corruption_blocks_financial_inspection(datab
 
 def test_schema_downgrade_refuses_to_discard_immutable_source_evidence(database):
     from alembic import command as alembic_command
+    from core.storage.schema import SCHEMA_REVISION
     engine,config,settings=database;req=prepared(engine);value,_=reviewed(engine,req,event(req,0,'SUBMIT'));accept(engine,value);before=sources.capture(engine,'account')
     with pytest.raises(RuntimeError,match='Cannot downgrade persisted local source evidence'):alembic_command.downgrade(config,'0017')
     assert sources.capture(engine,'account')==before
-    with engine.connect() as conn:assert conn.scalar(text('SELECT version_num FROM alembic_version'))=='0018'
+    with engine.connect() as conn:assert conn.scalar(text('SELECT version_num FROM alembic_version'))==SCHEMA_REVISION
