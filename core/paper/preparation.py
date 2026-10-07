@@ -7,7 +7,7 @@ from sqlalchemy import select,func
 from sqlalchemy.orm import Session
 from core.backtest.spot import digest
 from core.models import Candle
-from core.paper import streams,intents,authorization
+from core.paper import streams,intents,authorization,lifecycle
 from core.storage.models import PaperStreamRecord as Stream,PaperPreparationRecord as Preparation
 
 VERSION='paper-closed-bar-preparation-v1'
@@ -58,7 +58,11 @@ def prepare(engine,id,*,observed_at=None):
         record=db.scalar(select(Stream).where(Stream.session_id==id).with_for_update(skip_locked=True))
         if record is None:return None
         existing=pending(db,id)
-        if existing is not None:validate(existing);return existing.preparation_id
+        if existing is not None:
+            validate(existing)
+            if existing.authorization_version==authorization.VERSION and record.status in ['RUNNING','PAUSED'] and base(record)==existing.payload['base']:
+                lifecycle.enroll(db,record,existing,legacy=True)
+            return existing.preparation_id
         if record.status not in ['RUNNING','PAUSED']:return None
         # The dry preparation never accepts observations or changes economic facts.
         observations=streams.advance_locked(db,record,stamp,prepare_only=True)
@@ -75,6 +79,7 @@ def prepare(engine,id,*,observed_at=None):
             payload=payload,payload_sha256=digest(payload),status='PREPARED',reason=None,authorization_version=authorization.VERSION)
         db.add(prepared);db.flush()
         authorization.persist(db,record,prepared)
+        lifecycle.enroll(db,record,prepared)
         return pid
 
 
@@ -98,15 +103,19 @@ def consume(engine,id,pid,*,observed_at=None):
         elif any(stamp<datetime.fromisoformat(obs['observed_at']) for obs in payload['observations']):raise ValueError('Consumption precedes preparation observation')
         elif any(obs['gate']=='ELIGIBLE' and stamp>datetime.fromisoformat(obs['candle']['close_time'])+timedelta(seconds=record.snapshot['request']['max_lag_seconds']) for obs in payload['observations']):reason='EXPIRED'
         if reason:
+            lifecycle.finish(db,record,row,'CANCELLED',reason)
             row.status='CANCELLED';row.reason=reason;row.finished_at=datetime.now(timezone.utc);return False
         observed=datetime.fromisoformat(payload['observations'][0]['observed_at'])
         approved=authorization.check(db,record,row)
+        coverage,_=lifecycle.check_coverage(db,record,row)
+        if coverage is None:raise ValueError('Lifecycle must be independently enrolled before consumption')
         order_count=len(record.ledger['orders']);fill_count=len(record.ledger['fills'])
         added=streams.advance_locked(db,record,observed,accepted_plan=payload['observations'])
         if added:
             orders={v['order_id']:v for v in record.ledger['orders'][order_count:]}
             fills={v['order_id']:v for v in record.ledger['fills'][fill_count:]}
             if set(orders)!={v.order_id for v in approved} or any(orders[v.order_id]!=v.payload['proposed_order'] or fills.get(v.order_id)!=v.payload['projected_fill'] for v in approved):raise ValueError('Applied simulation differs from authorization')
+        lifecycle.finish(db,record,row,'CONSUMED' if added else 'CANCELLED',None if added else 'SOURCE_CHANGED')
         row.status='CONSUMED' if added else 'CANCELLED';row.reason=None if added else 'SOURCE_CHANGED'
         row.finished_at=datetime.now(timezone.utc)
         return bool(added)
@@ -121,7 +130,8 @@ def advance(engine,id,*,observed_at=None):
 def cancel_control(db,record):
     row=pending(db,record.session_id)
     if row is not None:
-        validate(row);row.status='CANCELLED';row.reason='CONTROL_CHANGED';row.finished_at=datetime.now(timezone.utc)
+        validate(row);lifecycle.finish(db,record,row,'CANCELLED','CONTROL_CHANGED')
+        row.status='CANCELLED';row.reason='CONTROL_CHANGED';row.finished_at=datetime.now(timezone.utc)
 
 
 def capture(engine,id):

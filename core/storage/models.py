@@ -195,6 +195,32 @@ class PaperAuthorizationRecord(Base):
     payload_sha256: Mapped[str] = mapped_column(String(64))
     __table_args__ = (UniqueConstraint('preparation_id','order_id',name='uq_paper_authorization_order'),)
 
+class PaperLifecycleCoverageRecord(Base):
+    __tablename__ = 'paper_lifecycle_coverage'
+    preparation_id: Mapped[str] = mapped_column(ForeignKey('paper_preparations.preparation_id'),primary_key=True)
+    version: Mapped[str] = mapped_column(String(64))
+    recorded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    origin: Mapped[str] = mapped_column(String(32))
+    __table_args__ = (CheckConstraint("origin IN ('NEW_PREPARATION','LEGACY_PENDING_ENROLLMENT')",name='ck_lifecycle_origin'),)
+
+class PaperLifecycleEventRecord(Base):
+    __tablename__ = 'paper_lifecycle_events'
+    event_id: Mapped[str] = mapped_column(String(64),primary_key=True)
+    authorization_id: Mapped[str] = mapped_column(ForeignKey('paper_authorizations.authorization_id'))
+    sequence: Mapped[int] = mapped_column(Integer)
+    kind: Mapped[str] = mapped_column(String(16))
+    fill_id: Mapped[str | None] = mapped_column(String(64),nullable=True)
+    recorded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    payload: Mapped[dict] = mapped_column(JSON)
+    payload_sha256: Mapped[str] = mapped_column(String(64))
+    __table_args__ = (
+        UniqueConstraint('authorization_id','sequence',name='uq_lifecycle_sequence'),
+        UniqueConstraint('authorization_id','fill_id',name='uq_lifecycle_fill'),
+        CheckConstraint('sequence >= 0 AND sequence <= 2',name='ck_lifecycle_sequence'),
+        CheckConstraint("kind IN ('CREATED','FILL','OUTCOME')",name='ck_lifecycle_kind'),
+        CheckConstraint("(kind='FILL' AND fill_id IS NOT NULL) OR (kind<>'FILL' AND fill_id IS NULL)",name='ck_lifecycle_fill'),
+    )
+
 class PaperControlRecord(Base):
     __tablename__ = 'paper_controls'
     event_id: Mapped[str] = mapped_column(String(36), primary_key=True)

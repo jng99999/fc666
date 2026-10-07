@@ -145,3 +145,10 @@ Portfolio历史切片后当前迁移head为0009。`bash scripts/start.sh` 保留
 当前迁移 head 为0011（前文为此前切片）。后台 streams.advance 已走 prepare/consume 两个独立事务，准备记录通过GET `/api/v1/paper/streams/{id}/preparations`及实时Paper页只读查看。`bash scripts/start.sh`保留既有.env与卷、升级并恢复五服务。`uv run --frozen python -m tests.browser_paper_recovery` 同时验证准备列表、409清除旧确认、旧账本和意图导出；要求已有真实已停止账户，不为测试补写市场或成交。专项 `uv run --frozen pytest -q tests/test_paper_preparation.py` 使用隔离数据库。准备列表不包含离线重建所需的完整旧输入，旧账本/意图离线工具保持适用。
 
 当前迁移head为0012。`bash scripts/start.sh`保留.env/卷并升级五服务。GET `/api/v1/paper/streams/{id}/authorizations`及实时Paper页只读核对最新20批次的完整预计授权，total_batches/has_older明确范围；不是全历史分页或离线复算。专项 `uv run --frozen pytest -q tests/test_paper_authorization.py`使用隔离DB；`uv run --frozen python -m tests.browser_paper_recovery`读取真实已停止账户的门禁与空/历史授权范围，不补写旧交易授权。旧恢复/意图下载与离线工具继续适用。
+
+
+## Local Paper lifecycle — schema 0013
+
+Independent immutable CREATED evidence commits with preparation before economic acceptance. FILL/OUTCOME and accepted receipts commit atomically; source, expiry and control cancellations preserve zero-fill outcomes. Read docs/PAPER_LIFECYCLE.md and docs/PHASE_9_LIFECYCLE_REPORT.md. The read-only lifecycle endpoint/widget verifies latest20 complete batches, explicit older/legacy coverage and cumulative quantity, fees and notional. Production emits one local fill per authorization (sequences0..2); pure reducer split-fill fixtures do not establish private exchange integration. Legacy pending enrollment precedes consumption in a separate transaction; terminal history is never retroactively invented.
+
+Current head0013 supersedes earlier schema notes. Run bash scripts/start.sh to preserve .env/volumes and restore all five services. Stop owned services before bash scripts/check.sh. No new dependencies, credentials, hosts or services; Live stays disabled. Next goal: a Paper-only fault adapter and explicit private-style fill/cancel reconciliation contract before exchange integration.

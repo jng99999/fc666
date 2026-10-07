@@ -51,3 +51,10 @@ Paper 独立完成态订单意图切片：schema0010，账户命名空间确定�
 执行前准备切片：schema0011，闭合柱批次 PREPARED 独立提交，消费事务复核原账户、行情和时限；两阶段中断、控制取消、来源阻断、幂等成交验证。每账户最多1000条不可删除准备历史；GET与页面只读。准备批次不代表确定数量的交易所订单。下一目标是每订单明确执行前授权与账户执行门禁。见 PAPER_PREPARATION.md。
 
 逐单Paper规则授权切片：schema0012，预计订单/数量/价格/费用与风险决定在准备事务不可变落盘；消费前重算完整计划，消费后对比实际效果，方向门禁保持halt买拒卖可。旧准备无事前证据明确取消或显示不可用；只读页核对最新20批次，不删除旧历史。交易所OMS、身份鉴权、共享资金与对账仍未实现。见 PAPER_AUTHORIZATION.md。
+
+
+## Local Paper lifecycle — schema 0013
+
+Independent immutable CREATED evidence commits with preparation before economic acceptance. FILL/OUTCOME and accepted receipts commit atomically; source, expiry and control cancellations preserve zero-fill outcomes. Read docs/PAPER_LIFECYCLE.md and docs/PHASE_9_LIFECYCLE_REPORT.md. The read-only lifecycle endpoint/widget verifies latest20 complete batches, explicit older/legacy coverage and cumulative quantity, fees and notional. Production emits one local fill per authorization (sequences0..2); pure reducer split-fill fixtures do not establish private exchange integration. Legacy pending enrollment precedes consumption in a separate transaction; terminal history is never retroactively invented.
+
+Current head0013 supersedes earlier schema notes. Run bash scripts/start.sh to preserve .env/volumes and restore all five services. Stop owned services before bash scripts/check.sh. No new dependencies, credentials, hosts or services; Live stays disabled. Next goal: a Paper-only fault adapter and explicit private-style fill/cancel reconciliation contract before exchange integration.

@@ -95,6 +95,20 @@ if __name__=='__main__':
         expect(auth_result).to_have_count(0)
         expect(page.get_by_test_id('paper-authorizations').get_by_role('alert')).to_contain_text('逐单授权核对未确认 (409)')
         page.unroute(auth_pattern)
+        expect(page.get_by_test_id('paper-lifecycle')).to_have_count(1)
+        with page.expect_response(lambda response:response.url.endswith('/lifecycle')) as life_response:
+            page.get_by_role('button',name='核对模拟生命周期',exact=True).click()
+        assert life_response.value.status==200,life_response.value.text()
+        life_report=life_response.value.json();assert life_report['session_id']==id
+        assert life_report['trading_enabled'] is life_report['external_reconciliation_supported'] is False
+        assert life_report['window_limit']==20 and len(life_report['batches'])<=20
+        life_result=page.get_by_test_id('lifecycle-result');expect(life_result).to_be_visible()
+        life_pattern='**/api/paper/streams/'+id+'/lifecycle'
+        page.route(life_pattern,lambda route:route.fulfill(status=409,json={'detail':'Lifecycle mismatch'}))
+        page.get_by_role('button',name='核对模拟生命周期',exact=True).click()
+        expect(life_result).to_have_count(0)
+        expect(page.get_by_test_id('paper-lifecycle').get_by_role('alert')).to_contain_text('生命周期核对未确认 (409)')
+        page.unroute(life_pattern)
         assert page.request.get(root+'/api/paper/streams/'+id).json()==chosen
         assert page.evaluate('document.documentElement.scrollWidth<=innerWidth')
         page.screenshot(path=str(ROOT/'.runtime/paper-recovery-mobile.png'),full_page=True)
@@ -108,5 +122,5 @@ if __name__=='__main__':
         expect(page.get_by_test_id('paper-stream-state')).to_have_attribute('data-status','STOPPED')
         expect(result).to_have_count(0)
         assert not errors,errors
-        print('PASS: real stopped account with fills; stable receipts; independent intent coverage and offline export; preparation and authorization history, stopped gates and failure clearing; coherent recovery export; no account mutation; failed inspection clears confirmation; refresh retains account; 393px; no JS errors')
+        print('PASS: real stopped account with fills; stable receipts; independent intent coverage and offline export; preparation, authorization and lifecycle history; stopped gates and failure clearing; coherent recovery export; no account mutation; failed inspection clears confirmation; refresh retains account; 393px; no JS errors')
         browser.close()
