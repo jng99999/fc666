@@ -100,3 +100,8 @@ PREPARE is an independent default-disabled grant. A new request re-evaluates the
 ### Goal7 progress — scoped source input forecast
 
 Independent PREVIEW_EVENT protects a read-only, complete offline-replayable local event forecast; see PAPER_REQUESTED_EVENT_PREVIEW.md and PHASE_9_REQUESTED_EVENT_PREVIEW_REPORT.md. Source labels explicitly identify proposed local input, never authenticated venue origin. Unknown outcomes keep holds; exact duplicates preserve current account/later request. No economic/provenance writes and schema0017 unchanged. Next: immutable local source receipt/provenance evidence and transaction fault acceptance before exposing ingestion. Venue authentication, ownership, private reconciliation and Live remain incomplete.
+
+
+## Current head0018 — atomic local source evidence
+
+Read PAPER_REQUESTED_SOURCES.md and PHASE_9_REQUESTED_SOURCES_REPORT.md. Independent default-disabled INGEST_EVENT atomically persists immutable local source receipts with event settlement, preserves unlabeled history and original retry acknowledgements, and exports complete offline-replayable source evidence. Current head0018 supersedes earlier head/absence-of-ingestion notes. Run bash scripts/start.sh; preserve .env/volumes and verify five services. Main remains empty/default-disabled. No dependencies, hosts, secrets or frontend changes. Next: controlled submission ownership and unknown-result recovery contracts; venue transport, shared capital, actor identity and Live remain incomplete.

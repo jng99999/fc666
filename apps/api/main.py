@@ -69,6 +69,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 conn.execute(text("SELECT account_id FROM requested_paper_controls LIMIT 0"))
                 conn.execute(text("SELECT request_id FROM requested_paper_gates LIMIT 0"))
                 conn.execute(text("SELECT request_id FROM requested_paper_voids LIMIT 0"))
+                conn.execute(text("SELECT source_version FROM requested_paper_events LIMIT 0"))
+                conn.execute(text("SELECT request_id FROM requested_paper_sources LIMIT 0"))
                 checks["schema"] = conn.execute(text("SELECT version_num FROM alembic_version")).scalar() == SCHEMA_REVISION
         except Exception:
             logger.warning("readiness_dependency_unavailable", extra={"dependency": "database"})

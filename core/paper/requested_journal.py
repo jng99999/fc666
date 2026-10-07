@@ -99,7 +99,9 @@ def _financial_audit(db,row):
 def audit(db,row):
     financial=_financial_audit(db,row)
     from core.paper import requested_controls
-    requested_controls.check(db,row,financial)
+    controlled=requested_controls.check(db,row,financial)
+    from core.paper import requested_sources
+    requested_sources.check(db,row,financial,controlled)
     return financial
 
 
@@ -152,26 +154,34 @@ def prepare(engine,value):
         return _prepare(db,row,view,value)
 
 
+def _accept(db,row,view,request_id,event,*,source_receipt=None):
+    entry=next((r for r in view['requests'] if r['request']['request_id']==request_id),None)
+    if entry is None:raise ValueError('Request does not belong to account')
+    events=entry['events']
+    if not isinstance(event,dict):raise ValueError('Invalid event envelope')
+    old=next((e for e in events if e['event_id']==event.get('event_id')),None)
+    if old is not None:
+        if encoded(old)!=encoded(event):raise ValueError('Conflicting event redelivery')
+        return deepcopy(entry['summary'])
+    summary=contract.reduce(entry['request'],events+[event])
+    if row.active_request_id!=request_id:raise ValueError('Request is not the active account request')
+    if view['total_events']>=TOTAL_EVENTS:raise ValueError('Event history capacity reached')
+    if event['kind']=='SUBMIT':
+        from core.paper import requested_controls
+        admitted=requested_controls.gate(db,row,view,entry['request'],'SUBMIT',event['received_at'])
+        if admitted is not None:db.add(admitted)
+    db.add(Event(request_id=request_id,sequence=event['sequence'],event_id=event['event_id'],payload=deepcopy(event),
+                 payload_sha256=sha(event),summary=deepcopy(summary),summary_sha256=sha(summary),source_version=source_receipt.payload['version'] if source_receipt is not None else None))
+    row.current=summary['account'];row.active_request_id=None if summary['local_source_sealed'] else request_id;row.revision+=1
+    db.flush()
+    if source_receipt is not None:
+        db.add(source_receipt);db.flush()
+    audit(db,row)
+    return summary
+
+
+
 def accept(engine,account_id,request_id,event):
     with transaction(engine) as db:
         row=lock(db,account_id);view=audit(db,row)
-        entry=next((r for r in view['requests'] if r['request']['request_id']==request_id),None)
-        if entry is None:raise ValueError('Request does not belong to account')
-        events=entry['events']
-        if not isinstance(event,dict):raise ValueError('Invalid event envelope')
-        old=next((e for e in events if e['event_id']==event.get('event_id')),None)
-        if old is not None:
-            if encoded(old)!=encoded(event):raise ValueError('Conflicting event redelivery')
-            return deepcopy(entry['summary'])
-        summary=contract.reduce(entry['request'],events+[event])
-        if row.active_request_id!=request_id:raise ValueError('Request is not the active account request')
-        if view['total_events']>=TOTAL_EVENTS:raise ValueError('Event history capacity reached')
-        if event['kind']=='SUBMIT':
-            from core.paper import requested_controls
-            admitted=requested_controls.gate(db,row,view,entry['request'],'SUBMIT',event['received_at'])
-            if admitted is not None:db.add(admitted)
-        db.add(Event(request_id=request_id,sequence=event['sequence'],event_id=event['event_id'],payload=deepcopy(event),
-                     payload_sha256=sha(event),summary=deepcopy(summary),summary_sha256=sha(summary)))
-        row.current=summary['account'];row.active_request_id=None if summary['local_source_sealed'] else request_id;row.revision+=1
-        db.flush();audit(db,row)
-        return summary
+        return _accept(db,row,view,request_id,event)

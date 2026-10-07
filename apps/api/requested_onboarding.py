@@ -4,7 +4,7 @@ from fastapi import Depends,HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel,ConfigDict,Field,StrictInt
 from sqlalchemy.exc import SQLAlchemyError
-from core.paper import requested_controls as controls,requested_journal as journal,requested_preview as preview,requested_preparation as preparation,requested_event_preview as event_preview
+from core.paper import requested_controls as controls,requested_journal as journal,requested_preview as preview,requested_preparation as preparation,requested_event_preview as event_preview,requested_sources as sources
 
 
 class Rules(BaseModel):
@@ -78,6 +78,10 @@ class EventProposal(BaseModel):
     event:SourceEvent
 
 
+class SourceCommand(EventProposal):
+    preview_sha256:str=Field(pattern=r"^[0-9a-f]{64}$")
+
+
 def add_onboarding(router,engine,settings,authenticate):
     def grant(account_id,action):
         if account_id not in settings.paper_operator_accounts or action not in settings.paper_operator_actions:
@@ -133,4 +137,17 @@ def add_onboarding(router,engine,settings,authenticate):
             raise HTTPException(409,'Explicit Paper event preview conflicts or cannot be verified',headers={'Cache-Control':'no-store'})
         except SQLAlchemyError:
             raise HTTPException(503,'Explicit Paper event preview temporarily unavailable',headers={'Cache-Control':'no-store'})
+        return JSONResponse(result,headers={'Cache-Control':'no-store'})
+
+    @router.post('/api/v1/paper-requested/source-commands',dependencies=[Depends(authenticate)])
+    def accept_source(value:SourceCommand):
+        grant(value.account_id,'INGEST_EVENT')
+        proposal=value.model_dump();digest=proposal.pop('preview_sha256')
+        try:result=sources.accept(engine,proposal,digest)
+        except journal.MissingAccount:
+            raise HTTPException(404,'Explicit Paper account not found',headers={'Cache-Control':'no-store'})
+        except (ValueError,ArithmeticError,TypeError,KeyError):
+            raise HTTPException(409,'Explicit Paper source input conflicts or cannot be verified',headers={'Cache-Control':'no-store'})
+        except SQLAlchemyError:
+            raise HTTPException(503,'Explicit Paper source input temporarily unavailable',headers={'Cache-Control':'no-store'})
         return JSONResponse(result,headers={'Cache-Control':'no-store'})

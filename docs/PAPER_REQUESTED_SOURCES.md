@@ -1,0 +1,17 @@
+# Immutable local Paper source receipts
+
+Schema0018 adds nullable immutable event source_version and requested_paper_sources. Existing events remain explicitly unlabeled; retrospective labeling is refused. Financial v1/v2 exports retain their existing shape and revision semantics. Receipts do not independently advance financial revision.
+
+POST /api/v1/paper-requested/source-commands requires the independent INGEST_EVENT grant, exact account membership and existing secure single-operator bearer configuration. It is disabled by default. PREVIEW_EVENT does not grant ingestion. Send the strict event-preview proposal plus preview_sha256. The service audits the full journal/control/source history, checks both revisions and the digest, and re-evaluates funding and admission under the account lock. A preview hash proves consistency, not prior invocation or signed authorization.
+
+Event, SUBMIT admission when applicable, settlement/cache and source receipt commit together. The immutable receipt binds LOCAL_PAPER_OPERATOR_INPUT/source_id, original financial/control revisions, event identity and preview/event/summary hashes. This is caller-declared local provenance, not authenticated exchange origin, human identity or proof of an actual venue submission. SUBMIT remains a local simulation fact; no private transport exists.
+
+Exact retries reconstruct the original financial/control prefixes and return the original receipt after later activity without another economic effect. Changed source labels, event clocks, digests or original checkpoints conflict. Old internal events have null source_version and null receipt and cannot be retroactively tagged. UNKNOWN_SUBMISSION retains its reservation; late fills after STOP remain admissible according to the existing contract. Cancellation acknowledgements retain remaining reservations until local SEAL.
+
+GET /api/v1/paper-requested/sources?account_id=ACCOUNT returns a complete paper-requested-sources-export-v1 report containing the original financial export, controls and one ordered source slot per event. Existing read-route access semantics apply; this is not multiuser authorization. Offline: `.venv/bin/python -m scripts.verify_requested_sources FILE`. Verification independently reconstructs each original checkpoint and checks all receipt bindings. Hashes establish internal consistency, not signed origin, freshness or authenticated completeness against a coherently replaced history.
+
+Declared missing, corrupt or mismatched receipts block journal reads and further writes without repair or partial output. Immutable database triggers reject receipt changes/deletion and event marker changes. These are normal database-operation safeguards, not protection against a privileged administrator disabling triggers. Migration downgrade refuses to discard persisted source evidence; empty-schema roundtrip remains supported.
+
+Complete histories remain bounded to100 requests/1000 events and32MiB. Database lock wait is2 seconds, not a whole-request deadline or throughput claim. Nonempty acceptance tests use isolated PostgreSQL only. Main retains no operator token/grants or requested-engine fixture data. No new dependencies, secrets, domains, UI or services; preserve .env/volumes and restore via bash scripts/start.sh. Live stays disabled; SQLite submission laboratories remain separate.
+
+Next: define controlled submission ownership and unknown-result recovery against the requested-account protocol before any transport or scheduling integration.

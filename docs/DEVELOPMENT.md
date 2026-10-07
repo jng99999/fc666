@@ -193,3 +193,8 @@ PAPER_REQUESTED_PREPARATION_API.md documents the default-disabled PREPARE route,
 ## Read-only local source-event preview
 
 PAPER_REQUESTED_EVENT_PREVIEW.md documents the default-disabled PREVIEW_EVENT route and explicit LOCAL_PAPER_OPERATOR_INPUT source labels. Recomputes unknown/late/cumulative/duplicate forecasts from both version checkpoints and full snapshots; persists no source event or funds. CLI: .venv/bin/python -m scripts.verify_requested_event_preview FILE. Existing startup and schema0017 unchanged; main has no token/grant/test data, source ingestion and Live remain disabled.
+
+
+## Current head0018 — atomic local source evidence
+
+Read PAPER_REQUESTED_SOURCES.md and PHASE_9_REQUESTED_SOURCES_REPORT.md. Independent default-disabled INGEST_EVENT atomically persists immutable local source receipts with event settlement, preserves unlabeled history and original retry acknowledgements, and exports complete offline-replayable source evidence. Current head0018 supersedes earlier head/absence-of-ingestion notes. Run bash scripts/start.sh; preserve .env/volumes and verify five services. Main remains empty/default-disabled. No dependencies, hosts, secrets or frontend changes. Next: controlled submission ownership and unknown-result recovery contracts; venue transport, shared capital, actor identity and Live remain incomplete.
