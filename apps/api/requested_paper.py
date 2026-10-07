@@ -2,7 +2,7 @@
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import SQLAlchemyError
-from core.paper import requested_inspection as inspection, requested_journal as journal, requested_controls as controls,requested_sources as sources
+from core.paper import requested_inspection as inspection, requested_journal as journal, requested_controls as controls,requested_sources as sources, requested_recovery as recovery
 
 
 def router_for(engine,settings=None):
@@ -40,6 +40,17 @@ def router_for(engine,settings=None):
             raise HTTPException(409,'Explicit Paper source evidence cannot be verified',headers={'Cache-Control':'no-store'})
         except SQLAlchemyError:
             raise HTTPException(503,'Explicit Paper source evidence temporarily unavailable',headers={'Cache-Control':'no-store'})
+        return JSONResponse(report,headers={'Cache-Control':'no-store'})
+
+    @router.get('/api/v1/paper-requested/recovery')
+    def inspect_recovery(account_id:str=Query(...,min_length=1,max_length=128)):
+        try:report=recovery.capture(engine,account_id)
+        except journal.MissingAccount:
+            raise HTTPException(404,'Explicit Paper account not found',headers={'Cache-Control':'no-store'})
+        except (ValueError,ArithmeticError,TypeError,KeyError):
+            raise HTTPException(409,'Explicit Paper recovery evidence cannot be verified',headers={'Cache-Control':'no-store'})
+        except SQLAlchemyError:
+            raise HTTPException(503,'Explicit Paper recovery temporarily unavailable',headers={'Cache-Control':'no-store'})
         return JSONResponse(report,headers={'Cache-Control':'no-store'})
 
     from apps.api.requested_commands import add_commands

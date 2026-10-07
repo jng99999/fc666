@@ -105,3 +105,8 @@ Independent PREVIEW_EVENT protects a read-only, complete offline-replayable loca
 ## Current head0018 — atomic local source evidence
 
 Read PAPER_REQUESTED_SOURCES.md and PHASE_9_REQUESTED_SOURCES_REPORT.md. Independent default-disabled INGEST_EVENT atomically persists immutable local source receipts with event settlement, preserves unlabeled history and original retry acknowledgements, and exports complete offline-replayable source evidence. Current head0018 supersedes earlier head/absence-of-ingestion notes. Run bash scripts/start.sh; preserve .env/volumes and verify five services. Main remains empty/default-disabled. No dependencies, hosts, secrets or frontend changes. Next: controlled submission ownership and unknown-result recovery contracts; venue transport, shared capital, actor identity and Live remain incomplete.
+
+
+## Local submission attribution and read-only recovery
+
+Read PAPER_REQUESTED_RECOVERY.md and PHASE_9_REQUESTED_RECOVERY_REPORT.md. GET recovery and the offline verifier preserve original declared submission identity, current account state and unknown/cancel holds. Every action prohibits automatic submission/retry; ownership remains explicitly NOT_IMPLEMENTED. Schema0018, disabled operator defaults and existing startup are unchanged. Next: durable PostgreSQL owner claim/takeover/fencing before dispatch integration. SQLite laboratories remain isolated; Live stays disabled.

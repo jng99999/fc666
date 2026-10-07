@@ -141,7 +141,8 @@ def test_api_busy_account_times_out_without_changes_then_recovers(database):
 
 def test_ready_detects_missing_new_journal_table(database):
     engine,_,settings=database;setup(engine)
-    with engine.begin() as conn:conn.execute(text('DROP TABLE requested_paper_events'))
+    # Preserve dependent source evidence while making the required relation unavailable.
+    with engine.begin() as conn:conn.execute(text('ALTER TABLE requested_paper_events RENAME TO unavailable_requested_paper_events'))
     with TestClient(create_app(settings)) as client:
         assert client.get('/health/ready').status_code==503
         response=client.get(PATH,params={'account_id':'account'})
