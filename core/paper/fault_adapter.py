@@ -35,7 +35,7 @@ class FaultAdapter:
             os.close(descriptor)
         with self.connection() as db:
             tables = {row[0] for row in db.execute("SELECT name FROM sqlite_master WHERE type='table'")}
-            if tables - {'lab_requests','lab_events','lab_evidence'}:
+            if tables - {'lab_requests','lab_events','lab_evidence','lab_leases','lab_dispatches'}:
                 raise ValueError('Refusing unrelated database')
             db.execute('PRAGMA journal_mode=WAL')
             db.executescript('''
@@ -131,35 +131,45 @@ class FaultAdapter:
         return json.loads(evidence[-1][1]) if evidence else self._evidence(request, events)
 
     def append(self, order_id, batch):
+        with self.transaction() as db:
+            has_leases = db.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='lab_leases'").fetchone()
+            has_dispatches = db.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='lab_dispatches'").fetchone()
+            owned = has_leases and db.execute('SELECT 1 FROM lab_leases WHERE order_id=?',(order_id,)).fetchone()
+            dispatched = has_dispatches and db.execute('SELECT 1 FROM lab_dispatches WHERE order_id=?',(order_id,)).fetchone()
+            if owned or dispatched:
+                raise ValueError('Owned laboratory request requires a current fencing token')
+            return self._append(db, order_id, batch)
+
+    def _append(self, db, order_id, batch):
         batch = deepcopy(batch)
         if not isinstance(batch, list) or not batch or len(batch) > LIMIT or len(encoded(batch).encode()) > 32*1024*1024:
             raise ValueError('Invalid bounded event batch')
-        with self.transaction() as db:
-            request, events = self._load(db, order_id)
-            self._verify(db, request, events)
-            by_id = {event['event_id']:event for event in events}
-            for event in batch:
-                if not isinstance(event, dict) or not isinstance(event.get('event_id'), str):
-                    raise ValueError('Invalid event identity')
-                identity = event['event_id']
-                if identity in by_id and by_id[identity] != event:
-                    raise ValueError('Conflicting duplicate event')
-                by_id[identity] = event
-            merged = list(by_id.values())
-            if len(encoded(merged).encode()) > 32*1024*1024:
-                raise ValueError('Oversized transcript')
-            summary = reconcile(order_id, request['requested_quantity'], merged)
-            existing_ids = {event['event_id'] for event in events}
-            for event in merged:
-                if event['event_id'] not in existing_ids:
-                    db.execute('INSERT INTO lab_events VALUES (?,?,?,?,?)',
-                               (order_id,event['event_id'],event['sequence'],encoded(event),sha(event)))
-            complete = sorted(by_id.values(), key=lambda event:event['sequence'])
-            if len(complete) != len(events):
-                evidence = self._evidence(request, complete, len(events))
-                db.execute('INSERT INTO lab_evidence VALUES (?,?,?,?)',
-                           (order_id,len(complete),encoded(evidence),sha(evidence)))
+        request, events = self._load(db, order_id)
+        self._verify(db, request, events)
+        by_id = {event['event_id']:event for event in events}
+        for event in batch:
+            if not isinstance(event, dict) or not isinstance(event.get('event_id'), str):
+                raise ValueError('Invalid event identity')
+            identity = event['event_id']
+            if identity in by_id and by_id[identity] != event:
+                raise ValueError('Conflicting duplicate event')
+            by_id[identity] = event
+        merged = list(by_id.values())
+        if len(encoded(merged).encode()) > 32*1024*1024:
+            raise ValueError('Oversized transcript')
+        summary = reconcile(order_id, request['requested_quantity'], merged)
+        existing_ids = {event['event_id'] for event in events}
+        for event in merged:
+            if event['event_id'] not in existing_ids:
+                db.execute('INSERT INTO lab_events VALUES (?,?,?,?,?)',
+                           (order_id,event['event_id'],event['sequence'],encoded(event),sha(event)))
+        complete = sorted(by_id.values(), key=lambda event:event['sequence'])
+        if len(complete) != len(events):
+            evidence = self._evidence(request, complete, len(events))
+            db.execute('INSERT INTO lab_evidence VALUES (?,?,?,?)',
+                       (order_id,len(complete),encoded(evidence),sha(evidence)))
         return summary
+
 
     def inspect(self, order_id):
         with self.connection() as db:

@@ -52,3 +52,7 @@ Next work is chosen automatically from dependencies and verified failures. Passi
 ### Goal6 progress — durable isolated fault laboratory
 
 Pure cumulative contract and dedicated immutable SQLite request/event/evidence storage implemented; see PAPER_RECONCILIATION.md. Genuine process SIGKILL before commit rolls back; after commit/lost reply retains one result under reopen/retry. Full-capacity duplicates, concurrent deliveries and corrupted/missing evidence fail safely. This lab has no product economic effects, API/UI or external transport. Production schema remains0013. Next dependency: durable simulated submission ownership/fencing and query-before-retry for unknown outcomes, then a separately versioned account/economic integration. Full OMS remains incomplete.
+
+### Goal7 progress — fenced simulated submission
+
+Isolated local leases, fencing tokens, one durable simulated dispatch, immutable initial-event evidence and query-only unknown-result recovery implemented; see PAPER_SUBMISSION.md and PHASE_9_SUBMISSION_REPORT.md. Actual process interruption, old owner rejection, concurrent selection/submission and expiry rollback are verified. This does not connect submission to product capital or exchange transport. Next: versioned economic integration contract including explicit requested quantity, reservation/authorization, partial and late fills and cancellation; preserve all original engine versions. Full OMS remains incomplete.
