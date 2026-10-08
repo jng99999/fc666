@@ -75,7 +75,7 @@ def check(db,row,financial,controlled):
     return replay(financial,controlled,records)
 
 
-def accept(engine,proposal,preview_sha256):
+def accept(engine,proposal,preview_sha256,*,health_cache=None):
     import re
     if not isinstance(proposal,dict) or set(proposal)!=preview.KEYS or not isinstance(proposal['event'],dict) or not isinstance(preview_sha256,str) or re.fullmatch('[0-9a-f]{64}',preview_sha256) is None:
         raise ValueError('Exact source proposal and digest required')
@@ -83,10 +83,10 @@ def accept(engine,proposal,preview_sha256):
         db.execute(text("SELECT set_config('lock_timeout', '2000ms', true)"))
         row=journal.lock(db,proposal['account_id']);financial=journal.audit(db,row);controlled=controls.check(db,row,financial)
         if controlled['coverage']!='CONTROLLED':raise ValueError('Controlled account required')
-        return _accept(db,row,financial,controlled,proposal,preview_sha256)
+        return _accept(db,row,financial,controlled,proposal,preview_sha256,health_cache=health_cache)
 
 
-def _accept(db,row,financial,controlled,proposal,preview_sha256,*,ownership_token=None):
+def _accept(db,row,financial,controlled,proposal,preview_sha256,*,ownership_token=None,health_cache=None):
     from core.paper import requested_ownership
     requested_ownership.guard(db,proposal['request_id'],ownership_token)
     records=check(db,row,financial,controlled)
@@ -102,7 +102,7 @@ def _accept(db,row,financial,controlled,proposal,preview_sha256,*,ownership_toke
         if report['sha256']!=preview_sha256:raise ValueError('Event preview differs from audited checkpoint')
         value=receipt(report)
         stored=Source(request_id=value['request_id'],sequence=value['sequence'],account_id=value['account_id'],event_id=value['event_id'],payload=value,payload_sha256=sha(value))
-        journal._accept(db,row,financial,value['request_id'],proposal['event'],source_receipt=stored,ownership_token=ownership_token)
+        journal._accept(db,row,financial,value['request_id'],proposal['event'],source_receipt=stored,ownership_token=ownership_token,health_cache=health_cache)
     return {'version':'paper-requested-source-command-result-v1','accepted_receipt':deepcopy(value),'event_committed':True,'external_submission_allowed':False}
 
 

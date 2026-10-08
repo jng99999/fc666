@@ -105,12 +105,15 @@ def test_empty_admission_migration_roundtrip(database):
 def test_upgrade_refuses_retrofit_of_existing_pool_request(database):
     from alembic import command
     from sqlalchemy.orm import Session
-    from core.storage.models import RequestedPaperRequestRecord as Request,RequestedPaperAccountRecord as Account
+    from core.storage.models import RequestedPaperRequestRecord as Request
     engine,config,_=database;opened(engine);pools.create(engine,pool());command.downgrade(config,'0022')
     req=request(account_id='a');summary=journal.contract.reduce(req,[])
     with Session(engine) as db,db.begin():
         db.add(Request(request_id=req['request_id'],account_id='a',client_request_id=req['client_request_id'],ordinal=0,payload=req,payload_sha256=sha(req)))
-        account=db.get(Account,'a');account.current=summary['account'];account.active_request_id=req['request_id'];account.revision=1
+        db.flush()
+        # This archived schema lacks later account columns; use its actual SQL shape.
+        db.execute(text("UPDATE requested_paper_accounts SET current=CAST(:current AS json),active_request_id=:request,revision=1 WHERE account_id='a'"),
+                   {'current':journal.encoded(summary['account']),'request':req['request_id']})
     with pytest.raises(RuntimeError,match='retrofit'):command.upgrade(config,'head')
     with engine.connect() as db:assert db.scalar(text('SELECT version_num FROM alembic_version'))=='0022'
 
@@ -130,7 +133,7 @@ def test_post_insert_evidence_budget_rolls_back_preparation(database,monkeypatch
     from sqlalchemy.orm import Session
     engine,_,_=database;ready(engine);a,digest=proposed(engine,'a');original=Session.scalar
     def overflow(self,statement,*args,**kwargs):
-        if 'octet_length(payload::text)' in str(statement):
+        if 'octet_length(payload::text)' in str(statement) and 'FROM paper_capital_admissions' in str(statement):
             existing=self.connection().execute(text('SELECT count(*) FROM paper_capital_admissions')).scalar()
             if existing:return admission.MAX_BYTES+1
         return original(self,statement,*args,**kwargs)

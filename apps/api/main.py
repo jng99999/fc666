@@ -76,6 +76,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 conn.execute(text("SELECT pool_id FROM paper_capital_pools LIMIT 0"))
                 conn.execute(text("SELECT account_id FROM paper_capital_members LIMIT 0"))
                 conn.execute(text("SELECT request_id FROM paper_capital_admissions LIMIT 0"))
+                conn.execute(text("SELECT health_version FROM requested_paper_accounts LIMIT 0"))
+                conn.execute(text("SELECT account_id FROM requested_paper_health_policies LIMIT 0"))
+                conn.execute(text("SELECT request_id,phase FROM requested_paper_health_gates LIMIT 0"))
                 conn.execute(text("SELECT request_id FROM requested_paper_sources LIMIT 0"))
                 checks["schema"] = conn.execute(text("SELECT version_num FROM alembic_version")).scalar() == SCHEMA_REVISION
         except Exception:

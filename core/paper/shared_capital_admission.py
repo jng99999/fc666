@@ -66,7 +66,7 @@ def check(db,row,financial,controlled):
     return values
 
 
-def prepare(engine,pool_id,proposal,preview_sha256,*,authorized_accounts=None):
+def prepare(engine,pool_id,proposal,preview_sha256,*,authorized_accounts=None,health_cache=None):
     if not isinstance(proposal,dict) or set(proposal)!=preview.PROPOSAL_KEYS or type(preview_sha256) is not str or re.fullmatch('[0-9a-f]{64}',preview_sha256) is None:raise ValueError('Exact local proposal/digest required')
     with journal.transaction(engine) as db:
         db.execute(text("SELECT set_config('lock_timeout','2000ms',true)"))
@@ -87,7 +87,7 @@ def prepare(engine,pool_id,proposal,preview_sha256,*,authorized_accounts=None):
         candidate={key:proposal[key] for key in capital.CANDIDATE_KEYS}
         captured=pools.evaluate(definition,reports,pools.ownership.clock(db),candidate)
         value=evaluate(captured,local)
-        journal._prepare(db,row,financial,local['request'],pool_admission=value)
+        journal._prepare(db,row,financial,local['request'],pool_admission=value,health_cache=health_cache)
         return value
 
 

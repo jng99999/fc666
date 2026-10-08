@@ -140,7 +140,7 @@ def claim(engine,account_id,request_id,owner,ttl_seconds=30,*,expected_financial
         return deepcopy(value)
 
 
-def deliver(engine,proposal,preview_sha256,owner,token):
+def deliver(engine,proposal,preview_sha256,owner,token,*,health_cache=None):
     if (not isinstance(proposal,dict) or set(proposal)!=sources.preview.KEYS or not isinstance(proposal['event'],dict)
             or not isinstance(preview_sha256,str) or re.fullmatch('[0-9a-f]{64}',preview_sha256) is None):
         raise ValueError('Exact source proposal and digest required')
@@ -148,7 +148,7 @@ def deliver(engine,proposal,preview_sha256,owner,token):
         db.execute(text("SELECT set_config('lock_timeout','2000ms',true)"))
         row=journal.lock(db,proposal['account_id']); financial=journal.audit(db,row); controlled=controls.check(db,row,financial)
         _owned(db,proposal['request_id'],owner,token)
-        result=sources._accept(db,row,financial,controlled,proposal,preview_sha256,ownership_token=token)
+        result=sources._accept(db,row,financial,controlled,proposal,preview_sha256,ownership_token=token,health_cache=health_cache)
         _owned(db,proposal['request_id'],owner,token)
         return result
 

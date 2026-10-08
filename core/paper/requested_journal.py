@@ -100,6 +100,8 @@ def audit(db,row):
     financial=_financial_audit(db,row)
     from core.paper import requested_controls
     controlled=requested_controls.check(db,row,financial)
+    from core.paper import requested_health
+    requested_health.check(db,row,financial,controlled)
     from core.paper import requested_sources
     requested_sources.check(db,row,financial,controlled)
     from core.paper import requested_ownership
@@ -131,7 +133,7 @@ def read(engine,account_id,*,lock_timeout_ms=None):
         return audit(db,lock(db,account_id))
 
 
-def _prepare(db,row,view,value,*,pool_admission=None):
+def _prepare(db,row,view,value,*,pool_admission=None,health_cache=None):
     existing=next((r for r in view['requests'] if r['request']['client_request_id']==value['client_request_id']),None)
     if existing is not None:
         if encoded(existing['request'])!=encoded(value):raise ValueError('Conflicting client request retry')
@@ -148,26 +150,30 @@ def _prepare(db,row,view,value,*,pool_admission=None):
     summary=contract.reduce(value,[])
     from core.paper import requested_controls
     admitted=requested_controls.gate(db,row,view,value,'PREPARE',value['created_at'])
+    from core.paper import requested_health
+    healthy=requested_health.guard(db,row,view,value,admitted,health_cache)
     db.add(Request(request_id=value['request_id'],account_id=row.account_id,client_request_id=value['client_request_id'],
                    ordinal=len(view['requests']),payload=deepcopy(value),payload_sha256=sha(value)))
     db.flush()  # Parent request must exist before its FK admission row; same transaction.
     if admitted is not None:db.add(admitted)
+    requested_health.insert(db,row,healthy)
     if pool_admission is not None:
         shared_capital_admission.insert(db,row,value,pool_admission)
     row.current=summary['account'];row.active_request_id=value['request_id'];row.revision+=1
     db.flush();audit(db,row)
+    requested_health.before_commit(db,healthy)
     return summary
 
 
 
-def prepare(engine,value):
+def prepare(engine,value,*,health_cache=None):
     value=contract.validate(value)
     with transaction(engine) as db:
         row=lock(db,value['account_id']);view=audit(db,row)
-        return _prepare(db,row,view,value)
+        return _prepare(db,row,view,value,health_cache=health_cache)
 
 
-def _accept(db,row,view,request_id,event,*,source_receipt=None,ownership_token=None):
+def _accept(db,row,view,request_id,event,*,source_receipt=None,ownership_token=None,health_cache=None):
     from core.paper import requested_ownership,requested_dispatch
     requested_ownership.guard(db,request_id,ownership_token)
     entry=next((r for r in view['requests'] if r['request']['request_id']==request_id),None)
@@ -181,10 +187,14 @@ def _accept(db,row,view,request_id,event,*,source_receipt=None,ownership_token=N
     summary=contract.reduce(entry['request'],events+[event])
     if row.active_request_id!=request_id:raise ValueError('Request is not the active account request')
     if view['total_events']>=TOTAL_EVENTS:raise ValueError('Event history capacity reached')
+    from core.paper import requested_health
+    healthy=None
     if event['kind']=='SUBMIT':
         from core.paper import requested_controls
         admitted=requested_controls.gate(db,row,view,entry['request'],'SUBMIT',event['received_at'])
+        healthy=requested_health.guard(db,row,view,entry['request'],admitted,health_cache)
         if admitted is not None:db.add(admitted)
+        requested_health.insert(db,row,healthy)
     stored_event=Event(request_id=request_id,sequence=event['sequence'],event_id=event['event_id'],payload=deepcopy(event),
                  payload_sha256=sha(event),summary=deepcopy(summary),summary_sha256=sha(summary),ownership_token=ownership_token,ownership_accepted_us=requested_ownership.clock(db) if ownership_token is not None else None,source_version=source_receipt.payload['version'] if source_receipt is not None else None,dispatch_version=requested_dispatch.declare(event,ownership_token))
     db.add(stored_event)
@@ -195,11 +205,12 @@ def _accept(db,row,view,request_id,event,*,source_receipt=None,ownership_token=N
     if stored_event.dispatch_version is not None:
         requested_dispatch.record(db,row,entry['request'],stored_event,source_receipt)
     audit(db,row)
+    requested_health.before_commit(db,healthy)
     return summary
 
 
 
-def accept(engine,account_id,request_id,event):
+def accept(engine,account_id,request_id,event,*,health_cache=None):
     with transaction(engine) as db:
         row=lock(db,account_id);view=audit(db,row)
-        return _accept(db,row,view,request_id,event)
+        return _accept(db,row,view,request_id,event,health_cache=health_cache)

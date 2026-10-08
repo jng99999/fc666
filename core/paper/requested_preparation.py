@@ -31,7 +31,7 @@ def historical(financial,controlled,proposal,index):
     return result
 
 
-def prepare(engine,proposal,preview_sha256):
+def prepare(engine,proposal,preview_sha256,*,health_cache=None):
     if not isinstance(proposal,dict) or set(proposal)!=preview.PROPOSAL_KEYS or not isinstance(preview_sha256,str) or re.fullmatch('[0-9a-f]{64}',preview_sha256) is None:
         raise ValueError('Exact proposal and preview digest required')
     with journal.transaction(engine) as db:
@@ -41,6 +41,6 @@ def prepare(engine,proposal,preview_sha256):
         existing=next((index for index,entry in enumerate(financial['requests']) if entry['request']['client_request_id']==proposal['client_request_id']),None)
         report=preview.evaluate(financial,controlled,proposal) if existing is None else historical(financial,controlled,proposal,existing)
         if report['sha256']!=preview_sha256:raise ValueError('Preview does not match audited preparation checkpoint')
-        if existing is None:journal._prepare(db,row,financial,report['request'])
+        if existing is None:journal._prepare(db,row,financial,report['request'],health_cache=health_cache)
         return {'version':VERSION,'request':deepcopy(report['request']),'accepted_preview_sha256':preview_sha256,
                 'initial_funding':deepcopy(report['projected_summary']['funding']),'preparation_committed':True,'external_submission_allowed':False}
