@@ -441,3 +441,17 @@ class RequestedPaperHealthGateRecord(Base):
     payload: Mapped[dict]=mapped_column(JSON)
     payload_sha256: Mapped[str]=mapped_column(String(64))
     __table_args__=(CheckConstraint("phase IN ('PREPARE','SUBMIT')",name='ck_requested_health_gate_phase'),)
+
+
+class RequestedPaperInboxRecord(Base):
+    __tablename__='requested_paper_inbox'
+    account_id: Mapped[str]=mapped_column(ForeignKey('requested_paper_accounts.account_id'),primary_key=True)
+    ordinal: Mapped[int]=mapped_column(Integer,primary_key=True)
+    request_id: Mapped[str]=mapped_column(ForeignKey('requested_paper_requests.request_id'))
+    event_id: Mapped[str]=mapped_column(String(128))
+    source_sequence: Mapped[int]=mapped_column(BigInteger)
+    payload: Mapped[dict]=mapped_column(JSON)
+    payload_sha256: Mapped[str]=mapped_column(String(64))
+    __table_args__=(UniqueConstraint('request_id','event_id',name='uq_requested_inbox_event'),
+                   UniqueConstraint('request_id','source_sequence',name='uq_requested_inbox_sequence'),
+                   CheckConstraint('ordinal>=0 AND ordinal<128',name='ck_requested_inbox_ordinal'))

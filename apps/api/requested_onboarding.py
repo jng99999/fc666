@@ -1,10 +1,11 @@
 """Scoped local Paper commands; no venue transport."""
 from typing import Literal
+from core.portfolio import requested_exposure
 from fastapi import Depends,HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel,ConfigDict,Field,StrictInt
 from sqlalchemy.exc import SQLAlchemyError
-from core.paper import requested_controls as controls,requested_journal as journal,requested_preview as preview,requested_preparation as preparation,requested_event_preview as event_preview,requested_sources as sources,requested_ownership as ownership,requested_dispatch_query as dispatch_query,requested_attempts as attempts,shared_capital_pool as capital_pool,shared_capital_admission as capital_admission,requested_health as health
+from core.paper import requested_controls as controls,requested_journal as journal,requested_preview as preview,requested_preparation as preparation,requested_event_preview as event_preview,requested_sources as sources,requested_ownership as ownership,requested_dispatch_query as dispatch_query,requested_attempts as attempts,shared_capital_pool as capital_pool,shared_capital_admission as capital_admission,requested_health as health,requested_inbox as inbox
 
 
 class Rules(BaseModel):
@@ -138,6 +139,11 @@ class HealthRead(BaseModel):
     account_id:str=Field(min_length=1,max_length=128)
 
 
+class ExposureRead(BaseModel):
+    model_config=ConfigDict(extra='forbid',strict=True)
+    account_ids:list[str]=Field(min_length=1,max_length=8)
+
+
 class HealthEnrollment(HealthRead):
     expected_control_revision:StrictInt=Field(ge=1)
     expected_financial_revision:StrictInt=Field(ge=0,le=0)
@@ -157,6 +163,31 @@ def add_onboarding(router,engine,settings,authenticate,*,health_cache=None):
         except SQLAlchemyError:
             raise HTTPException(503,'Explicit Paper health temporarily unavailable',headers={'Cache-Control':'no-store'})
         return JSONResponse(result,headers={'Cache-Control':'no-store'})
+
+    def inbox_result(call,component="inbox"):
+        try:result=call()
+        except journal.MissingAccount:
+            raise HTTPException(404,'Explicit Paper account not found',headers={'Cache-Control':'no-store'})
+        except (ValueError,ArithmeticError,TypeError,KeyError):
+            raise HTTPException(409,f'Explicit Paper {component} conflicts or cannot be verified',headers={'Cache-Control':'no-store'})
+        except SQLAlchemyError:
+            raise HTTPException(503,f'Explicit Paper {component} temporarily unavailable',headers={'Cache-Control':'no-store'})
+        return JSONResponse(result,headers={'Cache-Control':'no-store'})
+
+    @router.post('/api/v1/paper-requested/exposure-captures',dependencies=[Depends(authenticate)])
+    def read_exposure(value:ExposureRead):
+        for account in value.account_ids:grant(account,'READ_REQUESTED_EXPOSURE')
+        return inbox_result(lambda:requested_exposure.capture(engine,value.account_ids),component="exposure")
+
+    @router.post('/api/v1/paper-requested/inbox-commands',dependencies=[Depends(authenticate)])
+    def stage_input(value:inbox.Stage):
+        grant(value.account_id,'STAGE_LOCAL_INPUT')
+        return inbox_result(lambda:inbox.stage(engine,value.model_dump()))
+
+    @router.post('/api/v1/paper-requested/inbox-captures',dependencies=[Depends(authenticate)])
+    def read_inbox(value:HealthRead):
+        grant(value.account_id,'READ_LOCAL_INBOX')
+        return inbox_result(lambda:inbox.capture(engine,value.account_id))
 
     @router.post('/api/v1/paper-requested/health-enrollment-commands',dependencies=[Depends(authenticate)])
     def enroll_health(value:HealthEnrollment):

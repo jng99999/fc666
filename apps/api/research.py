@@ -80,6 +80,12 @@ def prepare(engine,request):
     frozen=request.model_dump(mode='json');frozen['as_of']=cutoff.isoformat()
     return bars,instrument,frozen
 
+class WalkForwardRequest(RunRequest):
+    grid:list[dict]=Field(min_length=1,max_length=8)
+    train_bars:int=Field(ge=3,le=1000,strict=True)
+    test_bars:int=Field(ge=3,le=1000,strict=True)
+
+
 def router_for(engine):
     router=APIRouter()
     @router.post('/api/v1/research/backtest')
@@ -87,6 +93,15 @@ def router_for(engine):
         bars,instrument,_=prepare(engine,request)
         try: return simulate(bars,instrument,request.config,strategy_id=request.strategy,parameters=request.parameters)
         except ValueError as error: raise HTTPException(409,str(error))
+    @router.post('/api/v1/research/walk-forward')
+    def walk_forward(request:WalkForwardRequest):
+        from core.backtest.walk_forward import simulate as walk
+        bars,instrument,_=prepare(engine,request)
+        try:result=walk(bars,instrument,request.config,strategy_id=request.strategy,grid=request.grid,train_bars=request.train_bars,test_bars=request.test_bars)
+        except (ValueError,ArithmeticError):raise HTTPException(409,'Walk-forward input cannot be verified')
+        from fastapi.responses import JSONResponse
+        return JSONResponse(result,headers={'Cache-Control':'no-store'})
+
     @router.get('/api/v1/research/status')
     def worker_status():
         try:ready=jobs.healthy(engine)

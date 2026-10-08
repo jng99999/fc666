@@ -10,12 +10,14 @@ The documented goals have unequal size; counting completed slices or passing tes
 | 4 Risk observability | Limited hint/policy/history, public-data quality replay and opt-in persisted request health gates and scoped HTTP enrollment/read | Full monitoring and production execution |
 | 5 Execution/recovery foundations | Paper preparation, authorization, lifecycle and funding slices implemented | Integrated production OMS and private reconciliation |
 | 6 Reconciliation | Pure contract and isolated durable fault laboratory implemented | Private exchange-origin reconciliation |
-| 7 OMS | PostgreSQL requested-quantity journal, local control/source/lease/dispatch/query/assessment evidence | Integrated scheduling, actual transport boundaries and authenticated outcomes |
+| 7 OMS | PostgreSQL requested-quantity journal, local control/source/lease/dispatch/query/assessment evidence | Bounded staged-unapplied inbox added; segmented application, integrated scheduling, actual transport and authenticated outcomes remain |
 | 8 Execution risk | Per-account reservations, exclusive pools, atomic pooled BUY admission, scoped interfaces, fault acceptance, capacity diagnostics, repeated-information terminal space protection and scoped server-captured health gates | Long-term retention/guaranteed settlement headroom, transfers/shared inventory and aggregate exposure |
-| 9 Private connectors/identity | Local operator action/account scoping | Protected venue credentials, identity isolation, balances/orders/fills integration |
-| 10 Production acceptance | Five development services and tested startup | Backups/restore, monitoring, sustained load, infrastructure faults, deployment/rollback |
-| 11 Research expansion | Existing research surfaces; this pass did not audit them | Strategy sandbox/SDK, matching/data coverage, optimization and reproducible AI expansion |
+| 9 Private connectors/identity | Local operator action/account scoping | Read-only signed query library is fixture-tested; real credential custody, identity isolation and authenticated balances/orders/fills integration remain |
+| 10 Production acceptance | Five development services, local snapshot/row-content restore drill and configured CI | Offsite retention/restore, monitoring, sustained load, infrastructure faults, deployment/rollback |
+| 11 Research expansion | Existing EMA/SMA research, queued holdout and new causal bounded walk-forward API/CLI | Strategy sandbox/SDK, matching/data coverage, walk-forward job/UI integration and reproducible AI expansion |
 
 Five substantial downstream work blocks remain: integrated OMS, shared-capital risk, private connectors/identity, production acceptance and research expansion. Earlier limited risk/foundation slices also need integration. No defensible completion percentage or delivery-date estimate is available from the current acceptance evidence. A live-ready trading platform remains materially unfinished.
 
 Current main requested-engine data stays empty with operator commands disabled; Live is disabled. The detailed current slice and evidence are in the latest acceptance report. Environment draft saving is separate from publication. Continue authorized work without routine permission; do not imply unattended execution after a chat turn ends.
+
+Unified programme: FIVE_BLOCK_EXECUTION_PLAN.md. Latest local batch and limitations: FIVE_BLOCK_FOUNDATIONS.md (schema0025). The five full blocks are not completed by delivering these foundations.
