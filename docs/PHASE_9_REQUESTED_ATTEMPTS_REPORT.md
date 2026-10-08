@@ -1,0 +1,9 @@
+# Acceptance: durable local assessment attempts
+
+Schema0021 adds immutable optional requested_paper_attempts linked to original dispatch/account/claim records. The internal library generates complete server-side query/failure evidence under the account lock, fences financial/control versions and current owner/token/expiry, commits one bounded receipt and leaves financial/control state unchanged. No attempt HTTP route or real transport is exposed.
+
+Validation: initial24 cases passed (four attempt,17 model,three query;28.04s). An additional run passed three cases (18.74s): updated receipt/CLI acceptance,16-record capacity/populated downgrade guard and empty migration roundtrip. This is26 distinct passing cases,27 executions. Covered exact retry/conflicting retry, immutable UPDATE/DELETE rejection, resealed false-send tampering, strict input rejection before storage, expiry after insert causing full rollback, takeover rejecting old retry while preserving client identity, offline CLI and duplicate-key rejection. Existing TestClient deprecation warning remains.
+
+Main upgraded0021, Alembic check reports no new operations. API restarted; all five services ready and /health/ready200. Eleven requested-engine tables remain empty; operator token/grants remain disabled. No dependency, domain, credential or frontend changes. Startup draft saved with0021 restoration instructions; publication remains separate.
+
+Limits: local declared failure-assessment receipts prove no actual transport attempt or remote outcome. Optional records are audited on assessment access, not required by existing financial APIs. No scoped HTTP commands, aggregate export, multiuser identity, scheduler or private connector yet. Next: independently scoped assessment commands/read exports and process-loss/locking acceptance. Live remains disabled.

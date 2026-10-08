@@ -133,3 +133,7 @@ QUERY_DISPATCH independently protects read-only dispatch-queries with exact acco
 ## Offline transport failure boundary — head0020 unchanged
 
 Read PAPER_REQUESTED_TRANSPORT_BOUNDARY.md and PHASE_9_REQUESTED_TRANSPORT_BOUNDARY_REPORT.md. Complete original-client query evidence now supports offline classification of timeout/disconnect/empty/contradictory/unsupported transport failures. Every classification retains funding and forbids release/resubmission; no remote outcome is invented. Four acceptance/regression cases passed, including20 state/failure assessments. Existing startup configuration remains sufficient. Next: durable local transport-attempt evidence and transaction fault acceptance before any adapter. Venue transport and Live remain disabled.
+
+## Current head0021 — durable local failure-assessment attempts
+
+Read PAPER_REQUESTED_ATTEMPTS.md and PHASE_9_REQUESTED_ATTEMPTS_REPORT.md. The internal PostgreSQL library stores immutable original-client/current-lease/checkpoint-bound assessment receipts, with exact retry, expiry rollback and16-record/request bounds. remote_send_performed=false explicitly distinguishes local assessment from venue transport. Populated downgrade is blocked; empty roundtrip supported. Twenty-six distinct cases passed. Main remains empty/default-disabled and five services ready. Restore via bash scripts/start.sh, preserve .env/volumes/proxy/CA and check0021. Next: independently scoped local assessment commands/read exports and process-loss/locking acceptance. No real transport or Live.

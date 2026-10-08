@@ -382,3 +382,17 @@ class RequestedPaperDispatchRecord(Base):
     payload_sha256: Mapped[str]=mapped_column(String(64))
     __table_args__=(ForeignKeyConstraint(['request_id','token'],['requested_paper_claims.request_id','requested_paper_claims.token']),
                    UniqueConstraint('client_id',name='uq_requested_paper_dispatch_client'))
+
+
+class RequestedPaperAttemptRecord(Base):
+    __tablename__='requested_paper_attempts'
+    request_id: Mapped[str]=mapped_column(ForeignKey('requested_paper_dispatches.request_id'),primary_key=True)
+    ordinal: Mapped[int]=mapped_column(Integer,primary_key=True)
+    account_id: Mapped[str]=mapped_column(ForeignKey('requested_paper_accounts.account_id'))
+    attempt_id: Mapped[str]=mapped_column(String(128))
+    token: Mapped[int]=mapped_column(Integer)
+    payload: Mapped[dict]=mapped_column(JSON)
+    payload_sha256: Mapped[str]=mapped_column(String(64))
+    __table_args__=(ForeignKeyConstraint(['request_id','token'],['requested_paper_claims.request_id','requested_paper_claims.token']),
+                   UniqueConstraint('request_id','attempt_id',name='uq_requested_paper_attempt_id'),
+                   CheckConstraint('ordinal>=0 AND ordinal<16',name='ck_requested_paper_attempt_ordinal'))
