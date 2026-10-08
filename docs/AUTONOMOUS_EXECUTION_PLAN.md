@@ -129,3 +129,7 @@ Read PAPER_REQUESTED_DISPATCH.md and PHASE_9_REQUESTED_DISPATCH_REPORT.md. New o
 ## Original-client scoped local query — head0020 unchanged
 
 QUERY_DISPATCH independently protects read-only dispatch-queries with exact account scope, original request/client identity and current lease checks before/after complete replay. Read PAPER_REQUESTED_DISPATCH_QUERY.md and PHASE_9_REQUESTED_DISPATCH_QUERY_REPORT.md. Takeover preserves original identity; unknown results retain holds and never authorize resubmission. Offline verification is available. Main remains empty/default-disabled and five services ready. Next: explicit local transport boundary and fault contracts before venue integration; Live disabled.
+
+## Offline transport failure boundary — head0020 unchanged
+
+Read PAPER_REQUESTED_TRANSPORT_BOUNDARY.md and PHASE_9_REQUESTED_TRANSPORT_BOUNDARY_REPORT.md. Complete original-client query evidence now supports offline classification of timeout/disconnect/empty/contradictory/unsupported transport failures. Every classification retains funding and forbids release/resubmission; no remote outcome is invented. Four acceptance/regression cases passed, including20 state/failure assessments. Existing startup configuration remains sufficient. Next: durable local transport-attempt evidence and transaction fault acceptance before any adapter. Venue transport and Live remain disabled.
