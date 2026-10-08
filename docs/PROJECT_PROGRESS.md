@@ -7,7 +7,7 @@ The documented goals have unequal size; counting completed slices or passing tes
 | 1 Persisted observations | Phase gate completed | Broader production capacity/retention |
 | 2 Comparable history | Phase gate completed | Future data/source expansion |
 | 3 Sampled visual analysis | sampled-v1 gate completed | Continuous analytics not implied |
-| 4 Risk observability | Limited hint/policy/history implemented | Full monitoring and execution integration |
+| 4 Risk observability | Limited hint/policy/history and replayable public-data freshness/continuity diagnostics | Full monitoring, persisted request health gates and execution integration |
 | 5 Execution/recovery foundations | Paper preparation, authorization, lifecycle and funding slices implemented | Integrated production OMS and private reconciliation |
 | 6 Reconciliation | Pure contract and isolated durable fault laboratory implemented | Private exchange-origin reconciliation |
 | 7 OMS | PostgreSQL requested-quantity journal, local control/source/lease/dispatch/query/assessment evidence | Integrated scheduling, actual transport boundaries and authenticated outcomes |

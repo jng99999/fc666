@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 from core.models import Instrument,Candle
 from core.exchange.binance import SYMBOLS,INTERVALS
 from core.storage.models import InstrumentRecord,CandleRecord
+from core.market_data import quality
 
 Symbol=Literal["BTCUSDT","ETHUSDT"]
 Interval=Literal["1m","5m","15m","1h","4h","1d"]
@@ -20,7 +21,8 @@ def market_health(cache):
     for symbol in SYMBOLS:
         try:
             ticker,book=cache.mget([f"market:{symbol}:ticker",f"market:{symbol}:book"])
-            symbols[symbol]="healthy" if ticker and book and json.loads(book)["payload"]["valid"] else "unavailable"
+            reasons=quality.live_reasons(symbol,quality.decode(ticker),quality.decode(book),datetime.now(timezone.utc).isoformat())
+            symbols[symbol]="healthy" if not reasons else "unavailable"
         except Exception: symbols[symbol]="unavailable"
     return {"status":"healthy" if all(v=="healthy" for v in symbols.values()) else "unavailable","symbols":symbols,"trading_enabled":False}
 
@@ -58,6 +60,11 @@ def router_for(engine,cache,redis_url):
 
     @router.get("/api/v1/market/status")
     def status(): return market_health(cache)
+
+    @router.get("/api/v1/market/quality")
+    def data_quality(symbol:Symbol):
+        from fastapi.responses import JSONResponse
+        return JSONResponse(content=quality.capture(engine,cache,symbol),headers={'Cache-Control':'no-store'})
 
     @router.get("/api/v1/market/snapshot")
     def snapshot(symbol:Symbol,channel:str="ticker"):
