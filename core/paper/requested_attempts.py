@@ -81,3 +81,38 @@ def capture(engine,account_id,request_id):
         row=journal.lock(db,account_id);financial=journal.audit(db,row)
         if not any(entry['request']['request_id']==request_id for entry in financial['requests']):raise ValueError('Request account differs')
         return check(db,account_id,request_id)
+
+
+EXPORT_VERSION='paper-requested-attempts-export-v1'
+
+
+def evaluate_export(dispatch_report,request_id,receipts):
+    current=dispatch.verify(dispatch_report)
+    slot=next((value for value in current['dispatches'] if value['request_id']==request_id),None)
+    if slot is None:raise ValueError('Request account differs')
+    if not isinstance(receipts,list) or len(receipts)>LIMIT:raise ValueError('Attempt export capacity exceeded')
+    values=[];identities=set()
+    for index,receipt in enumerate(receipts):
+        value=verify(receipt);cmd=value['command']
+        original=value['assessment']['query_evidence']['dispatch_evidence']
+        original_slot=next(item for item in original['dispatches'] if item['request_id']==request_id)
+        if value['ordinal']!=index or cmd['request_id']!=request_id or encoded(slot)!=encoded(original_slot) or cmd['attempt_id'] in identities:raise ValueError('Attempt export coverage/original identity differs')
+        identities.add(cmd['attempt_id']);values.append(value)
+    body={'version':EXPORT_VERSION,'dispatch_evidence':current,'request_id':request_id,'attempts':values,'read_only':True,'external_submission_allowed':False}
+    result={**body,'sha256':sha(body)}
+    if len(encoded(result).encode())>MAX_BYTES:raise ValueError('Attempt export exceeds32MiB')
+    return result
+
+
+def export(engine,account_id,request_id):
+    with journal.transaction(engine) as db:
+        db.execute(text("SELECT set_config('lock_timeout','2000ms',true)"))
+        row=journal.lock(db,account_id);financial=journal.audit(db,row);controlled=own.controls.check(db,row,financial)
+        return evaluate_export(dispatch.snapshot(db,row,financial,controlled),request_id,check(db,account_id,request_id))
+
+
+def verify_export(report):
+    if not isinstance(report,dict) or set(report)!={'version','dispatch_evidence','request_id','attempts','read_only','external_submission_allowed','sha256'} or report['version']!=EXPORT_VERSION or len(encoded(report).encode())>MAX_BYTES:raise ValueError('Invalid attempt export')
+    expected=evaluate_export(report['dispatch_evidence'],report['request_id'],report['attempts'])
+    if encoded(expected)!=encoded(report):raise ValueError('Attempt export differs from replay')
+    return expected

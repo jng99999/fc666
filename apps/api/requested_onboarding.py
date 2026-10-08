@@ -4,7 +4,7 @@ from fastapi import Depends,HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel,ConfigDict,Field,StrictInt
 from sqlalchemy.exc import SQLAlchemyError
-from core.paper import requested_controls as controls,requested_journal as journal,requested_preview as preview,requested_preparation as preparation,requested_event_preview as event_preview,requested_sources as sources,requested_ownership as ownership,requested_dispatch_query as dispatch_query
+from core.paper import requested_controls as controls,requested_journal as journal,requested_preview as preview,requested_preparation as preparation,requested_event_preview as event_preview,requested_sources as sources,requested_ownership as ownership,requested_dispatch_query as dispatch_query,requested_attempts as attempts
 
 
 class Rules(BaseModel):
@@ -105,6 +105,19 @@ class DispatchQuery(BaseModel):
     client_id:str=Field(pattern=r'^[0-9a-f]{64}$')
     owner:str=Field(min_length=1,max_length=128)
     ownership_token:StrictInt=Field(ge=1,le=64)
+
+
+class AssessmentRead(BaseModel):
+    model_config=ConfigDict(extra='forbid',strict=True)
+    account_id:str=Field(min_length=1,max_length=128)
+    request_id:str=Field(pattern=r'^[0-9a-f]{64}$')
+
+
+class AssessmentCommand(DispatchQuery):
+    attempt_id:str=Field(min_length=1,max_length=128)
+    failure:Literal['TIMEOUT','DISCONNECTED','EMPTY_RESULT','CONTRADICTORY_RESULT','UNSUPPORTED_TRANSPORT']
+    expected_financial_revision:StrictInt=Field(ge=1)
+    expected_control_revision:StrictInt=Field(ge=1)
 
 
 def add_onboarding(router,engine,settings,authenticate):
@@ -215,4 +228,28 @@ def add_onboarding(router,engine,settings,authenticate):
             raise HTTPException(409,'Explicit Paper dispatch query conflicts or cannot be verified',headers={'Cache-Control':'no-store'})
         except SQLAlchemyError:
             raise HTTPException(503,'Explicit Paper dispatch query temporarily unavailable',headers={'Cache-Control':'no-store'})
+        return JSONResponse(result,headers={'Cache-Control':'no-store'})
+
+    @router.post('/api/v1/paper-requested/assessment-commands',dependencies=[Depends(authenticate)])
+    def record_assessment(value:AssessmentCommand):
+        grant(value.account_id,'RECORD_ASSESSMENT')
+        try:result=attempts.record(engine,value.model_dump())
+        except journal.MissingAccount:
+            raise HTTPException(404,'Explicit Paper account not found',headers={'Cache-Control':'no-store'})
+        except (ValueError,ArithmeticError,TypeError,KeyError):
+            raise HTTPException(409,'Explicit Paper assessment conflicts or cannot be verified',headers={'Cache-Control':'no-store'})
+        except SQLAlchemyError:
+            raise HTTPException(503,'Explicit Paper assessment temporarily unavailable',headers={'Cache-Control':'no-store'})
+        return JSONResponse(result,headers={'Cache-Control':'no-store'})
+
+    @router.post('/api/v1/paper-requested/assessment-exports',dependencies=[Depends(authenticate)])
+    def read_assessments(value:AssessmentRead):
+        grant(value.account_id,'READ_ASSESSMENTS')
+        try:result=attempts.export(engine,value.account_id,value.request_id)
+        except journal.MissingAccount:
+            raise HTTPException(404,'Explicit Paper account not found',headers={'Cache-Control':'no-store'})
+        except (ValueError,ArithmeticError,TypeError,KeyError):
+            raise HTTPException(409,'Explicit Paper assessment export conflicts or cannot be verified',headers={'Cache-Control':'no-store'})
+        except SQLAlchemyError:
+            raise HTTPException(503,'Explicit Paper assessment export temporarily unavailable',headers={'Cache-Control':'no-store'})
         return JSONResponse(result,headers={'Cache-Control':'no-store'})

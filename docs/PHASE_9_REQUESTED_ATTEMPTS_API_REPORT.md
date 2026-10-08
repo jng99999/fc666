@@ -1,0 +1,9 @@
+# Acceptance: scoped local assessment API and export
+
+Added independent default-disabled RECORD_ASSESSMENT and READ_ASSESSMENTS capabilities with strict bodies and exact account/bearer grants. Writes preserve existing checkpoint/current-lease fencing and immutable exact retries. Read exports contain current dispatch evidence and ordered historical receipts, with complete nested offline replay, duplicate ID/order checks and a32MiB aggregate bound. Schema0021 unchanged.
+
+Validation:13 cases passed across four new API/process/concurrency cases, six attempt cases and three query regressions (59.06s). One additional account-lock timeout case passed (6.22s),14 distinct total. Covered default/auth/action/account denial before storage, strict types, command/read/exact retry/conflict, invalid request and resealed ordinal tampering, offline export CLI, true SIGKILL after insert but before commit with rollback and single subsequent retry, simultaneous exact retries producing one record, and generic503/no-store under account lock contention with no partial evidence. Existing TestClient deprecation warning remains.
+
+API restarted; five services ready, /health/ready200. Both actual new routes return503/no-store with disabled defaults. Main has eleven requested-engine tables with zero rows, no operator token/grants. No dependencies, schema, hosts, credentials or frontend changes. Startup draft saved; publication remains separate.
+
+Limits: local assessment input is caller declared and remote_send_performed remains false. Unsigned offline exports cannot authenticate origin or prove omitted stored tails; runtime immutable records and the ordered server query supply coverage. Historical receipts are separately verified but not yet fully bound to the current financial/control prefix. No scheduler/private transport/shared capital/multiuser identity or Live. Next: historical-prefix binding and stronger completeness contracts before adapters.
