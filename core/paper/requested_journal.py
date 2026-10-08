@@ -187,6 +187,8 @@ def _accept(db,row,view,request_id,event,*,source_receipt=None,ownership_token=N
     summary=contract.reduce(entry['request'],events+[event])
     if row.active_request_id!=request_id:raise ValueError('Request is not the active account request')
     if view['total_events']>=TOTAL_EVENTS:raise ValueError('Event history capacity reached')
+    from core.paper import requested_capacity
+    requested_capacity.require_information(view,entry,event,summary,TOTAL_EVENTS)
     from core.paper import requested_health
     healthy=None
     if event['kind']=='SUBMIT':

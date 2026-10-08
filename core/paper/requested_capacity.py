@@ -15,6 +15,18 @@ def require_new(financial, event_limit):
         raise ValueError('Account source history capacity lacks three-event preparation headroom')
 
 
+def require_information(financial,entry,event,projected,event_limit):
+    """Current write policy only; do not retrofit historical replay or receipts."""
+    repeated_ack=event['kind']=='ACK' and any(old['kind']=='ACK' for old in entry['events'])
+    repeated_receipt=event['kind']=='RECEIPT' and entry['summary']['receipt_confirmed']
+    if not (repeated_ack or repeated_receipt):return
+    needed=1 if (contract.decimal(projected['unfilled_quantity'])==0 or projected['state'] in
+                 ('REJECTED_UNCONFIRMED','CANCEL_ACKNOWLEDGED','PARTIAL_CANCEL_ACKNOWLEDGED')) else 2
+    remaining=min(event_limit-financial['total_events']-1,contract.EVENT_LIMIT-len(entry['events'])-1)
+    if remaining<needed:
+        raise ValueError('Repeated information would consume minimum terminal event headroom')
+
+
 def evaluate(journal_report):
     financial = inspection.verify(journal_report)
     remaining = ACCOUNT_EVENT_LIMIT - financial['total_events']

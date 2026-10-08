@@ -45,7 +45,12 @@ def evaluate(financial,controlled,proposal):
 def capture(engine,proposal):
     if not isinstance(proposal,dict) or set(proposal)!=KEYS:raise ValueError('Exact event proposal required')
     financial,controlled=controls.read(engine,proposal['account_id'])
-    return evaluate(financial,controlled,proposal)
+    result=evaluate(financial,controlled,proposal)
+    if result['classification']=='NEW_LOCAL_INPUT':
+        from core.paper import requested_capacity
+        entry=next(entry for entry in financial['requests'] if entry['request']['request_id']==proposal['request_id'])
+        requested_capacity.require_information(financial,entry,proposal['event'],result['projected_request_summary'],journal.TOTAL_EVENTS)
+    return result
 
 
 def verify(report):
