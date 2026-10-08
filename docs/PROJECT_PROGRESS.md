@@ -7,11 +7,11 @@ The documented goals have unequal size; counting completed slices or passing tes
 | 1 Persisted observations | Phase gate completed | Broader production capacity/retention |
 | 2 Comparable history | Phase gate completed | Future data/source expansion |
 | 3 Sampled visual analysis | sampled-v1 gate completed | Continuous analytics not implied |
-| 4 Risk observability | Limited hint/policy/history, public-data quality replay and opt-in persisted internal request health gates | Full monitoring, scoped HTTP health integration and production execution |
+| 4 Risk observability | Limited hint/policy/history, public-data quality replay and opt-in persisted request health gates and scoped HTTP enrollment/read | Full monitoring and production execution |
 | 5 Execution/recovery foundations | Paper preparation, authorization, lifecycle and funding slices implemented | Integrated production OMS and private reconciliation |
 | 6 Reconciliation | Pure contract and isolated durable fault laboratory implemented | Private exchange-origin reconciliation |
 | 7 OMS | PostgreSQL requested-quantity journal, local control/source/lease/dispatch/query/assessment evidence | Integrated scheduling, actual transport boundaries and authenticated outcomes |
-| 8 Execution risk | Per-account reservations, exclusive pools, atomic pooled BUY admission, scoped interfaces, fault acceptance, capacity diagnostics and opt-in internal health gates | Scoped health interfaces, long-term retention/guaranteed settlement headroom, transfers/shared inventory and aggregate exposure |
+| 8 Execution risk | Per-account reservations, exclusive pools, atomic pooled BUY admission, scoped interfaces, fault acceptance, capacity diagnostics and scoped server-captured health gates | Long-term retention/guaranteed settlement headroom, transfers/shared inventory and aggregate exposure |
 | 9 Private connectors/identity | Local operator action/account scoping | Protected venue credentials, identity isolation, balances/orders/fills integration |
 | 10 Production acceptance | Five development services and tested startup | Backups/restore, monitoring, sustained load, infrastructure faults, deployment/rollback |
 | 11 Research expansion | Existing research surfaces; this pass did not audit them | Strategy sandbox/SDK, matching/data coverage, optimization and reproducible AI expansion |

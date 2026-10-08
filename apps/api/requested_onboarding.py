@@ -4,7 +4,7 @@ from fastapi import Depends,HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel,ConfigDict,Field,StrictInt
 from sqlalchemy.exc import SQLAlchemyError
-from core.paper import requested_controls as controls,requested_journal as journal,requested_preview as preview,requested_preparation as preparation,requested_event_preview as event_preview,requested_sources as sources,requested_ownership as ownership,requested_dispatch_query as dispatch_query,requested_attempts as attempts,shared_capital_pool as capital_pool,shared_capital_admission as capital_admission
+from core.paper import requested_controls as controls,requested_journal as journal,requested_preview as preview,requested_preparation as preparation,requested_event_preview as event_preview,requested_sources as sources,requested_ownership as ownership,requested_dispatch_query as dispatch_query,requested_attempts as attempts,shared_capital_pool as capital_pool,shared_capital_admission as capital_admission,requested_health as health
 
 
 class Rules(BaseModel):
@@ -133,10 +133,44 @@ class PoolPreparation(PoolProposal):
     local_preview_sha256:str=Field(pattern=r'^[0-9a-f]{64}$')
 
 
-def add_onboarding(router,engine,settings,authenticate):
+class HealthRead(BaseModel):
+    model_config=ConfigDict(extra='forbid',strict=True)
+    account_id:str=Field(min_length=1,max_length=128)
+
+
+class HealthEnrollment(HealthRead):
+    expected_control_revision:StrictInt=Field(ge=1)
+    expected_financial_revision:StrictInt=Field(ge=0,le=0)
+
+
+def add_onboarding(router,engine,settings,authenticate,*,health_cache=None):
     def grant(account_id,action):
         if account_id not in settings.paper_operator_accounts or action not in settings.paper_operator_actions:
             raise HTTPException(403,'Paper operator grant denies this command',headers={'Cache-Control':'no-store'})
+
+    def health_result(call):
+        try:result=call()
+        except journal.MissingAccount:
+            raise HTTPException(404,'Explicit Paper account not found',headers={'Cache-Control':'no-store'})
+        except (ValueError,ArithmeticError,TypeError,KeyError):
+            raise HTTPException(409,'Explicit Paper health conflicts or cannot be verified',headers={'Cache-Control':'no-store'})
+        except SQLAlchemyError:
+            raise HTTPException(503,'Explicit Paper health temporarily unavailable',headers={'Cache-Control':'no-store'})
+        return JSONResponse(result,headers={'Cache-Control':'no-store'})
+
+    @router.post('/api/v1/paper-requested/health-enrollment-commands',dependencies=[Depends(authenticate)])
+    def enroll_health(value:HealthEnrollment):
+        grant(value.account_id,'ENROLL_HEALTH')
+        def run():
+            result=health.enroll(engine,value.account_id,value.expected_control_revision)
+            return {'version':'paper-requested-health-enrollment-result-v1','policy':result,
+                    'enrollment_committed':True,'external_submission_allowed':False}
+        return health_result(run)
+
+    @router.post('/api/v1/paper-requested/health-captures',dependencies=[Depends(authenticate)])
+    def read_health(value:HealthRead):
+        grant(value.account_id,'READ_HEALTH')
+        return health_result(lambda:health.capture(engine,value.account_id))
 
     @router.post('/api/v1/paper-requested/enrollment-commands',dependencies=[Depends(authenticate)])
     def enroll(value:Enrollment):
@@ -169,7 +203,7 @@ def add_onboarding(router,engine,settings,authenticate):
     def prepare(value:Preparation):
         grant(value.account_id,'PREPARE')
         proposal=value.model_dump();digest=proposal.pop('preview_sha256')
-        try:result=preparation.prepare(engine,proposal,digest)
+        try:result=preparation.prepare(engine,proposal,digest,health_cache=health_cache)
         except journal.MissingAccount:
             raise HTTPException(404,'Explicit Paper account not found',headers={'Cache-Control':'no-store'})
         except (ValueError,ArithmeticError,TypeError,KeyError):
@@ -194,7 +228,7 @@ def add_onboarding(router,engine,settings,authenticate):
     def accept_source(value:SourceCommand):
         grant(value.account_id,'INGEST_EVENT')
         proposal=value.model_dump();digest=proposal.pop('preview_sha256')
-        try:result=sources.accept(engine,proposal,digest)
+        try:result=sources.accept(engine,proposal,digest,health_cache=health_cache)
         except journal.MissingAccount:
             raise HTTPException(404,'Explicit Paper account not found',headers={'Cache-Control':'no-store'})
         except (ValueError,ArithmeticError,TypeError,KeyError):
@@ -222,7 +256,7 @@ def add_onboarding(router,engine,settings,authenticate):
     def deliver_owned_source(value:OwnedSourceCommand):
         grant(value.account_id,'DELIVER_OWNED_EVENT')
         proposal=value.model_dump();digest=proposal.pop('preview_sha256');owner=proposal.pop('owner');token=proposal.pop('ownership_token')
-        try:result=ownership.deliver(engine,proposal,digest,owner,token)
+        try:result=ownership.deliver(engine,proposal,digest,owner,token,health_cache=health_cache)
         except journal.MissingAccount:
             raise HTTPException(404,'Explicit Paper account not found',headers={'Cache-Control':'no-store'})
         except (ValueError,ArithmeticError,TypeError,KeyError):
@@ -293,7 +327,7 @@ def add_onboarding(router,engine,settings,authenticate):
     def prepare_pool(value:PoolPreparation):
         pool_grant(value.pool_id,'POOL_PREPARE',value.account_id)
         proposal=value.model_dump();pool_id=proposal.pop('pool_id');digest=proposal.pop('local_preview_sha256')
-        return pool_result(lambda:capital_admission.prepare(engine,pool_id,proposal,digest,authorized_accounts=settings.paper_operator_accounts))
+        return pool_result(lambda:capital_admission.prepare(engine,pool_id,proposal,digest,authorized_accounts=settings.paper_operator_accounts,health_cache=health_cache))
 
     @router.post('/api/v1/paper-requested/pool-captures',dependencies=[Depends(authenticate)])
     def read_pool(value:PoolRead):

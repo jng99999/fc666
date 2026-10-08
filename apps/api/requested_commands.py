@@ -30,7 +30,7 @@ class FinalizationCommand(BaseModel):
     created_at:str=Field(min_length=1,max_length=64)
 
 
-def add_commands(router,engine,settings):
+def add_commands(router,engine,settings,*,health_cache=None):
     bearer=HTTPBearer(auto_error=False)
     def authenticate(credentials:HTTPAuthorizationCredentials|None=Depends(bearer)):
         if settings is None or settings.paper_operator_token is None:
@@ -72,4 +72,4 @@ def add_commands(router,engine,settings):
                             headers={'Cache-Control':'no-store'})
 
     from apps.api.requested_onboarding import add_onboarding
-    add_onboarding(router,engine,settings,authenticate)
+    add_onboarding(router,engine,settings,authenticate,health_cache=health_cache)

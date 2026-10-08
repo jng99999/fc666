@@ -4,7 +4,7 @@ from datetime import datetime,timezone,timedelta
 import re
 from sqlalchemy import select,text
 from core.market_data import quality
-from core.paper import requested_execution as contract,requested_journal as journal,requested_controls as controls
+from core.paper import requested_execution as contract,requested_journal as journal,requested_controls as controls,requested_inspection as inspection
 from core.paper.fault_adapter import encoded,sha
 from core.storage.models import RequestedPaperHealthPolicyRecord as Policy,RequestedPaperHealthGateRecord as Gate
 
@@ -98,19 +98,71 @@ def check(db,row,financial,controlled):
     if (approved.payload_sha256!=sha(value) or value['account_id']!=row.account_id
         or value['opening_sha256']!=sha(financial['opening']) or value['instrument_id']!=financial['opening']['instrument_id']
         or value['enrolled_control_revision']>controlled['revision']):raise ValueError('Health policy storage identity differs')
+    replay(row.health_version,value,[deepcopy(stored.payload) for stored in sorted(saved,key=lambda gate:(gate.request_id,gate.phase))],financial,controlled)
+    for stored in saved:
+        if (stored.payload_sha256!=stored.payload['sha256'] or stored.request_id!=stored.payload['request']['request_id']
+            or stored.phase!=stored.payload['phase']):raise ValueError('Health gate storage identity differs')
+    return value
+
+
+def replay(marker,approved,saved,financial,controlled):
+    if not isinstance(saved,list) or len(saved)>2*journal.REQUEST_LIMIT:
+        raise ValueError('Invalid bounded health evidence list')
+    if marker is None:
+        if approved is not None or saved:raise ValueError('Orphan undeclared health evidence')
+        return None
+    if marker!=POLICY_VERSION or controlled['coverage']!='CONTROLLED':
+        raise ValueError('Missing declared health/control coverage')
+    value=validate_policy(approved)
+    if (value['account_id']!=financial['opening']['account_id'] or value['opening_sha256']!=sha(financial['opening'])
+        or value['instrument_id']!=financial['opening']['instrument_id'] or value['enrolled_control_revision']>controlled['revision']):
+        raise ValueError('Health policy differs from opening/control history')
     expected={(entry['request']['request_id'],phase):(entry,gate) for entry in financial['requests']
               for phase in ['PREPARE','SUBMIT']
               for gate in controlled['gates'] if gate['request_id']==entry['request']['request_id'] and gate['phase']==phase}
     if len(saved)!=len(expected):raise ValueError('Incomplete mandatory health gates')
-    for stored in saved:
-        context=expected.pop((stored.request_id,stored.phase),None)
-        if context is None:raise ValueError('Orphan health gate')
-        entry,risk=context;gate=verify_gate(stored.payload)
-        if (stored.payload_sha256!=gate['sha256'] or gate['phase']!=stored.phase
-            or encoded(gate['policy'])!=encoded(value) or encoded(gate['request'])!=encoded(entry['request'])
-            or encoded(gate['risk_gate'])!=encoded(risk)):raise ValueError('Health gate storage/request/control checkpoint differs')
-    if expected:raise ValueError('Missing health gate')
+    order=[]
+    for item in saved:
+        gate=verify_gate(item);key=(gate['request']['request_id'],gate['phase']);order.append(key)
+        context=expected.pop(key,None)
+        if context is None:raise ValueError('Orphan or duplicate health gate')
+        entry,risk=context
+        if (encoded(gate['policy'])!=encoded(value) or encoded(gate['request'])!=encoded(entry['request'])
+            or encoded(gate['risk_gate'])!=encoded(risk)):raise ValueError('Health gate request/control checkpoint differs')
+    if expected or order!=sorted(order):raise ValueError('Missing or unordered health gates')
     return value
+
+
+EXPORT_VERSION='paper-requested-health-export-v1'
+
+
+def capture(engine,account_id):
+    with journal.transaction(engine) as db:
+        db.execute(text("SET LOCAL lock_timeout='2000ms'"))
+        row=journal.lock(db,account_id);financial=journal.audit(db,row);controlled=controls.check(db,row,financial)
+        approved=check(db,row,financial,controlled)
+        saved=[deepcopy(g.payload) for g in db.scalars(select(Gate).where(Gate.account_id==account_id).order_by(Gate.request_id,Gate.phase))]
+        body={'version':EXPORT_VERSION,'declared_version':row.health_version,'policy':approved,'gates':saved,
+              'journal':inspection.seal(financial),'controls':controlled,'external_submission_allowed':False}
+        result={**body,'sha256':sha(body)}
+        if len(encoded(result).encode())>MAX_STORED_BYTES:raise ValueError('Health export exceeds 32 MiB')
+        verify(result)
+        return result
+
+
+def verify(report):
+    keys={'version','declared_version','policy','gates','journal','controls','external_submission_allowed','sha256'}
+    if (not isinstance(report,dict) or set(report)!=keys or report['version']!=EXPORT_VERSION
+        or len(encoded(report).encode())>MAX_STORED_BYTES):raise ValueError('Invalid bounded health export')
+    financial=inspection.verify(report['journal']);view=report['controls']
+    if not isinstance(view,dict):raise ValueError('Invalid control export')
+    marker=controls.VERSION if view.get('coverage')=='CONTROLLED' else None if view.get('coverage')=='LEGACY_UNMANAGED' else 'unsupported'
+    controlled=controls.replay(marker,view.get('policy'),view.get('records'),view.get('gates'),financial)
+    approved=replay(report['declared_version'],report['policy'],report['gates'],financial,controlled)
+    body={'version':EXPORT_VERSION,'declared_version':report['declared_version'],'policy':approved,'gates':report['gates'],
+          'journal':report['journal'],'controls':controlled,'external_submission_allowed':False}
+    if encoded(report)!=encoded({**body,'sha256':sha(body)}):raise ValueError('Health export differs from historical replay')
+    return deepcopy(report)
 
 
 def enroll(engine,account_id,expected_control_revision):

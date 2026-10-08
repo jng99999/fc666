@@ -5,7 +5,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from core.paper import requested_inspection as inspection, requested_journal as journal, requested_controls as controls,requested_sources as sources, requested_recovery as recovery, requested_ownership as ownership, requested_dispatch as dispatch
 
 
-def router_for(engine,settings=None):
+def router_for(engine,settings=None,*,health_cache=None):
     router=APIRouter()
 
     @router.get('/api/v1/paper-requested/journal')
@@ -76,5 +76,5 @@ def router_for(engine,settings=None):
         return JSONResponse(report,headers={'Cache-Control':'no-store'})
 
     from apps.api.requested_commands import add_commands
-    add_commands(router,engine,settings)
+    add_commands(router,engine,settings,health_cache=health_cache)
     return router
