@@ -193,3 +193,13 @@ Read PAPER_REQUESTED_OVERFLOW_DESIGN.md and PHASE_9_INFORMATION_CAPACITY_REPORT.
 ## Unified five-block local batch — current schema0025
 
 FIVE_BLOCK_EXECUTION_PLAN.md is the authorized whole-programme plan; FIVE_BLOCK_FOUNDATIONS.md records this batch's real boundary. Local staged-unapplied inbox and independent stage/read actions preserve financial state and immutable receipt history; current presence observations do not rewrite old acknowledgements. Selected-account common-minute exposure uses audited repeatable-read input without counting cash holds twice. Fixed-host private Spot GET signing/normalization is fixture-tested, credentials and real exchange acceptance remain absent. Causal bounded walk-forward API/export and offline selection replay are implemented; job/UI/AI remain incomplete. Main and populated-fixture snapshot/isolated restore with row-content SHA256 passed; configured CI is unverified remotely.85 distinct selected cases and typecheck passed, schema check clean. Main17 requested/pool tables empty, grants/Live disabled, five services ready. Continue whole programme without routine confirmation; next dependencies are segmented inbox application/OMS integration and enforced portfolio policies. Do not claim five complete production blocks or unattended execution after the turn.
+
+## Bounded inbox application — schema0025 unchanged
+
+Owned application now identifies staged immutable input by ordinal/hash, checks
+current financial/control revisions and unexpired ownership, and writes through
+the existing audited source/journal transaction and server health gates. Separate
+APPLY_LOCAL_INPUT authorization defaults disabled. Current-authority retries
+return original source receipts; staging receipts never change. Next OMS gate:
+a versioned segmented journal and archive replay contract with preserved global
+sequence/dedup/funds. This increment does not widen existing capacity limits.

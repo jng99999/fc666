@@ -21,3 +21,9 @@ Five substantial downstream work blocks remain: integrated OMS, shared-capital r
 Current main requested-engine data stays empty with operator commands disabled; Live is disabled. The detailed current slice and evidence are in the latest acceptance report. Environment draft saving is separate from publication. Continue authorized work without routine permission; do not imply unattended execution after a chat turn ends.
 
 Unified programme: FIVE_BLOCK_EXECUTION_PLAN.md. Latest local batch and limitations: FIVE_BLOCK_FOUNDATIONS.md (schema0025). The five full blocks are not completed by delivering these foundations.
+
+Current increment: owned local inbox application now reuses the atomic financial
+and source transaction, with a separate disabled-by-default API grant, exact
+staging identity, current revision/ownership fences and strict next sequence.
+This closes the bounded staged-input application path; it does not complete
+segmented journals or the five full production blocks.

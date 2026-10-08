@@ -184,6 +184,11 @@ def add_onboarding(router,engine,settings,authenticate,*,health_cache=None):
         grant(value.account_id,'STAGE_LOCAL_INPUT')
         return inbox_result(lambda:inbox.stage(engine,value.model_dump()))
 
+    @router.post('/api/v1/paper-requested/inbox-application-commands',dependencies=[Depends(authenticate)])
+    def apply_input(value:inbox.Apply):
+        grant(value.account_id,'APPLY_LOCAL_INPUT')
+        return inbox_result(lambda:inbox.apply(engine,value.model_dump(),health_cache=health_cache))
+
     @router.post('/api/v1/paper-requested/inbox-captures',dependencies=[Depends(authenticate)])
     def read_inbox(value:HealthRead):
         grant(value.account_id,'READ_LOCAL_INBOX')

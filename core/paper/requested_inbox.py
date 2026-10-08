@@ -140,3 +140,51 @@ def capture(engine,account_id):
         return {'version':VERSION,'account_id':account_id,'financial_revision':financial['revision'],
                 'records':[deepcopy(item.payload) for item in saved],'application_observations':observations,
                 'read_only':True,'event_committed':False,'external_submission_allowed':False}
+
+
+class Apply(BaseModel):
+    model_config=ConfigDict(extra='forbid',strict=True)
+    account_id:str=Field(min_length=1,max_length=128)
+    ordinal:StrictInt=Field(ge=0,lt=128)
+    staging_sha256:str=Field(pattern=r'^[0-9a-f]{64}$')
+    expected_financial_revision:StrictInt=Field(ge=1)
+    expected_control_revision:StrictInt=Field(ge=1)
+    owner:str=Field(min_length=1,max_length=128)
+    ownership_token:StrictInt=Field(ge=1,le=64)
+
+
+def apply(engine,value,*,health_cache=None):
+    """Apply one immutable staged input through the existing owned source contract.
+
+    Current authority is required even for retries. The original source receipt
+    proves application; the staging receipt remains an unapplied checkpoint.
+    This operation does not widen the frozen journal's sequence/capacity bounds.
+    """
+    from core.paper import requested_sources as sources,requested_event_preview as preview
+    value=Apply.model_validate(value).model_dump()
+    with journal.transaction(engine) as db:
+        db.execute(text("SET LOCAL lock_timeout='2000ms'"))
+        row=journal.lock(db,value['account_id']);financial=journal.audit(db,row)
+        controlled=controls.check(db,row,financial);saved=records(db,row.account_id)
+        if value['ordinal']>=len(saved):raise ValueError('Unknown staged input')
+        staged=saved[value['ordinal']].payload
+        if staged['sha256']!=value['staging_sha256']:raise ValueError('Staging identity mismatch')
+        original=staged['proposal'];request_id=original['request_id']
+        ownership._owned(db,request_id,value['owner'],value['ownership_token'])
+        if value['expected_financial_revision']!=financial['revision'] or value['expected_control_revision']!=controlled['revision']:
+            raise ValueError('Application checkpoint conflict')
+        index=next(i for i,item in enumerate(financial['requests']) if item['request']['request_id']==request_id)
+        entry=financial['requests'][index]
+        old=next((event for event in entry['events'] if event['event_id']==original['event']['event_id']),None)
+        if old is not None:
+            if encoded(old)!=encoded(original['event']):raise ValueError('Conflicting journal identity')
+            report=sources.reconstruct(financial,controlled,index,old['sequence'],original['source'])
+        else:
+            if original['event']['sequence']!=len(entry['events']):raise ValueError('Staged input is not the next journal sequence')
+            proposal={k:original[k] for k in ['account_id','request_id','source','event']}
+            proposal.update(expected_financial_revision=financial['revision'],expected_control_revision=controlled['revision'])
+            report=preview.evaluate(financial,controlled,proposal)
+        result=sources._accept(db,row,financial,controlled,report['proposal'],report['sha256'],ownership_token=value['ownership_token'],health_cache=health_cache)
+        ownership._owned(db,request_id,value['owner'],value['ownership_token'])
+        return {'version':'paper-requested-inbox-application-v1','staging_sha256':staged['sha256'],
+                'application':result,'event_committed':True,'external_submission_allowed':False}

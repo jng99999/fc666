@@ -45,3 +45,27 @@ Full dataset, parameters, costs/rules, candidate training results, selected inde
 85 distinct selected cases passed across new foundations, backtest, holdout, capacity, health HTTP, queued holdout jobs and storage integration. This includes actual inbox SIGKILL/reopen before commit/after lost reply, concurrent identical/conflicting delivery, capacity/fences, immutable rows, populated downgrade refusal and empty roundtrip. All generated account balances and credentials are fixtures; main17 requested/pool tables remain empty. Alembic check reports no pending operations at0025. Frontend typecheck passed. Only the existing Starlette/httpx deprecation warning was observed. The full1072-case suite and remote CI/deployment were not run or claimed.
 
 This batch needs no new Python/npm dependency or frontend build. Main operator token/accounts/actions/pools remain absent, Live false, and all five development services are ready. Startup draft persistence, environment publication and independent fresh-task restoration are separate steps.
+
+## Owned inbox application
+
+`POST /api/v1/paper-requested/inbox-application-commands` independently requires
+`APPLY_LOCAL_INPUT`. It identifies an immutable staging ordinal and SHA256,
+current financial/control revisions, and the current owner/token. Under the
+account lock it audits staging and financial history, requires the next sequence,
+and applies through the existing source/journal transaction with server health
+checks. Events, source receipts and dispatch evidence commit together. Original
+staging receipts stay `STAGED_UNAPPLIED`; captures report journal presence.
+
+Retries require current unexpired ownership and current revisions, and return
+original source receipts. An independently delivered matching source event may
+be acknowledged; this response does not claim that inbox application originally
+created it. Unlabeled history cannot acquire retrospective source provenance.
+Capacity and sequence bounds remain unchanged: overflow staging is retained but
+cannot yet be applied beyond the frozen journal limit. Segmented journal storage,
+automatic draining and archives remain outstanding. Default application grants
+are absent; this feature performs local Paper processing only.
+
+Validation: 50 distinct selected cases passed (49-case inbox/foundation/capacity/
+health regression run plus the additional enrolled-health rollback case).
+Alembic check found no upgrade operations; five development services were ready
+following API restart. Full suite and remote CI were not run for this increment.
