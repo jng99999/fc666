@@ -33,6 +33,8 @@ def evaluate(financial,controlled,proposal):
 def capture(engine,proposal):
     if not isinstance(proposal,dict) or set(proposal)!=PROPOSAL_KEYS:raise ValueError('Exact proposal envelope required')
     financial,controlled=controls.read(engine,proposal['account_id'])
+    from core.paper import requested_capacity
+    requested_capacity.require_new(financial,journal.TOTAL_EVENTS)
     return evaluate(financial,controlled,proposal)
 
 

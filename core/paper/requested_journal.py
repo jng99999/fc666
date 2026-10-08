@@ -139,6 +139,8 @@ def _prepare(db,row,view,value,*,pool_admission=None):
     if view['active_request_id'] is not None:raise ValueError('Account already has an unsealed request')
     if len(view['requests'])>=REQUEST_LIMIT:raise ValueError('Request history capacity reached')
     if view['total_events']>=TOTAL_EVENTS:raise ValueError('Account source history capacity reached')
+    from core.paper import requested_capacity
+    requested_capacity.require_new(view,TOTAL_EVENTS)
     if encoded(value['base'])!=encoded(view['account']) or contract.clock(value['created_at'])<contract.clock(view['last_clock']):
         raise ValueError('Stale account base or creation clock')
     from core.paper import shared_capital_admission

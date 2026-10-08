@@ -80,6 +80,8 @@ def prepare(engine,pool_id,proposal,preview_sha256,*,authorized_accounts=None):
         if old is not None:
             if encoded(old['local_preview']['proposal'])!=encoded(proposal) or old['local_preview']['sha256']!=preview_sha256:raise ValueError('Conflicting shared preparation retry')
             return old
+        from core.paper import requested_capacity
+        requested_capacity.require_new(financial,journal.TOTAL_EVENTS)
         local=preview.evaluate(financial,controlled,proposal)
         if local['sha256']!=preview_sha256:raise ValueError('Local preparation checkpoint differs')
         candidate={key:proposal[key] for key in capital.CANDIDATE_KEYS}
@@ -113,6 +115,8 @@ def capture_preview(engine,pool_id,proposal,*,authorized_accounts=None):
         financial=next((report['journal'] for report in reports if report['journal']['opening']['account_id']==proposal['account_id']),None)
         if financial is None:raise ValueError('Account not in pool')
         row=journal.lock(db,proposal['account_id']);controlled=controls.check(db,row,financial)
+        from core.paper import requested_capacity
+        requested_capacity.require_new(financial,journal.TOTAL_EVENTS)
         local=preview.evaluate(financial,controlled,proposal)
         candidate={key:proposal[key] for key in capital.CANDIDATE_KEYS}
         captured=pools.evaluate(definition,reports,pools.ownership.clock(db),candidate)
