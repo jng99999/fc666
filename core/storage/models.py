@@ -396,3 +396,21 @@ class RequestedPaperAttemptRecord(Base):
     __table_args__=(ForeignKeyConstraint(['request_id','token'],['requested_paper_claims.request_id','requested_paper_claims.token']),
                    UniqueConstraint('request_id','attempt_id',name='uq_requested_paper_attempt_id'),
                    CheckConstraint('ordinal>=0 AND ordinal<16',name='ck_requested_paper_attempt_ordinal'))
+
+
+class PaperCapitalPoolRecord(Base):
+    __tablename__='paper_capital_pools'
+    pool_id: Mapped[str]=mapped_column(String(128),primary_key=True)
+    payload: Mapped[dict]=mapped_column(JSON)
+    payload_sha256: Mapped[str]=mapped_column(String(64))
+
+
+class PaperCapitalMemberRecord(Base):
+    __tablename__='paper_capital_members'
+    account_id: Mapped[str]=mapped_column(ForeignKey('requested_paper_accounts.account_id'),primary_key=True)
+    pool_id: Mapped[str]=mapped_column(ForeignKey('paper_capital_pools.pool_id'))
+    ordinal: Mapped[int]=mapped_column(Integer)
+    payload: Mapped[dict]=mapped_column(JSON)
+    payload_sha256: Mapped[str]=mapped_column(String(64))
+    __table_args__=(UniqueConstraint('pool_id','ordinal',name='uq_paper_capital_member_ordinal'),
+                   CheckConstraint('ordinal>=0 AND ordinal<100',name='ck_paper_capital_member_ordinal'))

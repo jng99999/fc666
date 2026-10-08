@@ -1,3 +1,4 @@
+from core.storage.schema import SCHEMA_REVISION
 from copy import deepcopy
 import pytest
 from sqlalchemy import text
@@ -71,7 +72,7 @@ def test_populated_downgrade_refused_and_attempt_bound(database):
     with pytest.raises(ValueError):attempts.record(engine,{**cmd,'attempt_id':'over-limit'})
     assert len(attempts.capture(engine,'account',req['request_id']))==attempts.LIMIT
     with pytest.raises(RuntimeError):migration.downgrade(config,'0020')
-    with engine.connect() as db:assert db.scalar(text('SELECT version_num FROM alembic_version'))=='0021'
+    with engine.connect() as db:assert db.scalar(text('SELECT version_num FROM alembic_version'))==SCHEMA_REVISION
 
 
 def test_empty_attempt_migration_roundtrip(database):
