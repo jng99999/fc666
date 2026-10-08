@@ -1,0 +1,9 @@
+# Pooled preparation fault and capacity boundaries
+
+Six isolated PostgreSQL cases in `tests/test_shared_capital_faults.py` cover pooled command recovery. A real child process receives SIGKILL after request/gate/admission flush but before commit, or after commit before a reply can be recovered. A fresh engine sees no partial records in the first case and the original immutable admission in the second. Exact retries leave one request, one PREPARE gate, one admission and one quote hold.
+
+Request history exhaustion refuses new identities without evicting evidence. The test scales the production100-request limit to3; it is a boundary test, not a100-request throughput benchmark. Original retries remain valid after exhaustion. Whole-pool permissions are checked before returning even a committed receipt. STOP preserves the original receipt and hold while rejecting a new SUBMIT.
+
+A reproduced defect allowed preparation when the account had exhausted its total source-event history. The new hold could not be submitted because event acceptance rejects further events. Pure preparation preview and journal preparation now reject that state with `Account source history capacity reached`. The journal guard follows the existing exact-retry return, preserving historical acknowledgement. Pool commands inherit the preview guard and commit no new evidence on refusal. The regression uses a3-event bound, completes SUBMIT/FILL/SEAL, and checks preview, ordinary preparation and pool preparation refusal plus original receipt recovery.
+
+Limits remain100 requests and1000 total source events per account. This change does not reserve terminal-event headroom for arbitrary partial fills, add archive/rollover, prove storage-node failure recovery, or implement freshness/health/aggregate marked exposure gates. Fixtures run only in disposable databases. Scheduling, private transport and Live remain incomplete.

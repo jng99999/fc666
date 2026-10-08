@@ -17,6 +17,7 @@ def evaluate(financial,controlled,proposal):
         if type(proposal[key]) is not int or proposal[key]!=value:raise ValueError('Preview revision conflict')
     if proposal['account_id']!=financial['opening']['account_id']:raise ValueError('Preview account mismatch')
     if financial['active_request_id'] is not None or len(financial['requests'])>=journal.REQUEST_LIMIT:raise ValueError('Account is not available for a new request')
+    if financial['total_events']>=journal.TOTAL_EVENTS:raise ValueError('Account source history capacity reached')
     if any(entry['request']['client_request_id']==proposal['client_request_id'] for entry in financial['requests']):raise ValueError('Preview requires an unused request identity')
     if contract.clock(proposal['created_at'])<contract.clock(financial['last_clock']):raise ValueError('Preview predates account')
     value=contract.request(**{key:proposal[key] for key in PROPOSAL_KEYS-{'expected_financial_revision','expected_control_revision'}},base=financial['account'])
