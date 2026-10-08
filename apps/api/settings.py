@@ -10,7 +10,8 @@ class Settings(BaseSettings):
     live_trading: bool = False
     paper_operator_token: SecretStr | None = None
     paper_operator_accounts: list[str] = Field(default_factory=list)
-    paper_operator_actions: list[Literal["PAUSE", "HALT", "STOP", "RESUME", "VOID_UNSUBMITTED", "ENROLL", "PREVIEW_PREPARE", "PREPARE", "PREVIEW_EVENT", "INGEST_EVENT", "CLAIM_OWNERSHIP", "DELIVER_OWNED_EVENT", "QUERY_DISPATCH", "RECORD_ASSESSMENT", "READ_ASSESSMENTS"]] = Field(default_factory=list)
+    paper_operator_pool_ids: list[str] = Field(default_factory=list)
+    paper_operator_actions: list[Literal["PAUSE", "HALT", "STOP", "RESUME", "VOID_UNSUBMITTED", "ENROLL", "PREVIEW_PREPARE", "PREPARE", "PREVIEW_EVENT", "INGEST_EVENT", "CLAIM_OWNERSHIP", "DELIVER_OWNED_EVENT", "QUERY_DISPATCH", "RECORD_ASSESSMENT", "READ_ASSESSMENTS", "PREVIEW_POOL_PREPARE", "POOL_PREPARE", "READ_POOL"]] = Field(default_factory=list)
 
     @model_validator(mode="after")
     def validate_paper_operator(self):
@@ -24,6 +25,14 @@ class Settings(BaseSettings):
             or len(set(self.paper_operator_accounts))!=len(self.paper_operator_accounts)
             or len(set(self.paper_operator_actions))!=len(self.paper_operator_actions)):
             raise ValueError("Paper operator grants must be bounded and unique")
+        if (len(self.paper_operator_pool_ids)>100 or any(not value or len(value)>128 for value in self.paper_operator_pool_ids)
+            or len(set(self.paper_operator_pool_ids))!=len(self.paper_operator_pool_ids)):
+            raise ValueError("Paper pool grants must be bounded and unique")
+        pool_actions={'PREVIEW_POOL_PREPARE','POOL_PREPARE','READ_POOL'}
+        if self.paper_operator_pool_ids and not configured:
+            raise ValueError("Pool scope requires configured Paper operator")
+        if pool_actions.intersection(self.paper_operator_actions) and not self.paper_operator_pool_ids:
+            raise ValueError("Pool actions require explicit pool IDs")
         return self
 
 

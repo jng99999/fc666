@@ -66,11 +66,12 @@ def check(db,row,financial,controlled):
     return values
 
 
-def prepare(engine,pool_id,proposal,preview_sha256):
+def prepare(engine,pool_id,proposal,preview_sha256,*,authorized_accounts=None):
     if not isinstance(proposal,dict) or set(proposal)!=preview.PROPOSAL_KEYS or type(preview_sha256) is not str or re.fullmatch('[0-9a-f]{64}',preview_sha256) is None:raise ValueError('Exact local proposal/digest required')
     with journal.transaction(engine) as db:
         db.execute(text("SELECT set_config('lock_timeout','2000ms',true)"))
-        definition=pools.check(db,pools.lock(db,pool_id));reports=pools.journals(db,definition)
+        definition=pools.check(db,pools.lock(db,pool_id));pools.authorize(definition,authorized_accounts)
+        reports=pools.journals(db,definition)
         financial=next((report['journal'] for report in reports if report['journal']['opening']['account_id']==proposal['account_id']),None)
         if financial is None:raise ValueError('Account not in pool')
         row=journal.lock(db,proposal['account_id']);controlled=controls.check(db,row,financial)
@@ -86,3 +87,41 @@ def prepare(engine,pool_id,proposal,preview_sha256):
         value=evaluate(captured,local)
         journal._prepare(db,row,financial,local['request'],pool_admission=value)
         return value
+
+
+PREVIEW_VERSION='paper-capital-preparation-preview-v1'
+
+
+def evaluate_preview(pool_capture,local_preview):
+    pool=pools.verify(pool_capture);local=preview.verify(local_preview)
+    account=local['proposal']['account_id'];financial=next((report for report in pool['preview']['journals'] if report['journal']['opening']['account_id']==account),None)
+    forecast=pool['preview']['forecast']
+    if financial is None or encoded(financial)!=encoded(local['journal']) or forecast is None or encoded(forecast['request'])!=encoded(local['request']):raise ValueError('Pool/local preview differs')
+    body={'version':PREVIEW_VERSION,'pool_capture':pool,'local_preview':local,'capital_forecast_allowed':forecast['capital_forecast_allowed'],
+          'shared_reservation_committed':False,'submission_allowed':False,'read_only':True}
+    result={**body,'sha256':sha(body)}
+    if len(encoded(result).encode())>MAX_BYTES:raise ValueError('Pool preparation preview exceeds32MiB')
+    return result
+
+
+def capture_preview(engine,pool_id,proposal,*,authorized_accounts=None):
+    if not isinstance(proposal,dict) or set(proposal)!=preview.PROPOSAL_KEYS:raise ValueError('Exact local proposal required')
+    with journal.transaction(engine) as db:
+        db.execute(text("SELECT set_config('lock_timeout','2000ms',true)"))
+        definition=pools.check(db,pools.lock(db,pool_id));pools.authorize(definition,authorized_accounts)
+        reports=pools.journals(db,definition)
+        financial=next((report['journal'] for report in reports if report['journal']['opening']['account_id']==proposal['account_id']),None)
+        if financial is None:raise ValueError('Account not in pool')
+        row=journal.lock(db,proposal['account_id']);controlled=controls.check(db,row,financial)
+        local=preview.evaluate(financial,controlled,proposal)
+        candidate={key:proposal[key] for key in capital.CANDIDATE_KEYS}
+        captured=pools.evaluate(definition,reports,pools.ownership.clock(db),candidate)
+        return evaluate_preview(captured,local)
+
+
+def verify_preview(report):
+    keys={'version','pool_capture','local_preview','capital_forecast_allowed','shared_reservation_committed','submission_allowed','read_only','sha256'}
+    if not isinstance(report,dict) or set(report)!=keys or report['version']!=PREVIEW_VERSION or len(encoded(report).encode())>MAX_BYTES:raise ValueError('Invalid pool preparation preview')
+    expected=evaluate_preview(report['pool_capture'],report['local_preview'])
+    if encoded(expected)!=encoded(report):raise ValueError('Pool preparation preview differs from replay')
+    return expected

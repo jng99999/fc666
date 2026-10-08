@@ -4,7 +4,7 @@ from fastapi import Depends,HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel,ConfigDict,Field,StrictInt
 from sqlalchemy.exc import SQLAlchemyError
-from core.paper import requested_controls as controls,requested_journal as journal,requested_preview as preview,requested_preparation as preparation,requested_event_preview as event_preview,requested_sources as sources,requested_ownership as ownership,requested_dispatch_query as dispatch_query,requested_attempts as attempts
+from core.paper import requested_controls as controls,requested_journal as journal,requested_preview as preview,requested_preparation as preparation,requested_event_preview as event_preview,requested_sources as sources,requested_ownership as ownership,requested_dispatch_query as dispatch_query,requested_attempts as attempts,shared_capital_pool as capital_pool,shared_capital_admission as capital_admission
 
 
 class Rules(BaseModel):
@@ -118,6 +118,19 @@ class AssessmentCommand(DispatchQuery):
     failure:Literal['TIMEOUT','DISCONNECTED','EMPTY_RESULT','CONTRADICTORY_RESULT','UNSUPPORTED_TRANSPORT']
     expected_financial_revision:StrictInt=Field(ge=1)
     expected_control_revision:StrictInt=Field(ge=1)
+
+
+class PoolRead(BaseModel):
+    model_config=ConfigDict(extra='forbid',strict=True)
+    pool_id:str=Field(min_length=1,max_length=128)
+
+
+class PoolProposal(Proposal):
+    pool_id:str=Field(min_length=1,max_length=128)
+
+
+class PoolPreparation(PoolProposal):
+    local_preview_sha256:str=Field(pattern=r'^[0-9a-f]{64}$')
 
 
 def add_onboarding(router,engine,settings,authenticate):
@@ -253,3 +266,36 @@ def add_onboarding(router,engine,settings,authenticate):
         except SQLAlchemyError:
             raise HTTPException(503,'Explicit Paper assessment export temporarily unavailable',headers={'Cache-Control':'no-store'})
         return JSONResponse(result,headers={'Cache-Control':'no-store'})
+
+    def pool_grant(pool_id,action,account_id=None):
+        if action not in settings.paper_operator_actions or pool_id not in settings.paper_operator_pool_ids or (account_id is not None and account_id not in settings.paper_operator_accounts):
+            raise HTTPException(403,'Explicit Paper pool scope denied',headers={'Cache-Control':'no-store'})
+
+    def pool_result(call):
+        try:result=call()
+        except capital_pool.PoolScopeDenied:
+            raise HTTPException(403,'Explicit Paper pool scope denied',headers={'Cache-Control':'no-store'})
+        except (capital_pool.MissingPool,journal.MissingAccount):
+            raise HTTPException(404,'Explicit Paper pool or account not found',headers={'Cache-Control':'no-store'})
+        except (ValueError,ArithmeticError,TypeError,KeyError):
+            raise HTTPException(409,'Explicit Paper pool operation conflicts or cannot be verified',headers={'Cache-Control':'no-store'})
+        except SQLAlchemyError:
+            raise HTTPException(503,'Explicit Paper pool operation temporarily unavailable',headers={'Cache-Control':'no-store'})
+        return JSONResponse(result,headers={'Cache-Control':'no-store'})
+
+    @router.post('/api/v1/paper-requested/pool-preparation-previews',dependencies=[Depends(authenticate)])
+    def preview_pool_preparation(value:PoolProposal):
+        pool_grant(value.pool_id,'PREVIEW_POOL_PREPARE',value.account_id)
+        proposal=value.model_dump();pool_id=proposal.pop('pool_id')
+        return pool_result(lambda:capital_admission.capture_preview(engine,pool_id,proposal,authorized_accounts=settings.paper_operator_accounts))
+
+    @router.post('/api/v1/paper-requested/pool-preparation-commands',dependencies=[Depends(authenticate)])
+    def prepare_pool(value:PoolPreparation):
+        pool_grant(value.pool_id,'POOL_PREPARE',value.account_id)
+        proposal=value.model_dump();pool_id=proposal.pop('pool_id');digest=proposal.pop('local_preview_sha256')
+        return pool_result(lambda:capital_admission.prepare(engine,pool_id,proposal,digest,authorized_accounts=settings.paper_operator_accounts))
+
+    @router.post('/api/v1/paper-requested/pool-captures',dependencies=[Depends(authenticate)])
+    def read_pool(value:PoolRead):
+        pool_grant(value.pool_id,'READ_POOL')
+        return pool_result(lambda:capital_pool.capture(engine,value.pool_id,authorized_accounts=settings.paper_operator_accounts))

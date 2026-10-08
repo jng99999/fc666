@@ -14,6 +14,17 @@ POOL_LIMIT=100
 class MissingPool(ValueError):pass
 
 
+class PoolScopeDenied(ValueError):pass
+
+
+def authorize(definition,authorized_accounts):
+    if authorized_accounts is None:return  # Trusted internal library path; HTTP always supplies grants.
+    if (not isinstance(authorized_accounts,list) or not 1<=len(authorized_accounts)<=capital.LIMIT
+        or any(type(value) is not str or not 1<=len(value)<=128 for value in authorized_accounts)
+        or not {entry['account_id'] for entry in definition['allocations']}.issubset(set(authorized_accounts))):
+        raise PoolScopeDenied('Whole pool account scope required')
+
+
 def membership(definition):
     return [{'pool_id':definition['pool_id'],'ordinal':index,**deepcopy(row)} for index,row in enumerate(definition['allocations'])]
 
@@ -88,10 +99,11 @@ def evaluate(definition,reports,observed_us,candidate=None):
     return result
 
 
-def capture(engine,pool_id,candidate=None):
+def capture(engine,pool_id,candidate=None,*,authorized_accounts=None):
     with journal.transaction(engine) as db:
         db.execute(text("SELECT set_config('lock_timeout','2000ms',true)"))
-        definition=check(db,lock(db,pool_id));reports=journals(db,definition)
+        definition=check(db,lock(db,pool_id));authorize(definition,authorized_accounts)
+        reports=journals(db,definition)
         return evaluate(definition,reports,ownership.clock(db),candidate)
 
 
