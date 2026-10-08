@@ -40,13 +40,16 @@ def verify(value):
     return deepcopy(value)
 
 
-def check(db,account_id,request_id):
+def check(db,account_id,request_id,*,current=None):
+    stored_bytes=db.scalar(text('SELECT COALESCE(sum(octet_length(payload::text)),0) FROM requested_paper_attempts WHERE account_id=:account_id AND request_id=:request_id'),{'account_id':account_id,'request_id':request_id})
+    if stored_bytes>MAX_BYTES:raise ValueError('Stored request assessments exceed32MiB')
     saved=list(db.scalars(select(Attempt).where(Attempt.account_id==account_id,Attempt.request_id==request_id).order_by(Attempt.ordinal).limit(LIMIT+1)))
     if len(saved)>LIMIT:raise ValueError('Attempt capacity exceeded')
     values=[]
     for index,row in enumerate(saved):
         value=verify(row.payload);command=value['command']
         if row.ordinal!=index or value['ordinal']!=index or row.payload_sha256!=value['sha256'] or row.attempt_id!=command['attempt_id'] or row.token!=command['ownership_token'] or row.account_id!=command['account_id'] or row.request_id!=command['request_id']:raise ValueError('Attempt storage differs from evidence')
+        if current is not None:bind(value['assessment']['query_evidence']['dispatch_evidence'],current)
         values.append(value)
     return values
 
@@ -59,19 +62,20 @@ def record(engine,command):
         request_id=command['request_id']
         if not any(entry['request']['request_id']==request_id for entry in financial['requests']):raise ValueError('Request account differs')
         own._owned(db,request_id,command['owner'],command['ownership_token'])
-        history=check(db,row.account_id,request_id)
+        current=dispatch.snapshot(db,row,financial,controlled)
+        history=check(db,row.account_id,request_id,current=current)
         old=next((value for value in history if value['command']['attempt_id']==command['attempt_id']),None)
         if old is not None:
             if encoded(old['command'])!=encoded(command):raise ValueError('Conflicting attempt retry')
             own._owned(db,request_id,command['owner'],command['ownership_token'])
             return old
         if len(history)>=LIMIT or financial['revision']!=command['expected_financial_revision'] or controlled['revision']!=command['expected_control_revision']:raise ValueError('Attempt capacity/checkpoint differs')
-        q=query.evaluate(dispatch.snapshot(db,row,financial,controlled),request_id,command['client_id'],command['owner'],command['ownership_token'])
+        q=query.evaluate(current,request_id,command['client_id'],command['owner'],command['ownership_token'])
         assessment=boundary.evaluate(q,command['failure'])
         body={'version':VERSION,'command':deepcopy(command),'ordinal':len(history),'assessment':assessment,'remote_send_performed':False}
         value=verify({**body,'sha256':sha(body)})
         db.add(Attempt(request_id=request_id,ordinal=len(history),account_id=row.account_id,attempt_id=command['attempt_id'],token=command['ownership_token'],payload=value,payload_sha256=value['sha256']))
-        db.flush();check(db,row.account_id,request_id)
+        db.flush();check(db,row.account_id,request_id,current=current)
         own._owned(db,request_id,command['owner'],command['ownership_token'])
         return value
 
@@ -81,7 +85,9 @@ def capture(engine,account_id,request_id):
         db.execute(text("SELECT set_config('lock_timeout','2000ms',true)"))
         row=journal.lock(db,account_id);financial=journal.audit(db,row)
         if not any(entry['request']['request_id']==request_id for entry in financial['requests']):raise ValueError('Request account differs')
-        return check(db,account_id,request_id)
+        controlled=own.controls.check(db,row,financial)
+        current=dispatch.snapshot(db,row,financial,controlled)
+        return check(db,account_id,request_id,current=current)
 
 
 EXPORT_VERSION='paper-requested-attempts-export-v1'
@@ -110,7 +116,8 @@ def export(engine,account_id,request_id):
     with journal.transaction(engine) as db:
         db.execute(text("SELECT set_config('lock_timeout','2000ms',true)"))
         row=journal.lock(db,account_id);financial=journal.audit(db,row);controlled=own.controls.check(db,row,financial)
-        return evaluate_export(dispatch.snapshot(db,row,financial,controlled),request_id,check(db,account_id,request_id))
+        current=dispatch.snapshot(db,row,financial,controlled)
+        return evaluate_export(current,request_id,check(db,account_id,request_id,current=current))
 
 
 def verify_export(report,*,expected_receipt_sha256=None):

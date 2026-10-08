@@ -38,9 +38,9 @@ def test_durable_attempt_exact_retry_and_immutable_evidence(database,tmp_path):
 def test_attempt_expiry_during_processing_rolls_back(database,monkeypatch):
     engine,_,_=database;req,lease,_,_=submitted(engine);cmd=command(engine,req)
     original=attempts.check;calls=0
-    def expire(*args):
+    def expire(*args,**kwargs):
         nonlocal calls
-        values=original(*args);calls+=1
+        values=original(*args,**kwargs);calls+=1
         if calls==2:monkeypatch.setattr(own,'clock',lambda db:lease['expires_us'])
         return values
     monkeypatch.setattr(attempts,'check',expire)
