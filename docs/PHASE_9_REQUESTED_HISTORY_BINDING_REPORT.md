@@ -1,0 +1,11 @@
+# Acceptance: historical lineage and reference-based coverage
+
+Assessment export now rejects historical evidence that does not belong to the current verified opening/request/event/control/source/ownership/dispatch lineage. Later valid facts and takeover remain compatible with old receipts. Added optional trusted ordered receipt hashes to offline verification and CLI, preserving existing versions and0021 schema.
+
+Ten distinct cases accepted across runs: five existing API/process/concurrency/locking regressions and five new history/coverage cases. Initial run: six passed and one fixture-construction failure (33.85s); the alternative RESUME fixture changed admission gate identity before reaching the intended assertion. Replaced it with a replay-valid post-SUBMIT PAUSE-history branch preserving original dispatch; the corrected three-case history run passed (17.22s). Trusted coverage/CLI and alternative event-history cases each passed separately (6.20s,6.18s). No product validation was weakened; the alternative control and event exports each independently verify before lineage rejection.
+
+New cases cover later UNKNOWN/STOP/fill/takeover with original404/current303 cash holds, replay-valid alternative control/event histories retaining the original dispatch, independently valid future observation rejection, trusted ordered hash verification rejecting a resealed missing tail, malformed references and CLI success/failure. Source evidence remains unchanged. Existing TestClient deprecation warning remains.
+
+API restarted; five services ready, /health/ready200; schema0021 and eleven requested-engine main tables remain empty with operator token/grants disabled. No dependency/schema/network/frontend changes. Startup instruction draft saved; publication remains separate.
+
+Limits: optional independently trusted hashes prove agreement with that reference, not origin authentication. Without a reference, unsigned exports cannot establish omitted-tail coverage. History binding currently applies to export, not every optional receipt read/write path. No remote transport, scheduler/shared capital/multiuser identity or Live. Next: binding on stored receipt/retry paths and bounded processing before local adapters.

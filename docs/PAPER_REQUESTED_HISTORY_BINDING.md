@@ -1,0 +1,11 @@
+# Historical assessment lineage and trusted coverage
+
+Assessment exports now bind every historical receipt's independently verified dispatch report to the independently verified current report. The opening/request identity, financial event prefixes, declared void evidence, control policy/record prefixes and gates, source prefixes, event fencing evidence, claims and original dispatch must agree. Historical financial revisions and observation times cannot exceed the current snapshot. Claims already acquired before historical observation cannot disappear from that historical view. Current timestamps moving backwards therefore fail closed for history binding.
+
+Later valid fills, controls and lease takeover remain compatible with old receipts. Original historical funding remains separate from current funding. A replay-valid alternative control or event history with the same original dispatch cannot be spliced into the export. The binding validates lineage; it does not authenticate who supplied a report, prove remote outcome or change account state. Existing receipt/export versions and schema0021 are unchanged.
+
+For stronger coverage, `verify_export(report, expected_receipt_sha256=trusted_list)` optionally compares the exact ordered receipt hash list obtained independently from a trusted source. The CLI supports `--expected-receipts trusted.json`, a JSON array bounded to16 hashes/4KiB. A missing or substituted tail then fails even if the export's envelope hash was recomputed. With no external trusted reference, an unsigned self-consistent export still cannot prove the exporter included every stored record. A list copied from the same untrusted export adds no independent assurance. This is reference-based verification, not a signature system.
+
+Current account locking, immutable storage, server-side ordered reads and existing authentication remain the runtime boundaries. No schema/dependency/frontend/startup command changes, no remote querying or retry and no financial writes are introduced.
+
+Next: bind optional stored receipts on internal record/retry paths and strengthen bounded export processing before any local adapter scheduler. Actual venue transport and Live remain disabled.

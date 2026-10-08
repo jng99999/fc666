@@ -6,6 +6,7 @@ from core.storage.models import RequestedPaperAttemptRecord as Attempt
 from core.paper import requested_journal as journal, requested_ownership as own, requested_dispatch as dispatch, requested_dispatch_query as query, requested_transport_boundary as boundary
 from core.paper.fault_adapter import sha,encoded
 from core.paper.requested_execution import MAX_BYTES
+from core.paper.requested_history_binding import bind
 
 VERSION='paper-requested-local-attempt-v1'
 KEYS={'account_id','request_id','client_id','owner','ownership_token','attempt_id','failure','expected_financial_revision','expected_control_revision'}
@@ -95,6 +96,7 @@ def evaluate_export(dispatch_report,request_id,receipts):
     for index,receipt in enumerate(receipts):
         value=verify(receipt);cmd=value['command']
         original=value['assessment']['query_evidence']['dispatch_evidence']
+        bind(original,current)
         original_slot=next(item for item in original['dispatches'] if item['request_id']==request_id)
         if value['ordinal']!=index or cmd['request_id']!=request_id or encoded(slot)!=encoded(original_slot) or cmd['attempt_id'] in identities:raise ValueError('Attempt export coverage/original identity differs')
         identities.add(cmd['attempt_id']);values.append(value)
@@ -111,8 +113,11 @@ def export(engine,account_id,request_id):
         return evaluate_export(dispatch.snapshot(db,row,financial,controlled),request_id,check(db,account_id,request_id))
 
 
-def verify_export(report):
+def verify_export(report,*,expected_receipt_sha256=None):
     if not isinstance(report,dict) or set(report)!={'version','dispatch_evidence','request_id','attempts','read_only','external_submission_allowed','sha256'} or report['version']!=EXPORT_VERSION or len(encoded(report).encode())>MAX_BYTES:raise ValueError('Invalid attempt export')
     expected=evaluate_export(report['dispatch_evidence'],report['request_id'],report['attempts'])
     if encoded(expected)!=encoded(report):raise ValueError('Attempt export differs from replay')
+    if expected_receipt_sha256 is not None:
+        if not isinstance(expected_receipt_sha256,list) or len(expected_receipt_sha256)>LIMIT or any(type(value) is not str or re.fullmatch('[0-9a-f]{64}',value) is None for value in expected_receipt_sha256):raise ValueError('Invalid trusted receipt reference')
+        if expected_receipt_sha256!=[value['sha256'] for value in expected['attempts']]:raise ValueError('Attempt export differs from trusted receipt coverage')
     return expected
