@@ -414,3 +414,12 @@ class PaperCapitalMemberRecord(Base):
     payload_sha256: Mapped[str]=mapped_column(String(64))
     __table_args__=(UniqueConstraint('pool_id','ordinal',name='uq_paper_capital_member_ordinal'),
                    CheckConstraint('ordinal>=0 AND ordinal<100',name='ck_paper_capital_member_ordinal'))
+
+
+class PaperCapitalAdmissionRecord(Base):
+    __tablename__='paper_capital_admissions'
+    request_id: Mapped[str]=mapped_column(ForeignKey('requested_paper_requests.request_id'),primary_key=True)
+    account_id: Mapped[str]=mapped_column(ForeignKey('paper_capital_members.account_id'))
+    pool_id: Mapped[str]=mapped_column(ForeignKey('paper_capital_pools.pool_id'))
+    payload: Mapped[dict]=mapped_column(JSON)
+    payload_sha256: Mapped[str]=mapped_column(String(64))

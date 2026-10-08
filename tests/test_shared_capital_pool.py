@@ -5,7 +5,7 @@ import pytest
 from sqlalchemy import text,event as sql_event
 from sqlalchemy.exc import DBAPIError
 from alembic import command as migration
-from core.paper import shared_capital_pool as pools,requested_journal as journal
+from core.paper import shared_capital_pool as pools,shared_capital as capital,requested_journal as journal
 from core.storage.schema import SCHEMA_REVISION
 from core.paper.fault_adapter import sha
 from tests.test_integration import database
@@ -29,7 +29,16 @@ def test_immutable_exclusive_pool_capture_and_later_retry(database,tmp_path):
     path.write_text('{"version":"a","version":"b"}')
     assert subprocess.run([sys.executable,'-m','scripts.verify_shared_capital_pool',str(path)],capture_output=True,timeout=10).returncode!=0
     assert not report['submission_allowed'] and not report['shared_reservation_committed']
-    req=request(account_id='a');journal.prepare(engine,req)
+    from core.paper import requested_controls as controls,requested_preview as preview,shared_capital_admission as admission
+    from tests.test_requested_controls import LIMITS
+    controls.enroll(engine,'a',controls.policy('a',LIMITS),'enroll-a',STAMP.isoformat())
+    controls.command(engine,'a','resume-a',1,'RESUME',STAMP.isoformat())
+    financial,controlled=controls.read(engine,'a')
+    candidate=request(account_id='a')
+    local_proposal={key:candidate[key] for key in capital.CANDIDATE_KEYS}
+    local_proposal.update(expected_financial_revision=financial['revision'],expected_control_revision=controlled['revision'])
+    local=preview.evaluate(financial,controlled,local_proposal)
+    admission.prepare(engine,'pool',local_proposal,local['sha256'])
     assert pools.create(engine,definition)==definition
     assert pools.capture(engine,'pool')['preview']['reserved_quote'].startswith('404.')
     with pytest.raises(ValueError):pools.create(engine,{**definition,'pool_id':'other'})

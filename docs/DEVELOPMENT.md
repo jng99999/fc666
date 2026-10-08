@@ -222,3 +222,5 @@ Read PAPER_REQUESTED_DISPATCH.md and PHASE_9_REQUESTED_DISPATCH_REPORT.md. New o
 Current requested-engine schema is0021 (supersedes older phase notes). `bash scripts/start.sh` upgrades the schema and restores the five services. Durable internal local assessment receipts and acceptance evidence are documented in PAPER_REQUESTED_ATTEMPTS.md and PHASE_9_REQUESTED_ATTEMPTS_REPORT.md. Preserve empty/default-disabled main state; fixtures belong only in isolated test databases.
 
 Current requested/pool schema is0022 (supersedes earlier head notes). Existing bash scripts/start.sh upgrades0022 and restores five services. PAPER_SHARED_CAPITAL_POOL.md describes immutable local membership/coherent capture and the limits of pool risk observation. Preserve empty/default-disabled main; all pool test fixtures belong in isolated databases.
+
+Current schema is0023. Existing startup upgrades0023 and restores five services. PAPER_SHARED_CAPITAL_ADMISSION.md covers mandatory internal pooled BUY preparation and migration refusal for old pooled requests without proof; main currently has no such requests. Preserve empty/default-disabled main and isolated fixtures.

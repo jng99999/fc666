@@ -106,6 +106,8 @@ def audit(db,row):
     requested_ownership.check(db,row,financial,controlled)
     from core.paper import requested_dispatch
     requested_dispatch.check(db,row,financial,controlled)
+    from core.paper import shared_capital_admission
+    shared_capital_admission.check(db,row,financial,controlled)
     return financial
 
 
@@ -129,7 +131,7 @@ def read(engine,account_id,*,lock_timeout_ms=None):
         return audit(db,lock(db,account_id))
 
 
-def _prepare(db,row,view,value):
+def _prepare(db,row,view,value,*,pool_admission=None):
     existing=next((r for r in view['requests'] if r['request']['client_request_id']==value['client_request_id']),None)
     if existing is not None:
         if encoded(existing['request'])!=encoded(value):raise ValueError('Conflicting client request retry')
@@ -138,6 +140,8 @@ def _prepare(db,row,view,value):
     if len(view['requests'])>=REQUEST_LIMIT:raise ValueError('Request history capacity reached')
     if encoded(value['base'])!=encoded(view['account']) or contract.clock(value['created_at'])<contract.clock(view['last_clock']):
         raise ValueError('Stale account base or creation clock')
+    from core.paper import shared_capital_admission
+    shared_capital_admission.guard(db,row,value,pool_admission)
     summary=contract.reduce(value,[])
     from core.paper import requested_controls
     admitted=requested_controls.gate(db,row,view,value,'PREPARE',value['created_at'])
@@ -145,6 +149,8 @@ def _prepare(db,row,view,value):
                    ordinal=len(view['requests']),payload=deepcopy(value),payload_sha256=sha(value)))
     db.flush()  # Parent request must exist before its FK admission row; same transaction.
     if admitted is not None:db.add(admitted)
+    if pool_admission is not None:
+        shared_capital_admission.insert(db,row,value,pool_admission)
     row.current=summary['account'];row.active_request_id=value['request_id'];row.revision+=1
     db.flush();audit(db,row)
     return summary
