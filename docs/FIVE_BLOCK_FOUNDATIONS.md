@@ -114,3 +114,19 @@ config fields. Local backup/isolated restore verified schema0026 and all row
 content hashes without modifying the main DB. Five services ready; main18
 requested/pool tables empty, operator actions absent and Live false. Full backend
 suite, remote CI and external production deployment were not run in this batch.
+
+## Private snapshot and offline differences
+
+PRIVATE_SNAPSHOTS.md supersedes the prior note that private snapshot files had
+not yet been created. The bounded read-only client now supports an owner-only
+credential-file loader, complete validated/hash-bound local snapshots,
+conservative observed-scope comparisons and a protected CLI. No real private
+credentials, exchange identity, complete history, financial reconciliation,
+production capture or submission permissions have been established.
+
+Snapshot acceptance:16 selected cases passed;20 unrelated foundation cases were
+deselected. Cases cover normalization/signing regression, complete artifact
+roundtrip and real offline CLI,0600 exclusive output, owner/symlink/FIFO/
+duplicate-key credential rejection, strict scope/cursor/clock/data bounds,
+rehashed false authority flags, and sanitized CLI failure. All5 existing services
+remain ready. No schema/dependency/frontend changes or live network capture.

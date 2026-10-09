@@ -36,3 +36,8 @@ walk-forward/page, atomic bounded inbox drain, and opt-in immutable pool risk
 admission. Recovery evidence is documented in FIVE_BLOCK_FOUNDATIONS.md.
 This is current cloud service restoration, not an externally hosted production
 release or completion of the entire five-block programme.
+
+Private connector integration now includes protected credential-file loading,
+bounded snapshot export/verification and offline observation differences. This
+is fixture-validated read-only tooling. Real credentials/identity and complete
+financial reconciliation remain outstanding; see PRIVATE_SNAPSHOTS.md.
