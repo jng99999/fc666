@@ -50,3 +50,8 @@ failed cases and affected paths passed the39-case focused regression, including
 6 new target-guard/active-connection cleanup cases. Main backup row hashes,
 schema0026 and five-service readiness passed. No clean second full-suite run,
 production load or external deployment is claimed. See INTEGRATED_ACCEPTANCE_REPORT.md.
+# Financial segmented archive checkpoint
+
+Implemented bounded financial-only archive transport and protected local capture/verify CLI. Existing complete journal exports are split into64KiB canonical chunks with contiguous offsets and predecessor hashes. Offline verification reassembles and deterministically replays the full financial journal; pending funding holds remain intact. It rejects missing/reordered/truncated segments and resealed economic corruption. Capture is read-only, output is exclusive0600 and fsynced. No dependencies, migrations, runtime settings or financial capacity changed.
+
+Validation: `pytest -q tests/test_requested_archive.py tests/test_requested_inspection.py` completed with44 passed (one existing Starlette deprecation warning), including isolated PostgreSQL capture and subprocess CLI acceptance/rejection. Five service readiness checks passed. No full-suite rerun claimed for this checkpoint. Full operational evidence manifests, segmented financial application and authorized retention remain unfinished; private exchange identity and external production deployment remain unverified.
