@@ -28,7 +28,7 @@ def test_stored_size_budget_checked_before_loading_payloads(database,monkeypatch
     from sqlalchemy.orm import Session
     original=Session.scalar
     def oversized(self,statement,*args,**kwargs):
-        if 'octet_length(payload::text)' in str(statement):return attempts.MAX_BYTES+1
+        if 'octet_length(payload::text)' in str(statement) and 'FROM requested_paper_attempts ' in str(statement):return attempts.MAX_BYTES+1
         return original(self,statement,*args,**kwargs)
     monkeypatch.setattr(Session,'scalar',oversized)
     for operation in [lambda:attempts.capture(engine,'account',req['request_id']),lambda:attempts.record(engine,cmd),lambda:attempts.export(engine,'account',req['request_id'])]:
@@ -42,7 +42,7 @@ def test_insert_crossing_stored_budget_rolls_back(database,monkeypatch):
     before=sources.capture(engine,'account');original=Session.scalar;checks=0
     def over_after_insert(self,statement,*args,**kwargs):
         nonlocal checks
-        if 'octet_length(payload::text)' in str(statement):
+        if 'octet_length(payload::text)' in str(statement) and 'FROM requested_paper_attempts ' in str(statement):
             checks+=1
             if checks==2:return attempts.MAX_BYTES+1
         return original(self,statement,*args,**kwargs)

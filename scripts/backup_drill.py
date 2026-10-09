@@ -1,7 +1,8 @@
 """Verify a local PG custom archive by restoring a new isolated database; no main writes."""
-import argparse,json,os,subprocess,hashlib,uuid,re
+import argparse,json,os,subprocess,hashlib,uuid,re,time
 from pathlib import Path
 from sqlalchemy import create_engine,text
+from sqlalchemy.exc import OperationalError
 from apps.api.settings import Settings
 
 ROOT=Path(__file__).resolve().parents[1]
@@ -13,6 +14,25 @@ def run(args,**kwargs):
     result=subprocess.run(args,stderr=subprocess.PIPE,**kwargs)
     if result.returncode:raise RuntimeError('Backup/restore operation failed; sensitive diagnostics suppressed')
     return result
+
+
+def _drop_restore_database(engine,target):
+    # This helper can remove only a generated restoration target, never the source.
+    if type(target) is not str or re.fullmatch(r'fc666_restore_[0-9a-f]{32}',target) is None:
+        raise ValueError('Only generated isolated restore targets may be removed')
+    admin=create_engine(engine.url.set(database='postgres'),isolation_level='AUTOCOMMIT',hide_parameters=True)
+    try:
+        with admin.connect() as db:
+            db.execute(text(f'ALTER DATABASE "{target}" ALLOW_CONNECTIONS false'))
+            for attempt in range(10):
+                db.execute(text('SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname=:target AND pid <> pg_backend_pid()'),{'target':target})
+                try:
+                    db.execute(text(f'DROP DATABASE "{target}" WITH (FORCE)'))
+                    break
+                except OperationalError as error:
+                    if getattr(error.orig,'sqlstate',None)!='55006' or attempt==9:raise
+                    time.sleep(.1)
+    finally:admin.dispose()
 
 
 def catalog(connection):
@@ -68,7 +88,7 @@ def drill(directory):
         return report
     finally:
         engine.dispose()
-        if created:run([*exec_prefix,'dropdb','-U','fc666','--force',target],stdout=subprocess.DEVNULL)
+        if created:_drop_restore_database(engine,target)
 
 
 def main():

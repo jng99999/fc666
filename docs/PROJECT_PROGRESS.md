@@ -41,3 +41,12 @@ Private connector integration now includes protected credential-file loading,
 bounded snapshot export/verification and offline observation differences. This
 is fixture-validated read-only tooling. Real credentials/identity and complete
 financial reconciliation remain outstanding; see PRIVATE_SNAPSHOTS.md.
+
+## 2026-10-09 — full backend regression and fixes
+
+Full1101-case run completed:1098 passed,3 failed. Fixed Timescale-backed isolated
+restore cleanup and two overbroad assessment-budget fault injections. All3
+failed cases and affected paths passed the39-case focused regression, including
+6 new target-guard/active-connection cleanup cases. Main backup row hashes,
+schema0026 and five-service readiness passed. No clean second full-suite run,
+production load or external deployment is claimed. See INTEGRATED_ACCEPTANCE_REPORT.md.
