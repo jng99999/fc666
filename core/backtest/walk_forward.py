@@ -9,7 +9,7 @@ VERSION='spot-walk-forward-v1'
 MAX_BYTES=32*1024*1024
 
 
-def simulate(bars,instrument,config,*,strategy_id,grid,train_bars,test_bars):
+def validate(bars,instrument,strategy_id,grid,train_bars,test_bars):
     if (type(train_bars) is not int or type(test_bars) is not int or train_bars<3 or test_bars<3
         or not isinstance(grid,list) or not 1<=len(grid)<=8 or not train_bars+test_bars<=len(bars)<=1000):
         raise ValueError('Bounded complete training/test windows and1..8 candidates required')
@@ -23,18 +23,28 @@ def simulate(bars,instrument,config,*,strategy_id,grid,train_bars,test_bars):
     for i,bar in enumerate(bars):
         if not bar.is_closed or bar.instrument_id!=instrument.instrument_id or (i and (bar.timeframe!=bars[i-1].timeframe or bar.open_time!=bars[i-1].close_time)):
             raise ValueError('Matching closed contiguous source required')
+    return parameters,folds
+
+
+def simulate(bars,instrument,config,*,strategy_id,grid,train_bars,test_bars,checkpoint=None):
+    parameters,folds=validate(bars,instrument,strategy_id,grid,train_bars,test_bars)
+    total=folds*(len(parameters)*train_bars+test_bars);completed=0
+    def progress(offset):
+        return None if checkpoint is None else lambda done,count:checkpoint(offset+done,total)
     results=[]
     for index in range(folds):
         boundary=train_bars+index*test_bars;train=bars[boundary-train_bars:boundary];test=bars[boundary:boundary+test_bars]
         candidates=[]
         for p in parameters:
             selected_config=config.model_copy(update={'period':p['period']}) if strategy_id=='ema_long_flat_v1' else config
-            run=spot(train,instrument,selected_config,strategy_id=strategy_id,parameters=p)
+            run=spot(train,instrument,selected_config,strategy_id=strategy_id,parameters=p,checkpoint=progress(completed))
+            completed+=train_bars
             candidates.append({'parameters':p,'config':selected_config.model_dump(mode='json'),'train':run})
         # Deterministic declared-grid-order tie break; no test result affects selection.
         selected=max(range(len(candidates)),key=lambda i:Decimal(candidates[i]['train']['metrics']['total_return']))
         chosen=candidates[selected]
-        out=spot(test,instrument,BacktestConfig.model_validate(chosen['config']),strategy_id=strategy_id,parameters=chosen['parameters'])
+        out=spot(test,instrument,BacktestConfig.model_validate(chosen['config']),strategy_id=strategy_id,parameters=chosen['parameters'],checkpoint=progress(completed))
+        completed+=test_bars
         results.append({'train_start':train[0].open_time.isoformat(),'train_end':train[-1].close_time.isoformat(),
                         'test_start':test[0].open_time.isoformat(),'test_end':test[-1].close_time.isoformat(),
                         'candidates':candidates,'selected_index':selected,'test':out})

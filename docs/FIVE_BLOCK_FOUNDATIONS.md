@@ -69,3 +69,48 @@ Validation: 50 distinct selected cases passed (49-case inbox/foundation/capacity
 health regression run plus the additional enrolled-health rollback case).
 Alembic check found no upgrade operations; five development services were ready
 following API restart. Full suite and remote CI were not run for this increment.
+
+## Recovery and integrated execution — schema0026
+
+The managed connection recovered on 2026-10-09. The existing checkout, uncommitted
+work, .env and database volumes were retained. Binary tracked changes and
+untracked files were separately archived under /workspace/recovery-backups.
+Git read verification confirmed remote branch codex/fc666-research-platform at
+b29e197 before recovery work. This is restored cloud development service delivery,
+not deployment to an external production host.
+
+Walk-forward research now has immutable queued snapshots, lease recovery,
+candidate/fold checkpoints, cancellation with no partial publication, and a
+page supporting progress, refresh restoration, history and full export. The
+research proxy explicitly admits the new bounded task route.
+
+Opt-in immutable pool risk policy enrollment requires untouched openings and
+whole-pool authorization. Version2 admission/preview evidence binds complete
+pool inputs, quantity ceilings including outstanding BUY quantities, active
+request caps and an available-quote floor. Pool locking serializes competing
+reservations; current account holdings and pending quantities are counted once.
+Existing v1 pool evidence remains compatible. Quantity/cash policy is admission
+control; marked-price/drawdown policies, shared inventory and transfers remain
+unfinished. ENROLL_POOL_RISK requires explicit pool/account/action grants.
+
+Inbox drain automatically selects up to16 contiguous staged events for one
+currently owned request under one account transaction. Gap waits, cap/health/
+financial errors roll back the entire batch; lost-response callers refresh
+financial/control fences. Frozen1000-event limits remain. This does not implement
+segmented journals or an unattended scheduler.
+
+Private snapshot/reconciliation files proposed during the outage did not exist
+at recovery and are not claimed implemented. Production target infrastructure,
+real private credentials, segmented journals, full sandbox/AI and remaining
+five-block goals still require work and acceptance.
+
+Recovery acceptance evidence: 41 distinct selected backend cases passed across
+inbox application, walk-forward queue, pool admissions/API, new recovery
+integrations and onboarding API. Frontend typecheck and optimized build passed;
+real-browser acceptance submitted a stored-market-data job, observed worker
+success, refreshed the page and verified the downloaded4-fold report offline.
+The browser checks found and fixed missing proxy admission and stripped candidate
+config fields. Local backup/isolated restore verified schema0026 and all row
+content hashes without modifying the main DB. Five services ready; main18
+requested/pool tables empty, operator actions absent and Live false. Full backend
+suite, remote CI and external production deployment were not run in this batch.

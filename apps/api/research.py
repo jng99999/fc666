@@ -102,6 +102,16 @@ def router_for(engine):
         from fastapi.responses import JSONResponse
         return JSONResponse(result,headers={'Cache-Control':'no-store'})
 
+    @router.post('/api/v1/research/walk-forwards',status_code=202)
+    def submit_walk_forward(request:WalkForwardRequest):
+        from core.backtest.walk_forward import validate
+        bars,instrument,frozen=prepare(engine,request)
+        try:
+            validate(bars,instrument,request.strategy,request.grid,request.train_bars,request.test_bars)
+            return jobs.enqueue(engine,{**frozen,'research_type':'walk_forward'},bars,instrument)
+        except jobs.QueueFull:raise HTTPException(429,'Research queue full (20 active tasks)')
+        except (ValueError,ArithmeticError):raise HTTPException(409,'Walk-forward windows or candidates unavailable')
+
     @router.get('/api/v1/research/status')
     def worker_status():
         try:ready=jobs.healthy(engine)

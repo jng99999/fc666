@@ -203,3 +203,14 @@ APPLY_LOCAL_INPUT authorization defaults disabled. Current-authority retries
 return original source receipts; staging receipts never change. Next OMS gate:
 a versioned segmented journal and archive replay contract with preserved global
 sequence/dedup/funds. This increment does not widen existing capacity limits.
+
+## Recovery checkpoint — schema0026
+
+Original environment/checkout retained; inspect FIVE_BLOCK_FOUNDATIONS.md.
+Restore with scripts/start.sh without overwriting .env or database volumes.
+Walk-forward queue/UI and pool-risk v2 admissions are integrated; inbox drain
+atomically selects a bounded contiguous prefix. Continue remaining programme:
+segmented journals/archive replay, shared inventory/transfers and broader risk,
+private secure snapshots/reconciliation, full research sandbox and production
+infrastructure/load acceptance. Do not equate the successful recovery batch
+with completion of all five full blocks.

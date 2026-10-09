@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     paper_operator_token: SecretStr | None = None
     paper_operator_accounts: list[str] = Field(default_factory=list)
     paper_operator_pool_ids: list[str] = Field(default_factory=list)
-    paper_operator_actions: list[Literal["PAUSE", "HALT", "STOP", "RESUME", "VOID_UNSUBMITTED", "ENROLL", "PREVIEW_PREPARE", "PREPARE", "PREVIEW_EVENT", "INGEST_EVENT", "CLAIM_OWNERSHIP", "DELIVER_OWNED_EVENT", "QUERY_DISPATCH", "RECORD_ASSESSMENT", "READ_ASSESSMENTS", "PREVIEW_POOL_PREPARE", "POOL_PREPARE", "READ_POOL", "ENROLL_HEALTH", "READ_HEALTH", "STAGE_LOCAL_INPUT", "APPLY_LOCAL_INPUT", "READ_LOCAL_INBOX", "READ_REQUESTED_EXPOSURE"]] = Field(default_factory=list)
+    paper_operator_actions: list[Literal["PAUSE", "HALT", "STOP", "RESUME", "VOID_UNSUBMITTED", "ENROLL", "PREVIEW_PREPARE", "PREPARE", "PREVIEW_EVENT", "INGEST_EVENT", "CLAIM_OWNERSHIP", "DELIVER_OWNED_EVENT", "QUERY_DISPATCH", "RECORD_ASSESSMENT", "READ_ASSESSMENTS", "PREVIEW_POOL_PREPARE", "POOL_PREPARE", "READ_POOL", "ENROLL_HEALTH", "READ_HEALTH", "STAGE_LOCAL_INPUT", "APPLY_LOCAL_INPUT", "DRAIN_LOCAL_INBOX", "ENROLL_POOL_RISK", "READ_LOCAL_INBOX", "READ_REQUESTED_EXPOSURE"]] = Field(default_factory=list)
 
     @model_validator(mode="after")
     def validate_paper_operator(self):
@@ -28,7 +28,7 @@ class Settings(BaseSettings):
         if (len(self.paper_operator_pool_ids)>100 or any(not value or len(value)>128 for value in self.paper_operator_pool_ids)
             or len(set(self.paper_operator_pool_ids))!=len(self.paper_operator_pool_ids)):
             raise ValueError("Paper pool grants must be bounded and unique")
-        pool_actions={'PREVIEW_POOL_PREPARE','POOL_PREPARE','READ_POOL'}
+        pool_actions={'PREVIEW_POOL_PREPARE','POOL_PREPARE','READ_POOL','ENROLL_POOL_RISK'}
         if self.paper_operator_pool_ids and not configured:
             raise ValueError("Pool scope requires configured Paper operator")
         if pool_actions.intersection(self.paper_operator_actions) and not self.paper_operator_pool_ids:

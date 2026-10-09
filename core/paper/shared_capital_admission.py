@@ -8,23 +8,36 @@ from core.paper.fault_adapter import sha,encoded
 from core.paper.requested_execution import MAX_BYTES
 
 VERSION='paper-capital-admission-v1'
+VERSION_V2='paper-capital-admission-v2'
 
 
-def evaluate(pool_capture,local_preview):
+def evaluate(pool_capture,local_preview,risk_policy=None):
     pool=pools.verify(pool_capture);local=preview.verify(local_preview)
     account=local['proposal']['account_id'];financial=next((report for report in pool['preview']['journals'] if report['journal']['opening']['account_id']==account),None)
     forecast=pool['preview']['forecast']
     if financial is None or encoded(financial)!=encoded(local['journal']) or forecast is None or not forecast['capital_forecast_allowed'] or encoded(forecast['request'])!=encoded(local['request']):raise ValueError('Pool/local funding admission differs or denied')
     body={'version':VERSION,'pool_capture':pool,'local_preview':local,'request_sha256':sha(local['request']),
           'shared_reservation_committed':True,'external_submission_allowed':False}
+    if risk_policy is not None:
+        from core.portfolio import pool_risk
+        decision=pool_risk.evaluate(risk_policy,pool)
+        if not decision['allowed']:raise ValueError('Pool risk denies new reservation')
+        body.update(version=VERSION_V2,risk_decision=decision)
     result={**body,'sha256':sha(body)}
     if len(encoded(result).encode())>MAX_BYTES:raise ValueError('Shared admission exceeds32MiB')
     return result
 
 
 def verify(value):
-    if not isinstance(value,dict) or set(value)!={'version','pool_capture','local_preview','request_sha256','shared_reservation_committed','external_submission_allowed','sha256'} or value['version']!=VERSION or len(encoded(value).encode())>MAX_BYTES:raise ValueError('Invalid shared admission')
-    expected=evaluate(value['pool_capture'],value['local_preview'])
+    keys={'version','pool_capture','local_preview','request_sha256','shared_reservation_committed','external_submission_allowed','sha256'}
+    v2=isinstance(value,dict) and value.get('version')==VERSION_V2
+    if v2:keys.add('risk_decision')
+    if not isinstance(value,dict) or set(value)!=keys or value['version'] not in [VERSION,VERSION_V2] or len(encoded(value).encode())>MAX_BYTES:raise ValueError('Invalid shared admission')
+    if v2:
+        from core.portfolio import pool_risk
+        decision=pool_risk.verify(value['risk_decision'])
+        if encoded(decision['pool_capture'])!=encoded(value['pool_capture']):raise ValueError('Risk admission capture differs')
+    expected=evaluate(value['pool_capture'],value['local_preview'],value['risk_decision']['policy'] if v2 else None)
     if encoded(expected)!=encoded(value):raise ValueError('Shared admission differs from replay')
     return expected
 
@@ -53,12 +66,17 @@ def check(db,row,financial,controlled):
         return []
     pool_row=db.get(pools.Pool,member.pool_id)
     if pool_row is None:raise ValueError('Missing declared pool')
-    definition=pools.check(db,pool_row);lookup={value.request_id:value for value in saved};values=[]
+    definition=pools.check(db,pool_row)
+    from core.portfolio import pool_risk
+    risk_policy=pool_risk.check(db,member.pool_id)
+    lookup={value.request_id:value for value in saved};values=[]
     if len(saved)!=len(financial['requests']):raise ValueError('Incomplete mandatory shared admissions')
     for index,entry in enumerate(financial['requests']):
         stored=lookup.pop(entry['request']['request_id'],None)
         if stored is None:raise ValueError('Missing mandatory shared admission')
-        value=verify(stored.payload);local=value['local_preview'];prior=preparation.prefix(financial,index)
+        value=verify(stored.payload)
+        if (risk_policy is None)!=(value['version']==VERSION) or (risk_policy is not None and encoded(value['risk_decision']['policy'])!=encoded(risk_policy)):raise ValueError('Mandatory pool risk policy evidence differs')
+        local=value['local_preview'];prior=preparation.prefix(financial,index)
         if stored.pool_id!=member.pool_id or stored.payload_sha256!=value['sha256'] or encoded(value['pool_capture']['definition'])!=encoded(definition) or encoded(local['request'])!=encoded(entry['request']) or encoded(local['journal']['journal'])!=encoded(prior):raise ValueError('Shared admission storage/prefix differs')
         if encoded(local['controls']['records'])!=encoded(controlled['records'][:local['controls']['revision']]):raise ValueError('Shared admission control prefix differs')
         values.append(value)
@@ -86,21 +104,27 @@ def prepare(engine,pool_id,proposal,preview_sha256,*,authorized_accounts=None,he
         if local['sha256']!=preview_sha256:raise ValueError('Local preparation checkpoint differs')
         candidate={key:proposal[key] for key in capital.CANDIDATE_KEYS}
         captured=pools.evaluate(definition,reports,pools.ownership.clock(db),candidate)
-        value=evaluate(captured,local)
+        from core.portfolio import pool_risk
+        value=evaluate(captured,local,pool_risk.check(db,pool_id))
         journal._prepare(db,row,financial,local['request'],pool_admission=value,health_cache=health_cache)
         return value
 
 
 PREVIEW_VERSION='paper-capital-preparation-preview-v1'
+PREVIEW_VERSION_V2='paper-capital-preparation-preview-v2'
 
 
-def evaluate_preview(pool_capture,local_preview):
+def evaluate_preview(pool_capture,local_preview,risk_policy=None):
     pool=pools.verify(pool_capture);local=preview.verify(local_preview)
     account=local['proposal']['account_id'];financial=next((report for report in pool['preview']['journals'] if report['journal']['opening']['account_id']==account),None)
     forecast=pool['preview']['forecast']
     if financial is None or encoded(financial)!=encoded(local['journal']) or forecast is None or encoded(forecast['request'])!=encoded(local['request']):raise ValueError('Pool/local preview differs')
     body={'version':PREVIEW_VERSION,'pool_capture':pool,'local_preview':local,'capital_forecast_allowed':forecast['capital_forecast_allowed'],
           'shared_reservation_committed':False,'submission_allowed':False,'read_only':True}
+    if risk_policy is not None:
+        from core.portfolio import pool_risk
+        decision=pool_risk.evaluate(risk_policy,pool)
+        body.update(version=PREVIEW_VERSION_V2,risk_decision=decision,capital_forecast_allowed=decision['allowed'])
     result={**body,'sha256':sha(body)}
     if len(encoded(result).encode())>MAX_BYTES:raise ValueError('Pool preparation preview exceeds32MiB')
     return result
@@ -120,12 +144,18 @@ def capture_preview(engine,pool_id,proposal,*,authorized_accounts=None):
         local=preview.evaluate(financial,controlled,proposal)
         candidate={key:proposal[key] for key in capital.CANDIDATE_KEYS}
         captured=pools.evaluate(definition,reports,pools.ownership.clock(db),candidate)
-        return evaluate_preview(captured,local)
+        from core.portfolio import pool_risk
+        return evaluate_preview(captured,local,pool_risk.check(db,pool_id))
 
 
 def verify_preview(report):
     keys={'version','pool_capture','local_preview','capital_forecast_allowed','shared_reservation_committed','submission_allowed','read_only','sha256'}
-    if not isinstance(report,dict) or set(report)!=keys or report['version']!=PREVIEW_VERSION or len(encoded(report).encode())>MAX_BYTES:raise ValueError('Invalid pool preparation preview')
-    expected=evaluate_preview(report['pool_capture'],report['local_preview'])
+    v2=isinstance(report,dict) and report.get('version')==PREVIEW_VERSION_V2
+    if v2:keys.add('risk_decision')
+    if not isinstance(report,dict) or set(report)!=keys or report['version'] not in [PREVIEW_VERSION,PREVIEW_VERSION_V2] or len(encoded(report).encode())>MAX_BYTES:raise ValueError('Invalid pool preparation preview')
+    if v2:
+        from core.portfolio import pool_risk
+        pool_risk.verify(report['risk_decision'])
+    expected=evaluate_preview(report['pool_capture'],report['local_preview'],report['risk_decision']['policy'] if v2 else None)
     if encoded(expected)!=encoded(report):raise ValueError('Pool preparation preview differs from replay')
     return expected

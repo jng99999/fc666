@@ -160,31 +160,75 @@ def apply(engine,value,*,health_cache=None):
     proves application; the staging receipt remains an unapplied checkpoint.
     This operation does not widen the frozen journal's sequence/capacity bounds.
     """
-    from core.paper import requested_sources as sources,requested_event_preview as preview
     value=Apply.model_validate(value).model_dump()
+    with journal.transaction(engine) as db:
+        db.execute(text("SET LOCAL lock_timeout='2000ms'"))
+        return _apply(db,value,health_cache=health_cache)
+
+
+def _apply(db,value,*,health_cache=None):
+    from core.paper import requested_sources as sources,requested_event_preview as preview
+    row=journal.lock(db,value['account_id']);financial=journal.audit(db,row)
+    controlled=controls.check(db,row,financial);saved=records(db,row.account_id)
+    if value['ordinal']>=len(saved):raise ValueError('Unknown staged input')
+    staged=saved[value['ordinal']].payload
+    if staged['sha256']!=value['staging_sha256']:raise ValueError('Staging identity mismatch')
+    original=staged['proposal'];request_id=original['request_id']
+    ownership._owned(db,request_id,value['owner'],value['ownership_token'])
+    if value['expected_financial_revision']!=financial['revision'] or value['expected_control_revision']!=controlled['revision']:
+        raise ValueError('Application checkpoint conflict')
+    index=next(i for i,item in enumerate(financial['requests']) if item['request']['request_id']==request_id)
+    entry=financial['requests'][index]
+    old=next((event for event in entry['events'] if event['event_id']==original['event']['event_id']),None)
+    if old is not None:
+        if encoded(old)!=encoded(original['event']):raise ValueError('Conflicting journal identity')
+        report=sources.reconstruct(financial,controlled,index,old['sequence'],original['source'])
+    else:
+        if original['event']['sequence']!=len(entry['events']):raise ValueError('Staged input is not the next journal sequence')
+        proposal={k:original[k] for k in ['account_id','request_id','source','event']}
+        proposal.update(expected_financial_revision=financial['revision'],expected_control_revision=controlled['revision'])
+        report=preview.evaluate(financial,controlled,proposal)
+    result=sources._accept(db,row,financial,controlled,report['proposal'],report['sha256'],ownership_token=value['ownership_token'],health_cache=health_cache)
+    ownership._owned(db,request_id,value['owner'],value['ownership_token'])
+    return {'version':'paper-requested-inbox-application-v1','staging_sha256':staged['sha256'],
+            'application':result,'event_committed':True,'external_submission_allowed':False}
+
+
+class Drain(BaseModel):
+    model_config=ConfigDict(extra='forbid',strict=True)
+    account_id:str=Field(min_length=1,max_length=128)
+    request_id:str=Field(pattern=r'^[0-9a-f]{64}$')
+    expected_financial_revision:StrictInt=Field(ge=1)
+    expected_control_revision:StrictInt=Field(ge=1)
+    owner:str=Field(min_length=1,max_length=128)
+    ownership_token:StrictInt=Field(ge=1,le=64)
+    max_events:StrictInt=Field(ge=1,le=16)
+
+
+def drain(engine,value,*,health_cache=None):
+    """Atomic bounded automatic selection of the contiguous staged prefix.
+
+    A gap waits; validation/health/capacity failure rolls back the whole batch.
+    Caller must refresh checkpoints after a committed batch or lost response.
+    """
+    value=Drain.model_validate(value).model_dump()
     with journal.transaction(engine) as db:
         db.execute(text("SET LOCAL lock_timeout='2000ms'"))
         row=journal.lock(db,value['account_id']);financial=journal.audit(db,row)
         controlled=controls.check(db,row,financial);saved=records(db,row.account_id)
-        if value['ordinal']>=len(saved):raise ValueError('Unknown staged input')
-        staged=saved[value['ordinal']].payload
-        if staged['sha256']!=value['staging_sha256']:raise ValueError('Staging identity mismatch')
-        original=staged['proposal'];request_id=original['request_id']
-        ownership._owned(db,request_id,value['owner'],value['ownership_token'])
-        if value['expected_financial_revision']!=financial['revision'] or value['expected_control_revision']!=controlled['revision']:
-            raise ValueError('Application checkpoint conflict')
-        index=next(i for i,item in enumerate(financial['requests']) if item['request']['request_id']==request_id)
-        entry=financial['requests'][index]
-        old=next((event for event in entry['events'] if event['event_id']==original['event']['event_id']),None)
-        if old is not None:
-            if encoded(old)!=encoded(original['event']):raise ValueError('Conflicting journal identity')
-            report=sources.reconstruct(financial,controlled,index,old['sequence'],original['source'])
-        else:
-            if original['event']['sequence']!=len(entry['events']):raise ValueError('Staged input is not the next journal sequence')
-            proposal={k:original[k] for k in ['account_id','request_id','source','event']}
-            proposal.update(expected_financial_revision=financial['revision'],expected_control_revision=controlled['revision'])
-            report=preview.evaluate(financial,controlled,proposal)
-        result=sources._accept(db,row,financial,controlled,report['proposal'],report['sha256'],ownership_token=value['ownership_token'],health_cache=health_cache)
-        ownership._owned(db,request_id,value['owner'],value['ownership_token'])
-        return {'version':'paper-requested-inbox-application-v1','staging_sha256':staged['sha256'],
-                'application':result,'event_committed':True,'external_submission_allowed':False}
+        ownership._owned(db,value['request_id'],value['owner'],value['ownership_token'])
+        if value['expected_financial_revision']!=financial['revision'] or value['expected_control_revision']!=controlled['revision']:raise ValueError('Drain checkpoint conflict')
+        entry=next((item for item in financial['requests'] if item['request']['request_id']==value['request_id']),None)
+        if entry is None:raise ValueError('Known request required')
+        next_sequence=len(entry['events']);results=[]
+        pending={item.source_sequence:item for item in saved if item.request_id==value['request_id'] and item.source_sequence>=next_sequence}
+        while next_sequence in pending and len(results)<value['max_events']:
+            item=pending.pop(next_sequence)
+            command={key:value[key] for key in ['account_id','expected_control_revision','owner','ownership_token']}
+            command.update(ordinal=item.ordinal,staging_sha256=item.payload['sha256'],expected_financial_revision=financial['revision']+len(results))
+            results.append(_apply(db,command,health_cache=health_cache));next_sequence+=1
+        ownership._owned(db,value['request_id'],value['owner'],value['ownership_token'])
+        return {'version':'paper-requested-inbox-drain-v1','account_id':value['account_id'],'request_id':value['request_id'],
+                'initial_financial_revision':financial['revision'],'final_financial_revision':financial['revision']+len(results),
+                'next_sequence':next_sequence,'applications':results,'state':'BATCH_LIMIT' if next_sequence in pending else 'WAITING_FOR_SEQUENCE' if pending else 'NO_PENDING_INPUT',
+                'events_committed':len(results),'external_submission_allowed':False}

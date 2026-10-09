@@ -27,3 +27,12 @@ and source transaction, with a separate disabled-by-default API grant, exact
 staging identity, current revision/ownership fences and strict next sequence.
 This closes the bounded staged-input application path; it does not complete
 segmented journals or the five full production blocks.
+
+## 2026-10-09 — cloud recovery and integrated redeployment
+
+Original environment is connected again; preserved checkout and local changes,
+verified remote b29e197, restored PG/Redis and migrated to0026. Integrated queued
+walk-forward/page, atomic bounded inbox drain, and opt-in immutable pool risk
+admission. Recovery evidence is documented in FIVE_BLOCK_FOUNDATIONS.md.
+This is current cloud service restoration, not an externally hosted production
+release or completion of the entire five-block programme.

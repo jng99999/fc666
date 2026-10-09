@@ -455,3 +455,10 @@ class RequestedPaperInboxRecord(Base):
     __table_args__=(UniqueConstraint('request_id','event_id',name='uq_requested_inbox_event'),
                    UniqueConstraint('request_id','source_sequence',name='uq_requested_inbox_sequence'),
                    CheckConstraint('ordinal>=0 AND ordinal<128',name='ck_requested_inbox_ordinal'))
+
+
+class PaperCapitalRiskPolicyRecord(Base):
+    __tablename__='paper_capital_risk_policies'
+    pool_id: Mapped[str]=mapped_column(ForeignKey('paper_capital_pools.pool_id'),primary_key=True)
+    payload: Mapped[dict]=mapped_column(JSON)
+    payload_sha256: Mapped[str]=mapped_column(String(64))

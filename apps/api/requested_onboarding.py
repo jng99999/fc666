@@ -1,6 +1,6 @@
 """Scoped local Paper commands; no venue transport."""
 from typing import Literal
-from core.portfolio import requested_exposure
+from core.portfolio import requested_exposure,pool_risk
 from fastapi import Depends,HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel,ConfigDict,Field,StrictInt
@@ -121,6 +121,14 @@ class AssessmentCommand(DispatchQuery):
     expected_control_revision:StrictInt=Field(ge=1)
 
 
+class PoolRiskEnrollment(BaseModel):
+    model_config=ConfigDict(extra='forbid',strict=True)
+    pool_id:str=Field(min_length=1,max_length=128)
+    max_quantity_by_instrument:dict[str,str]=Field(min_length=1,max_length=2)
+    max_active_requests:StrictInt=Field(ge=1,le=100)
+    min_available_quote:str=Field(min_length=1,max_length=96)
+
+
 class PoolRead(BaseModel):
     model_config=ConfigDict(extra='forbid',strict=True)
     pool_id:str=Field(min_length=1,max_length=128)
@@ -188,6 +196,11 @@ def add_onboarding(router,engine,settings,authenticate,*,health_cache=None):
     def apply_input(value:inbox.Apply):
         grant(value.account_id,'APPLY_LOCAL_INPUT')
         return inbox_result(lambda:inbox.apply(engine,value.model_dump(),health_cache=health_cache))
+
+    @router.post('/api/v1/paper-requested/inbox-drain-commands',dependencies=[Depends(authenticate)])
+    def drain_inbox(value:inbox.Drain):
+        grant(value.account_id,'DRAIN_LOCAL_INBOX')
+        return inbox_result(lambda:inbox.drain(engine,value.model_dump(),health_cache=health_cache))
 
     @router.post('/api/v1/paper-requested/inbox-captures',dependencies=[Depends(authenticate)])
     def read_inbox(value:HealthRead):
@@ -364,6 +377,11 @@ def add_onboarding(router,engine,settings,authenticate,*,health_cache=None):
         pool_grant(value.pool_id,'POOL_PREPARE',value.account_id)
         proposal=value.model_dump();pool_id=proposal.pop('pool_id');digest=proposal.pop('local_preview_sha256')
         return pool_result(lambda:capital_admission.prepare(engine,pool_id,proposal,digest,authorized_accounts=settings.paper_operator_accounts,health_cache=health_cache))
+
+    @router.post('/api/v1/paper-requested/pool-risk-enrollment-commands',dependencies=[Depends(authenticate)])
+    def enroll_pool_risk(value:PoolRiskEnrollment):
+        pool_grant(value.pool_id,'ENROLL_POOL_RISK')
+        return pool_result(lambda:pool_risk.enroll(engine,{'version':pool_risk.VERSION,**value.model_dump()},authorized_accounts=settings.paper_operator_accounts))
 
     @router.post('/api/v1/paper-requested/pool-captures',dependencies=[Depends(authenticate)])
     def read_pool(value:PoolRead):
