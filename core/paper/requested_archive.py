@@ -10,9 +10,14 @@ MAX_BYTES = 70 * 1024 * 1024
 KEYS = {'version', 'scope', 'export_sha256', 'byte_length', 'segments', 'sha256'}
 OPERATIONAL_VERSION = 'paper-requested-segmented-operational-archive-v1'
 OPERATIONAL_VERSION_V2 = 'paper-requested-segmented-operational-archive-v2'
+POOL_VERSION = 'paper-requested-segmented-pool-archive-v1'
 
 
 def payload_contract(report):
+    from core.paper import requested_pool_archive as pool
+    if isinstance(report, dict) and report.get('version') == pool.VERSION:
+        pool.verify(report)
+        return POOL_VERSION, pool.SCOPE
     from core.paper import requested_operational_archive as operational
     if isinstance(report, dict) and report.get('version') in [operational.VERSION, operational.VERSION_V2]:
         operational.verify(report)
@@ -41,8 +46,9 @@ def pack(report):
 
 
 def verify(value):
+    from core.paper import requested_pool_archive as pool
     from core.paper import requested_operational_archive as operational
-    if not isinstance(value, dict) or set(value) != KEYS or (value['version'], value['scope']) not in [(VERSION, inspection.SCOPE), (OPERATIONAL_VERSION, operational.SCOPE), (OPERATIONAL_VERSION_V2, operational.SCOPE_V2)]:
+    if not isinstance(value, dict) or set(value) != KEYS or (value['version'], value['scope']) not in [(VERSION, inspection.SCOPE), (OPERATIONAL_VERSION, operational.SCOPE), (OPERATIONAL_VERSION_V2, operational.SCOPE_V2), (POOL_VERSION, pool.SCOPE)]:
         raise ValueError('Unsupported archive envelope')
     size = value['byte_length']
     if type(size) is not int or not 0 < size <= 32 * 1024 * 1024:

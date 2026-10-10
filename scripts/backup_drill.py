@@ -49,7 +49,7 @@ def catalog(connection):
     return {'schema':connection.scalar(text('SELECT version_num FROM alembic_version')),'tables':counts,'table_sha256':digests}
 
 
-def drill(directory):
+def drill(directory,*,verify_restored=None):
     directory=Path(directory);directory.mkdir(parents=True,exist_ok=True,mode=0o700)
     if directory.is_symlink():raise ValueError('Backup directory must not be a symlink')
     os.chmod(directory,0o700)
@@ -72,9 +72,14 @@ def drill(directory):
             run([*exec_prefix,'pg_restore','-U','fc666','-d',target,'--exit-on-error','--no-owner','--no-acl'],stdin=file,stdout=subprocess.DEVNULL)
         run([*exec_prefix,'psql','-U','fc666','-d',target,'-v','ON_ERROR_STOP=1','-c','SELECT timescaledb_post_restore();'],stdout=subprocess.DEVNULL)
         restored=create_engine(engine.url.set(database=target),hide_parameters=True)
+        additional=None
         try:
             with restored.connect() as db:actual=catalog(db)
             if actual!=expected:raise RuntimeError('Restored schema/table counts differ from snapshot')
+            if verify_restored is not None:
+                additional=verify_restored(restored)
+                if not isinstance(additional,dict) or len(json.dumps(additional,sort_keys=True,allow_nan=False).encode())>16384:
+                    raise ValueError('Bounded additional restore verification required')
         finally:restored.dispose()
         digest=hashlib.sha256()
         with archive.open('rb') as file:
@@ -83,6 +88,7 @@ def drill(directory):
                 'bytes':archive.stat().st_size,'restored_schema':actual['schema'],'verified_table_counts':actual['tables'],'verified_table_sha256':actual['table_sha256'],
                 'verification':'snapshot-schema-counts-and-row-content-sha256','row_content_verified':True,'offsite_retention_verified':False,
                 'isolated_restore_verified':True,'main_database_modified':False}
+        if additional is not None:report['additional_verification']=additional
         fd=os.open(manifest,os.O_WRONLY|os.O_CREAT|os.O_EXCL,0o600)
         with os.fdopen(fd,'w') as file:json.dump(report,file,sort_keys=True);file.flush();os.fsync(file.fileno())
         return report

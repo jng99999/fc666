@@ -2,6 +2,8 @@
 
 One authorized execution programme replaces requests to confirm each small slice. Existing checkout and financial evidence are preserved. Install/test/fix/commit/push within this programme are authorized. Live remains blocked by actual incomplete execution/reconciliation/identity and acceptance requirements; a health endpoint or local test never establishes production readiness.
 
+The ordered remaining milestones and acceptance gates are tracked in [REMAINING_DELIVERY_PLAN.md](REMAINING_DELIVERY_PLAN.md). Whole-pool evidence export and populated local restore replay are now implemented and tested; segmented financial application and complete production acceptance remain separate outstanding goals.
+
 | Block | Local acceptance targets | Remaining full-delivery gate |
 | --- | --- | --- |
 | OMS | Durable staged input and atomic bounded contiguous drain, strict identity/retry/fences, retained funds and crash recovery | Segmented journal application, scheduler integration, archive restore and complete order lifecycle |

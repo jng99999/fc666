@@ -96,11 +96,15 @@ def capture(engine, account_id, *, include_receipts=False):
         row = journal.lock(db, account_id)
         financial = journal.audit(db, row)
         controlled = controls.check(db, row, financial)
-        dispatched = dispatch.snapshot(db, row, financial, controlled)
-        healthy = health.snapshot(db, row, financial, controlled)
-        if include_receipts:
-            from core.paper import requested_attempts as attempts, requested_inbox as inbox
-            groups = [dict(request_id=e['request']['request_id'], receipts=attempts.check(db, account_id, e['request']['request_id'], current=dispatched)) for e in financial['requests']]
-            staged = [deepcopy(r.payload) for r in inbox.records(db, account_id)]
-            return seal_receipts(dispatched, healthy, groups, staged)
-        return seal(dispatched, healthy)
+        return snapshot(db, row, financial, controlled, include_receipts=include_receipts)
+
+
+def snapshot(db, row, financial, controlled, *, include_receipts=False):
+    dispatched = dispatch.snapshot(db, row, financial, controlled)
+    healthy = health.snapshot(db, row, financial, controlled)
+    if include_receipts:
+        from core.paper import requested_attempts as attempts, requested_inbox as inbox
+        groups = [dict(request_id=e['request']['request_id'], receipts=attempts.check(db, row.account_id, e['request']['request_id'], current=dispatched)) for e in financial['requests']]
+        staged = [deepcopy(r.payload) for r in inbox.records(db, row.account_id)]
+        return seal_receipts(dispatched, healthy, groups, staged)
+    return seal(dispatched, healthy)
