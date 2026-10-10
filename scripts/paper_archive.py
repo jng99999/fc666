@@ -36,16 +36,19 @@ def main():
     cap.add_argument('--account-id', required=True)
     cap.add_argument('--output', required=True)
     cap.add_argument('--operational', action='store_true')
+    cap.add_argument('--receipts', action='store_true', help='Include attempts and staged inbox; requires --operational')
     check = commands.add_parser('verify')
     check.add_argument('--input', required=True)
     args = parser.parse_args()
     try:
         if args.command == 'capture':
+            if args.receipts and not args.operational:
+                raise ValueError('Receipts require operational scope')
             engine = create_engine(Settings().database_url.get_secret_value(), hide_parameters=True)
             try:
                 if args.operational:
                     from core.paper import requested_operational_archive as operational
-                    value = archive.pack(operational.capture(engine, args.account_id))
+                    value = archive.pack(operational.capture(engine, args.account_id, include_receipts=args.receipts))
                 else:
                     value = archive.capture(engine, args.account_id)
                 write(args.output, value)
