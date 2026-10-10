@@ -35,6 +35,7 @@ def main():
     cap = commands.add_parser('capture')
     cap.add_argument('--account-id', required=True)
     cap.add_argument('--output', required=True)
+    cap.add_argument('--operational', action='store_true')
     check = commands.add_parser('verify')
     check.add_argument('--input', required=True)
     args = parser.parse_args()
@@ -42,14 +43,19 @@ def main():
         if args.command == 'capture':
             engine = create_engine(Settings().database_url.get_secret_value(), hide_parameters=True)
             try:
-                write(args.output, archive.capture(engine, args.account_id))
+                if args.operational:
+                    from core.paper import requested_operational_archive as operational
+                    value = archive.pack(operational.capture(engine, args.account_id))
+                else:
+                    value = archive.capture(engine, args.account_id)
+                write(args.output, value)
             finally:
                 engine.dispose()
         else:
             archive.verify(read(args.input))
     except Exception:
         parser.exit(1, 'Archive operation failed; check complete input, account and protected destination.\n')
-    print('Complete financial journal verified; control/ownership evidence and retention authorization excluded.')
+    print('Bounded Paper archive verified; inspect version/scope for coverage. Retention and external execution are not authorized.')
 
 
 if __name__ == '__main__':

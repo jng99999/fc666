@@ -140,14 +140,18 @@ def capture(engine,account_id):
     with journal.transaction(engine) as db:
         db.execute(text("SET LOCAL lock_timeout='2000ms'"))
         row=journal.lock(db,account_id);financial=journal.audit(db,row);controlled=controls.check(db,row,financial)
-        approved=check(db,row,financial,controlled)
-        saved=[deepcopy(g.payload) for g in db.scalars(select(Gate).where(Gate.account_id==account_id).order_by(Gate.request_id,Gate.phase))]
-        body={'version':EXPORT_VERSION,'declared_version':row.health_version,'policy':approved,'gates':saved,
-              'journal':inspection.seal(financial),'controls':controlled,'external_submission_allowed':False}
-        result={**body,'sha256':sha(body)}
-        if len(encoded(result).encode())>MAX_STORED_BYTES:raise ValueError('Health export exceeds 32 MiB')
-        verify(result)
-        return result
+        return snapshot(db,row,financial,controlled)
+
+
+def snapshot(db,row,financial,controlled):
+    approved=check(db,row,financial,controlled)
+    saved=[deepcopy(g.payload) for g in db.scalars(select(Gate).where(Gate.account_id==row.account_id).order_by(Gate.request_id,Gate.phase))]
+    body={'version':EXPORT_VERSION,'declared_version':row.health_version,'policy':approved,'gates':saved,
+          'journal':inspection.seal(financial),'controls':controlled,'external_submission_allowed':False}
+    result={**body,'sha256':sha(body)}
+    if len(encoded(result).encode())>MAX_STORED_BYTES:raise ValueError('Health export exceeds 32 MiB')
+    verify(result)
+    return result
 
 
 def verify(report):

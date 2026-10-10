@@ -8,10 +8,20 @@ VERSION = 'paper-requested-segmented-archive-v1'
 SEGMENT_BYTES = 65536
 MAX_BYTES = 70 * 1024 * 1024
 KEYS = {'version', 'scope', 'export_sha256', 'byte_length', 'segments', 'sha256'}
+OPERATIONAL_VERSION = 'paper-requested-segmented-operational-archive-v1'
+
+
+def payload_contract(report):
+    from core.paper import requested_operational_archive as operational
+    if isinstance(report, dict) and report.get('version') == operational.VERSION:
+        operational.verify(report)
+        return OPERATIONAL_VERSION, operational.SCOPE
+    inspection.verify(report)
+    return VERSION, inspection.SCOPE
 
 
 def pack(report):
-    inspection.verify(report)
+    version, scope = payload_contract(report)
     raw = encoded(report)
     segments = []
     previous = report['sha256']
@@ -21,7 +31,7 @@ def pack(report):
         segment = {**body, 'sha256': sha(body)}
         segments.append(segment)
         previous = segment['sha256']
-    body = dict(version=VERSION, scope=inspection.SCOPE, export_sha256=report['sha256'],
+    body = dict(version=version, scope=scope, export_sha256=report['sha256'],
                 byte_length=len(raw), segments=segments)
     result = {**body, 'sha256': sha(body)}
     if len(encoded(result)) > MAX_BYTES:
@@ -30,7 +40,8 @@ def pack(report):
 
 
 def verify(value):
-    if not isinstance(value, dict) or set(value) != KEYS or value['version'] != VERSION or value['scope'] != inspection.SCOPE:
+    from core.paper import requested_operational_archive as operational
+    if not isinstance(value, dict) or set(value) != KEYS or (value['version'], value['scope']) not in [(VERSION, inspection.SCOPE), (OPERATIONAL_VERSION, operational.SCOPE)]:
         raise ValueError('Unsupported archive envelope')
     size = value['byte_length']
     if type(size) is not int or not 0 < size <= 32 * 1024 * 1024:
@@ -59,7 +70,7 @@ def verify(value):
     report = json.loads(raw)
     if raw != encoded(report) or report.get('sha256') != value['export_sha256']:
         raise ValueError('Archive canonical export differs')
-    inspection.verify(report)
+    payload_contract(report)
     if encoded(value) != encoded(pack(report)):
         raise ValueError('Archive manifest differs')
     return deepcopy(report)
