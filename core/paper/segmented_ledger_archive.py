@@ -57,11 +57,15 @@ def verify(value):
     return deepcopy(value)
 
 
+def _pack(row, nodes):
+    body = {'version': VERSION, 'ledger_id': row.ledger_id, 'root_sha256': row.root_sha256,
+            'head_sha256': row.head_sha256, 'commits': [deepcopy(node.payload) for node in nodes],
+            'operator_worker_binding_supported': False, 'external_submission_allowed': False}
+    return {**body, 'sha256': sha(body)}
+
+
 def capture(engine, ledger_id):
     with transaction(engine) as db:
         row = ledger._lock(db, ledger_id)
         nodes = ledger._audit(db, row)
-        body = {'version': VERSION, 'ledger_id': row.ledger_id, 'root_sha256': row.root_sha256,
-                'head_sha256': row.head_sha256, 'commits': [deepcopy(node.payload) for node in nodes],
-                'operator_worker_binding_supported': False, 'external_submission_allowed': False}
-        return verify({**body, 'sha256': sha(body)})
+        return verify(_pack(row, nodes))

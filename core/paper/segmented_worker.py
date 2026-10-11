@@ -29,23 +29,36 @@ def enrolled(db, identity):
 
 def audit(db, row, nodes):
     records = list(db.scalars(select(Record).where(Record.ledger_id == row.ledger_id).order_by(Record.sequence).limit(RECORDS + 1)))
-    if row.worker_version is None:
+    for index, record in enumerate(records):
+        value = record.payload
+        if (not isinstance(value, dict) or record.sequence != index or value.get('sequence') != record.sequence
+                or record.kind != value.get('kind') or record.command_id != value.get('command_id')
+                or record.payload_sha256 != value.get('sha256')):
+            raise ValueError('Persisted worker metadata differs from evidence')
+    _replay(row.ledger_id, row.worker_version, [node.payload for node in nodes], [record.payload for record in records])
+    return records
+
+
+def _replay(ledger_id, worker_version, nodes, records):
+    # Financial nodes must already have passed the native financial replay.
+    # Shared by database auditing and the complete offline operational archive.
+    if not isinstance(records, list):
+        raise ValueError('Exact worker record list required')
+    if worker_version is None:
         if records: raise ValueError('Undeclared worker fencing evidence')
         return []
-    if row.worker_version != VERSION or not records:
+    if worker_version != VERSION or not records:
         raise ValueError('Missing or unsupported worker fencing evidence')
     if len(records) > RECORDS:
         raise ValueError('Worker record capacity exceeded')
     parent = None; previous_us = 0; head = 0; claim = None; identities = set()
-    for index, saved in enumerate(records):
-        value = saved.payload
+    for index, value in enumerate(records):
         keys = {'version', 'ledger_id', 'sequence', 'parent_sha256', 'kind', 'command_id',
                 'commit_index', 'node_sha256', 'recorded_us', 'payload', 'sha256'}
         if (not isinstance(value, dict) or set(value) != keys or value['version'] != VERSION
-                or value['ledger_id'] != row.ledger_id or type(value['sequence']) is not int
-                or value['sequence'] != index or saved.sequence != index
-                or value['parent_sha256'] != parent or saved.kind != value['kind']
-                or saved.command_id != value['command_id'] or saved.payload_sha256 != value['sha256']
+                or value['ledger_id'] != ledger_id or type(value['sequence']) is not int
+                or value['sequence'] != index
+                or value['parent_sha256'] != parent
                 or value['sha256'] != sha({key: item for key, item in value.items() if key != 'sha256'})
                 or len(ledger.json_text(value).encode()) > RECORD_BYTES
                 or type(value['recorded_us']) is not int or not previous_us <= value['recorded_us'] <= 2**63-1
@@ -73,17 +86,17 @@ def audit(db, row, nodes):
             if (claim is None or not isinstance(payload, dict) or set(payload) != {'owner', 'token'}
                     or type(payload['token']) is not int or payload['token'] != claim['token']
                     or payload['owner'] != claim['owner'] or now >= claim['expires_us'] or point != head + 1
-                    or point >= len(nodes) or nodes[point].payload['command']['command_id'] != value['command_id']):
+                    or point >= len(nodes) or nodes[point]['command']['command_id'] != value['command_id']):
                 raise ValueError('Financial admission has stale/missing worker fence')
             head = point
         else:
             raise ValueError('Invalid worker transition')
-        if not 0 <= point < len(nodes) or value['node_sha256'] != nodes[point].payload['sha256']:
+        if not 0 <= point < len(nodes) or value['node_sha256'] != nodes[point]['sha256']:
             raise ValueError('Worker checkpoint differs from financial evidence')
         parent = value['sha256']; previous_us = now
     if head != len(nodes) - 1:
         raise ValueError('Bound ledger financial commit lacks worker admission')
-    return records
+    return deepcopy(records)
 
 
 def _append(db, row, records, kind, identity, index, node_hash, payload, now):
