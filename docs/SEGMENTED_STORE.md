@@ -1,0 +1,21 @@
+# Durable local segmented evidence store
+
+`core/paper/segmented_store.py` persists the independent segmented replay contract in an owner-only local directory. This is evidence storage, not a database financial journal, worker lease or command authorization. The source account remains under its existing1000-event rules; writing a replay artifact does not advance a financial revision, consume/release funds or submit an order. The store's revision counts appended evidence batches only.
+
+Creation accepts a frozen request and creates a revision0 node. Each immutable snapshot node binds its predecessor digest, local revision and complete validated replay report. Every load replays the entire reachable chain and requires identical historical segments. The current HEAD binds request identity, node digest and local revision. Missing nodes, incomplete/noncanonical/duplicate-key JSON, invalid hashes or replay mismatch fail reads and appends. Hashes prove internal consistency, not authenticated venue provenance or protection against an authorized local owner replacing an entire chain.
+
+Under a bounded exclusive file lock, append checks an explicit expected-node digest. A concurrent conflicting append has one accepted checkpoint. Exact final-batch retry tied to the original parent or current node returns the existing index; no new node/revision is created. Other stale checkpoints are rejected. This is optimistic local evidence fencing, not a worker ownership token or operator grant.
+
+Commit writes and fsyncs a temporary object, links it exclusively under its immutable digest name, then fsyncs the directory. Only complete objects are exposed under digest names. HEAD is written/fsynced to a unique temporary file, atomically replaced and directory-fsynced. An interrupted write may leave an unreferenced temporary or immutable object, while the previous HEAD remains authoritative. Such remnants count toward capacity and are not silently removed as retention. Initial creation interrupted before HEAD is published remains unready; selecting a new directory or separately verified recovery is required. Process-crash tests do not establish machine power-loss, filesystem or offsite-storage durability.
+
+The directory must belong to the current user with no group/other permissions. All entries must be owner-only regular files; store directories and files cannot be symlinks. Reads use byte bounds and nonblocking/no-follow file opens. Lock acquisition times out after2 seconds. Snapshots retain full prefixes for simple independent verification: each node is bounded to32MiB plus metadata, total retained storage including interrupted remnants is bounded to64MiB and file count is bounded to512. These additional budgets may exhaust before the replay contract's8192 events. No automatic garbage collection is authorized.
+
+Commands:
+
+- `.venv/bin/python -m scripts.segmented_store init --request-file /protected/request.json --directory /protected/new-store`
+- `.venv/bin/python -m scripts.segmented_store append --batch-file /protected/batch.json --directory /protected/new-store --expected-node-sha256 DIGEST`
+- `.venv/bin/python -m scripts.segmented_store verify --directory /protected/new-store`
+
+CLI outputs only the committed index and explicit unsupported financial/worker/external-execution flags. No database or exchange connection is used. Verification includes real SIGKILL during partial-object writing, after durable object publication but before HEAD, and after HEAD publication; retry produces one committed batch. Tests also cover concurrent conflicting writers, missing/tampered predecessors, stale checkpoints, capacity failures, permissions/symlinks, CLI with an unavailable database and persisted1003-event settlement.
+
+Remaining integration: a separate database account-journal version must atomically bind these segments to immutable openings, financial revisions, source/claim/control/health evidence and pool admissions. Define trusted archive reachability and cross-store failure behavior before economic mutation; apply current authorization and worker fences even on retries. Full database transaction, scheduler, infrastructure recovery and retention acceptance remain outstanding.
