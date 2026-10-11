@@ -40,7 +40,7 @@ if __name__=="__main__":
             let colored=0;for(const canvas of element.querySelectorAll('canvas')){
               const ctx=canvas.getContext('2d');if(!ctx)continue;
               const p=ctx.getImageData(0,0,canvas.width,canvas.height).data;
-              for(let i=0;i<p.length;i+=4)if((p[i]===53&&p[i+1]===208&&p[i+2]===160)||(p[i]===255&&p[i+1]===119&&p[i+2]===133))colored++;
+              for(let i=0;i<p.length;i+=4)if((p[i]===0&&p[i+1]===135&&p[i+2]===90)||(p[i]===217&&p[i+1]===77&&p[i+2]===98))colored++;
             }return colored;
         }""")
         assert pixels>20,"Candlestick colors must be drawn, not a blank canvas"

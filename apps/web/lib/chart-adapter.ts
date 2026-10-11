@@ -5,18 +5,18 @@ export interface ChartAdapter {setIndicators:(rows:IndicatorRow[],visible:boolea
 const WINDOW=5000;
 // Float conversion is confined to rendering; financial data keeps decimal strings.
 const point=(bar:ChartBar)=>({time:(Date.parse(bar.open_time)/1000) as UTCTimestamp,open:Number(bar.open),high:Number(bar.high),low:Number(bar.low),close:Number(bar.close)});
-const volume=(bar:ChartBar)=>({time:point(bar).time,value:Number(bar.volume),color:Number(bar.close)>=Number(bar.open)?"#35d0a055":"#ff778555"});
+const volume=(bar:ChartBar)=>({time:point(bar).time,value:Number(bar.volume),color:Number(bar.close)>=Number(bar.open)?"#00875a55":"#d94d6255"});
 export function createChartAdapter(container:HTMLElement):ChartAdapter {
-  const chart=createChart(container,{autoSize:true,localization:{locale:"zh-CN"},layout:{background:{type:ColorType.Solid,color:"#111925"},textColor:"#a9b8cc",attributionLogo:true},grid:{vertLines:{color:"#1b293b"},horzLines:{color:"#1b293b"}},timeScale:{timeVisible:true,secondsVisible:false},rightPriceScale:{borderColor:"#2a3b50",scaleMargins:{top:.1,bottom:.25}},crosshair:{vertLine:{color:"#77b7ff"},horzLine:{color:"#77b7ff"}}});
-  const prices=chart.addSeries(CandlestickSeries,{upColor:"#35d0a0",downColor:"#ff7785",borderVisible:false,wickUpColor:"#35d0a0",wickDownColor:"#ff7785"});
+  const chart=createChart(container,{autoSize:true,localization:{locale:"zh-CN"},layout:{background:{type:ColorType.Solid,color:"#ffffff"},textColor:"#6e6e73",attributionLogo:true},grid:{vertLines:{color:"#f0f1f4"},horzLines:{color:"#f0f1f4"}},timeScale:{timeVisible:true,secondsVisible:false},rightPriceScale:{borderColor:"#e3e5e9",scaleMargins:{top:.1,bottom:.25}},crosshair:{vertLine:{color:"#0071e3"},horzLine:{color:"#0071e3"}}});
+  const prices=chart.addSeries(CandlestickSeries,{upColor:"#00875a",downColor:"#d94d62",borderVisible:false,wickUpColor:"#00875a",wickDownColor:"#d94d62"});
   const volumes=chart.addSeries(HistogramSeries,{priceFormat:{type:"volume"},priceScaleId:"volume",lastValueVisible:false,priceLineVisible:false});
   chart.priceScale("volume").applyOptions({visible:false,scaleMargins:{top:.82,bottom:0}});
-  const overlays=([['sma','#f5c96a'],['ema','#77b7ff'],['bollinger_upper','#ab94dd'],['bollinger_lower','#ab94dd'],['vwap','#ef99c0']] as const).map(([key,color])=>({key,series:chart.addSeries(LineSeries,{color,lineWidth:1,lastValueVisible:false,priceLineVisible:false,visible:false})}));
+  const overlays=([['sma','#f5c96a'],['ema','#0071e3'],['bollinger_upper','#ab94dd'],['bollinger_lower','#ab94dd'],['vwap','#ef99c0']] as const).map(([key,color])=>({key,series:chart.addSeries(LineSeries,{color,lineWidth:1,lastValueVisible:false,priceLineVisible:false,visible:false})}));
   const markers=createSeriesMarkers(prices,[]);
   let oscillators:{key:'rsi'|'atr'|'macd'|'macd_signal'|'macd_histogram';series:ISeriesApi<'Line'>}[]=[];
   function configurePanes(visible:boolean){
     if(visible&&!oscillators.length){
-      oscillators=([['rsi','#e7c366',1],['macd','#77b7ff',2],['macd_signal','#ef99c0',2],['macd_histogram','#35d0a0',2],['atr','#ab94dd',3]] as const).map(([key,color,pane])=>({key,series:chart.addSeries(LineSeries,{color,lineWidth:1,lastValueVisible:false,priceLineVisible:false},pane)}));
+      oscillators=([['rsi','#e7c366',1],['macd','#0071e3',2],['macd_signal','#ef99c0',2],['macd_histogram','#00875a',2],['atr','#ab94dd',3]] as const).map(([key,color,pane])=>({key,series:chart.addSeries(LineSeries,{color,lineWidth:1,lastValueVisible:false,priceLineVisible:false},pane)}));
       chart.panes().slice(1).forEach(pane=>pane.setHeight(70));
     }else if(!visible&&oscillators.length){for(const {series} of oscillators)chart.removeSeries(series);oscillators=[];}
   }
@@ -25,7 +25,7 @@ export function createChartAdapter(container:HTMLElement):ChartAdapter {
     const first=history[start]?.open_time,last=history[end-1]?.open_time;
     const rows=first&&last?indicators.filter(r=>Date.parse(r.open_time)>=Date.parse(first)&&Date.parse(r.open_time)<=Date.parse(last)):[];
     for(const {key,series} of [...overlays,...oscillators]){series.applyOptions({visible:overlayVisible});series.setData(rows.map(r=>r.values[key]===null?{time:(Date.parse(r.open_time)/1000) as UTCTimestamp}:{time:(Date.parse(r.open_time)/1000) as UTCTimestamp,value:r.values[key]!}));}
-    markers.setMarkers(overlayVisible?rows.flatMap(r=>[...r.confirmed_swings.map(p=>({time:(Date.parse(r.open_time)/1000) as UTCTimestamp,position:'aboveBar' as const,color:'#e7c366',shape:'circle' as const,text:`${p.label??(p.kind==='high'?'H':'L')}`})),...r.structure_breaks.map(b=>({time:(Date.parse(r.open_time)/1000) as UTCTimestamp,position:'belowBar' as const,color:b.direction==='up'?'#35d0a0':'#ff7785',shape:'square' as const,text:`${b.kind} ${b.direction==='up'?'↑':'↓'}`}))]).slice(-20):[]);
+    markers.setMarkers(overlayVisible?rows.flatMap(r=>[...r.confirmed_swings.map(p=>({time:(Date.parse(r.open_time)/1000) as UTCTimestamp,position:'aboveBar' as const,color:'#e7c366',shape:'circle' as const,text:`${p.label??(p.kind==='high'?'H':'L')}`})),...r.structure_breaks.map(b=>({time:(Date.parse(r.open_time)/1000) as UTCTimestamp,position:'belowBar' as const,color:b.direction==='up'?'#00875a':'#d94d62',shape:'square' as const,text:`${b.kind} ${b.direction==='up'?'↑':'↓'}`}))]).slice(-20):[]);
   }
   let history:ChartBar[]=[],start=0,end=0,last=-Infinity,applying=false;
   function render(first:number,until:number,preserve=true) {

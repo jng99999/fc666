@@ -37,5 +37,5 @@ export function TradesPanel({symbol}:{symbol:SymbolName}) {
 export function ConnectionFooter({symbol}:{symbol:SymbolName}) {
   const connection=useMarketStore(state=>state.connection);
   const ticker=useFresh(symbol,"ticker"),book=useFresh(symbol,"book");
-  return <footer className="terminal-footer"><span className={connection==="connected"?"buy":"warning"}>网关 {connection==="connected"?"已连接":connection==="retrying"?"重连中":"连接中"}</span><span>市场数据 {ticker && book?"健康":"不可用 / 等待同步"}</span><span>策略 未实现</span><span>风控 未实现</span><span>执行 禁用</span><span className="mode-label">PAPER · 未启用交易</span></footer>;
+  return <footer className="terminal-footer"><span className={connection==="connected"?"buy":"warning"}>网关 {connection==="connected"?"已连接":connection==="retrying"?"重连中":"连接中"}</span><span>市场数据 {ticker && book?"健康":"不可用 / 等待同步"}</span><a href="/research">策略研究</a><span>账户风控未连接</span><span>执行 禁用</span><span className="mode-label">PAPER · 未启用交易</span></footer>;
 }
