@@ -462,3 +462,27 @@ class PaperCapitalRiskPolicyRecord(Base):
     pool_id: Mapped[str]=mapped_column(ForeignKey('paper_capital_pools.pool_id'),primary_key=True)
     payload: Mapped[dict]=mapped_column(JSON)
     payload_sha256: Mapped[str]=mapped_column(String(64))
+
+
+class SegmentedPaperLedgerRecord(Base):
+    __tablename__='segmented_paper_ledgers'
+    ledger_id: Mapped[str]=mapped_column(String(128),primary_key=True)
+    root_sha256: Mapped[str]=mapped_column(String(64))
+    head_sha256: Mapped[str]=mapped_column(String(64))
+    commit_index: Mapped[int]=mapped_column(Integer)
+    financial_revision: Mapped[int]=mapped_column(Integer)
+    current: Mapped[dict]=mapped_column(JSON)
+    __table_args__=(CheckConstraint('commit_index>=0 AND commit_index<512',name='ck_segmented_ledger_index'),
+                   CheckConstraint('financial_revision>=0',name='ck_segmented_ledger_revision'))
+
+
+class SegmentedPaperCommitRecord(Base):
+    __tablename__='segmented_paper_commits'
+    ledger_id: Mapped[str]=mapped_column(ForeignKey('segmented_paper_ledgers.ledger_id'),primary_key=True)
+    commit_index: Mapped[int]=mapped_column(Integer,primary_key=True)
+    command_id: Mapped[str|None]=mapped_column(String(128),nullable=True)
+    payload: Mapped[dict]=mapped_column(JSON)
+    payload_sha256: Mapped[str]=mapped_column(String(64))
+    __table_args__=(UniqueConstraint('ledger_id','command_id',name='uq_segmented_command'),
+                   CheckConstraint('commit_index>=0 AND commit_index<512',name='ck_segmented_commit_index'),
+                   CheckConstraint('octet_length(payload::text)<=35651584',name='ck_segmented_commit_bytes'))

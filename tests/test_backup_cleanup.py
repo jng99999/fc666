@@ -4,6 +4,7 @@ from sqlalchemy import create_engine,text
 from sqlalchemy.exc import OperationalError
 from scripts.backup_drill import _drop_restore_database
 from tests.test_integration import database
+from core.storage.schema import SCHEMA_REVISION
 
 
 @pytest.mark.parametrize('target',['fc666','postgres','fc666_test_'+'0'*32,'fc666_restore_invalid','fc666_restore_'+'0'*32+'"'])
@@ -23,7 +24,7 @@ def test_cleanup_terminates_active_target_connection_preserves_source(database):
         connection=clone.connect();assert connection.scalar(text('SELECT current_database()'))==target
         _drop_restore_database(engine,target)
         with admin.connect() as db:assert db.scalar(text('SELECT count(*) FROM pg_database WHERE datname=:target'),{'target':target})==0
-        with engine.connect() as db:assert db.scalar(text('SELECT version_num FROM alembic_version'))=='0026'
+        with engine.connect() as db:assert db.scalar(text('SELECT version_num FROM alembic_version'))==SCHEMA_REVISION
         with pytest.raises(OperationalError):
             with create_engine(engine.url.set(database=target)).connect():pass
     finally:
