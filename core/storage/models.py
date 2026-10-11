@@ -467,12 +467,14 @@ class PaperCapitalRiskPolicyRecord(Base):
 class SegmentedPaperLedgerRecord(Base):
     __tablename__='segmented_paper_ledgers'
     ledger_id: Mapped[str]=mapped_column(String(128),primary_key=True)
+    worker_version: Mapped[str|None]=mapped_column(String(64),nullable=True)
     root_sha256: Mapped[str]=mapped_column(String(64))
     head_sha256: Mapped[str]=mapped_column(String(64))
     commit_index: Mapped[int]=mapped_column(Integer)
     financial_revision: Mapped[int]=mapped_column(Integer)
     current: Mapped[dict]=mapped_column(JSON)
-    __table_args__=(CheckConstraint('commit_index>=0 AND commit_index<512',name='ck_segmented_ledger_index'),
+    __table_args__=(CheckConstraint("worker_version IS NULL OR worker_version='paper-segmented-local-worker-v1'",name='ck_segmented_worker_version'),
+                   CheckConstraint('commit_index>=0 AND commit_index<512',name='ck_segmented_ledger_index'),
                    CheckConstraint('financial_revision>=0',name='ck_segmented_ledger_revision'))
 
 
@@ -486,3 +488,17 @@ class SegmentedPaperCommitRecord(Base):
     __table_args__=(UniqueConstraint('ledger_id','command_id',name='uq_segmented_command'),
                    CheckConstraint('commit_index>=0 AND commit_index<512',name='ck_segmented_commit_index'),
                    CheckConstraint('octet_length(payload::text)<=35651584',name='ck_segmented_commit_bytes'))
+
+
+class SegmentedPaperWorkerRecord(Base):
+    __tablename__ = 'segmented_paper_worker_records'
+    ledger_id: Mapped[str] = mapped_column(ForeignKey('segmented_paper_ledgers.ledger_id'), primary_key=True)
+    sequence: Mapped[int] = mapped_column(Integer, primary_key=True)
+    kind: Mapped[str] = mapped_column(String(16))
+    command_id: Mapped[str] = mapped_column(String(128))
+    payload: Mapped[dict] = mapped_column(JSON)
+    payload_sha256: Mapped[str] = mapped_column(String(64))
+    __table_args__ = (UniqueConstraint('ledger_id', 'kind', 'command_id', name='uq_segmented_worker_command'),
+                     CheckConstraint('sequence>=0 AND sequence<576', name='ck_segmented_worker_sequence'),
+                     CheckConstraint("kind IN ('ENROLL','CLAIM','ACCEPT')", name='ck_segmented_worker_kind'),
+                     CheckConstraint('octet_length(payload::text)<=16384', name='ck_segmented_worker_bytes'))

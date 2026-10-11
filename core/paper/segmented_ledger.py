@@ -100,6 +100,8 @@ def _audit(db,row):
         before=report;parent=value['sha256']
     if (row.commit_index!=len(nodes)-1 or row.head_sha256!=parent or row.financial_revision!=before['revision'] or
         encoded(row.current)!=encoded(before['account'])):raise ValueError('Financial head differs from immutable commits')
+    from core.paper import segmented_worker
+    segmented_worker.audit(db, row, nodes)
     return nodes
 
 
@@ -140,24 +142,32 @@ def execute(engine,ledger_id,command):
     command=_command(command)
     with transaction(engine) as db:
         row=_lock(db,ledger_id);nodes=_audit(db,row)
-        old=next((node for node in nodes if node.command_id==command['command_id']),None)
-        if old is not None:
-            if encoded(old.payload['command'])!=encoded(command):raise ValueError('Conflicting command retry')
-            return _view(old.payload)
-        if len(nodes)>=COMMITS:raise ValueError('Commit count capacity exceeded')
-        head=nodes[-1].payload
-        report=_transition(head['report'],command,head['sha256'])
-        node=_node(ledger_id,len(nodes),head['sha256'],command,report)
-        # Measure the same JSON rendering the database stores; caller hashes do not
-        # authorize or override budgets. This query sends no new financial rows.
-        size=db.scalar(text('SELECT coalesce(sum(octet_length(payload::text)),0) FROM segmented_paper_commits WHERE ledger_id=:id'),{'id':ledger_id})
-        added=db.scalar(text('SELECT octet_length(CAST(:payload AS json)::text)'),{'payload':json_text(node)})
-        if size+added>STORAGE_BYTES:raise ValueError('Retained commit storage capacity exceeded')
-        db.add(Commit(ledger_id=ledger_id,commit_index=len(nodes),command_id=command['command_id'],payload=node,payload_sha256=node['sha256']))
-        row.head_sha256=node['sha256'];row.commit_index=len(nodes);row.financial_revision=report['revision'];row.current=deepcopy(report['account'])
-        db.flush();_audit(db,row)
-        return _view(node)
+        from core.paper import segmented_worker
+        if segmented_worker.enrolled(db,ledger_id):
+            raise ValueError('Bound ledger requires current worker lease')
+        return _execute_locked(db,row,nodes,command)
 
+
+def _execute_locked(db,row,nodes,command,*,final_audit=True):
+    ledger_id=row.ledger_id
+    old=next((node for node in nodes if node.command_id==command['command_id']),None)
+    if old is not None:
+        if encoded(old.payload['command'])!=encoded(command):raise ValueError('Conflicting command retry')
+        return _view(old.payload)
+    if len(nodes)>=COMMITS:raise ValueError('Commit count capacity exceeded')
+    head=nodes[-1].payload
+    report=_transition(head['report'],command,head['sha256'])
+    node=_node(ledger_id,len(nodes),head['sha256'],command,report)
+    # Measure the same JSON rendering the database stores; caller hashes do not
+    # authorize or override budgets. This query sends no new financial rows.
+    size=db.scalar(text('SELECT coalesce(sum(octet_length(payload::text)),0) FROM segmented_paper_commits WHERE ledger_id=:id'),{'id':ledger_id})
+    added=db.scalar(text('SELECT octet_length(CAST(:payload AS json)::text)'),{'payload':json_text(node)})
+    if size+added>STORAGE_BYTES:raise ValueError('Retained commit storage capacity exceeded')
+    db.add(Commit(ledger_id=ledger_id,commit_index=len(nodes),command_id=command['command_id'],payload=node,payload_sha256=node['sha256']))
+    row.head_sha256=node['sha256'];row.commit_index=len(nodes);row.financial_revision=report['revision'];row.current=deepcopy(report['account'])
+    db.flush()
+    if final_audit:_audit(db,row)
+    return _view(node)
 
 def json_text(value):
     # Match SQLAlchemy's default JSON serialization (including whitespace/ASCII).
