@@ -1,0 +1,13 @@
+import assert from 'node:assert/strict';
+import {createRequire} from 'node:module';
+const require=createRequire(new URL('../apps/web/package.json',import.meta.url));
+const {build}=require('esbuild');
+const result=await build({entryPoints:['apps/web/lib/market-socket-url.ts'],bundle:true,platform:'node',format:'esm',write:false});
+const {marketSocketUrl}=await import(`data:text/javascript;base64,${Buffer.from(result.outputFiles[0].text).toString('base64')}`);
+const secure={protocol:'https:',host:'fc666-test.vercel.app'};
+assert.equal(marketSocketUrl(undefined,secure),'wss://fc666-test.vercel.app/stream/v1/market');
+assert.equal(marketSocketUrl(undefined,{protocol:'http:',host:'127.0.0.1:3000'}),'ws://127.0.0.1:3000/stream/v1/market');
+assert.equal(marketSocketUrl('wss://market.example.test/ws/v1/market',secure),'wss://market.example.test/ws/v1/market');
+assert.equal(marketSocketUrl('ws://localhost:8000/ws/v1/market',{protocol:'http:',host:'localhost:3000'}),'ws://localhost:8000/ws/v1/market');
+for(const invalid of ['https://market.example.test/ws/v1/market','ws://market.example.test/ws/v1/market','wss://user:password@market.example.test/ws/v1/market','wss://market.example.test/ws/v1/market?token=secret','wss://market.example.test/ws/v1/market#fragment','wss://market.example.test/private','not-a-url']) assert.throws(()=>marketSocketUrl(invalid,secure));
+console.log('11 market socket configuration checks passed');

@@ -2,12 +2,16 @@
 import {useEffect} from "react";
 import {SnapshotSchema,type Interval} from "../lib/market";
 import {useMarketStore} from "../lib/market-store";
+import {marketSocketUrl} from "../lib/market-socket-url";
 export default function MarketSocket({timeframe}:{timeframe:Interval}) {
   useEffect(() => {
     let disposed=false,attempt=0,socket:WebSocket|null=null,timer:ReturnType<typeof setTimeout>|undefined;
     function connect() {
       useMarketStore.getState().setConnection(attempt ? "retrying":"connecting");
-      const ws=new WebSocket(`${location.protocol==="https:" ? "wss":"ws"}://${location.host}/stream/v1/market`);socket=ws;
+      let ws:WebSocket;
+      try {ws=new WebSocket(marketSocketUrl(process.env.NEXT_PUBLIC_MARKET_WS_URL,location));}
+      catch {useMarketStore.getState().setConnection("offline");return;}
+      socket=ws;
       ws.onopen=() => ws.send(JSON.stringify({action:"subscribe",symbols:["BTCUSDT","ETHUSDT"],channels:["ticker","book","trade",`candle.${timeframe}`]}));
       ws.onmessage=event => {
         if (disposed || socket!==ws) return;
