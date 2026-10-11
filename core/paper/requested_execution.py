@@ -91,15 +91,22 @@ def validate(value):
 
 
 def reduce(value, events):
+    return _reduce(value, events, event_limit=EVENT_LIMIT)
+
+
+def _reduce(value, events, *, event_limit):
+    """Shared settlement arithmetic; callers own their versioned envelope grammar."""
+    if type(event_limit) is not int or not 1 <= event_limit <= 8192:
+        raise ValueError('Unsupported settlement replay capacity')
     value=validate(value)
-    if not isinstance(events,list) or len(events)>EVENT_LIMIT or len(encoded(events).encode())>MAX_BYTES:
+    if not isinstance(events,list) or len(events)>event_limit or len(encoded(events).encode())>MAX_BYTES:
         raise ValueError('Invalid bounded transcript')
     by_id={};by_sequence={}
     for event in events:
         if not isinstance(event,dict) or set(event)!={'event_id','request_id','sequence','received_at','kind','payload'}:
             raise ValueError('Invalid event envelope')
         identity,sequence=event['event_id'],event['sequence']
-        if not isinstance(identity,str) or not identity or len(identity)>128 or event['request_id']!=value['request_id'] or type(sequence) is not int or not 0<=sequence<EVENT_LIMIT:
+        if not isinstance(identity,str) or not identity or len(identity)>128 or event['request_id']!=value['request_id'] or type(sequence) is not int or not 0<=sequence<event_limit:
             raise ValueError('Invalid event identity/sequence')
         if identity in by_id:
             if encoded(by_id[identity])!=encoded(event):raise ValueError('Conflicting event redelivery')

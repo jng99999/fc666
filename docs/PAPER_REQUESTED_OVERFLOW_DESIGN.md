@@ -1,6 +1,6 @@
 # Requested Paper settlement overflow and archival design
 
-Status: bounded local STAGED_UNAPPLIED inbox is implemented at schema0025; see FIVE_BLOCK_FOUNDATIONS.md. Segmented application, archival deletion, rollover and external transport remain proposed and unimplemented. A bounded journal cannot guarantee retention of an arbitrarily long sequence of partial fills. Removing or merging historical rows is not an acceptable way to make capacity available.
+Status: bounded local STAGED_UNAPPLIED inbox and atomic drain are implemented; schema0026 adds pool risk policies. Whole-pool archive and populated isolated restore replay are verified. An independent segmented single-request replay contract is now implemented; see [SEGMENTED_REPLAY_CONTRACT.md](SEGMENTED_REPLAY_CONTRACT.md). Durable segmented account application, archival deletion, rollover and external transport remain unimplemented. A bounded journal cannot guarantee retention of an arbitrarily long sequence of partial fills. Removing or merging historical rows is not an acceptable way to make capacity available.
 
 ## Immediate implemented protection
 
