@@ -13,6 +13,27 @@ class QueueFull(Exception):pass
 class Cancelled(Exception):pass
 class LostLease(Exception):pass
 
+ENGINES={None:VERSION,'holdout':'spot-holdout-v1','walk_forward':'spot-walk-forward-v1'}
+
+def validate_request(request,bars,instrument):
+    if not isinstance(request,dict) or 'config' not in request:raise ValueError('Research configuration required')
+    kind=request.get('research_type')
+    if not isinstance(kind,(str,type(None))) or kind not in ENGINES:raise ValueError('Unsupported research type')
+    config=BacktestConfig.model_validate(request['config'])
+    strategy=request.get('strategy','ema_long_flat_v1')
+    from core.strategy.registry import resolve
+    parameters=request.get('parameters')
+    if parameters is None and strategy=='ema_long_flat_v1':parameters={'period':config.period}
+    _,validated=resolve(strategy).create(parameters)
+    if strategy=='ema_long_flat_v1' and validated.period!=config.period:raise ValueError('EMA period must match config.period')
+    if kind=='holdout':
+        from core.backtest.holdout import validate_split
+        validate_split(bars,request.get('train_bars'),strategy,parameters,config)
+    elif kind=='walk_forward':
+        from core.backtest.walk_forward import validate
+        validate(bars,instrument,strategy,request.get('grid'),request.get('train_bars'),request.get('test_bars'))
+    return ENGINES[kind]
+
 def now():return datetime.now(timezone.utc)
 
 def view(job):
@@ -25,8 +46,12 @@ def enqueue(engine,request,bars,instrument):
 def enqueue_many(engine,requests,bars,instrument):
     """One admission lock and transaction: all variants accepted or none."""
     if not 1<=len(requests)<=8:raise ValueError('Require 1..8 tasks')
-    if len(bars)<2:raise ValueError('Require at least two finalized bars')
+    if not 2<=len(bars)<=1000:raise ValueError('Require 2..1000 finalized bars')
+    if instrument.market_type!='SPOT':raise ValueError('Only Spot research is implemented')
+    if any(not bar.is_closed or bar.instrument_id!=instrument.instrument_id for bar in bars):raise ValueError('Finalized matching instrument required')
     if any(b.open_time!=a.close_time or b.timeframe!=a.timeframe for a,b in zip(bars,bars[1:])):raise ValueError('Contiguous ordered series required')
+    # Validate every member before opening the admission transaction; no partial batch.
+    versions=[validate_request(request,bars,instrument) for request in requests]
     dataset=[b.model_dump(mode='json') for b in bars]
     stamp=now()
     with Session(engine) as session,session.begin():
@@ -34,8 +59,8 @@ def enqueue_many(engine,requests,bars,instrument):
         count=session.scalar(select(func.count()).select_from(Job).where(Job.status.in_(['QUEUED','RUNNING'])))
         if count+len(requests)>ACTIVE_LIMIT:raise QueueFull()
         created=[]
-        for request in requests:
-            snapshot={'request_sha256':digest(request),'engine_version':{'holdout':'spot-holdout-v1','walk_forward':'spot-walk-forward-v1'}.get(request.get('research_type'),VERSION),'strategy':request.get('strategy','ema_long_flat_v1'),'dataset':dataset,'instrument':instrument.model_dump(mode='json')}
+        for request,version in zip(requests,versions):
+            snapshot={'request_sha256':digest(request),'engine_version':version,'strategy':request.get('strategy','ema_long_flat_v1'),'dataset':dataset,'instrument':instrument.model_dump(mode='json')}
             snapshot['sha256']=digest(snapshot)
             job=Job(job_id=str(uuid4()),created_at=stamp,updated_at=stamp,status='QUEUED',progress=0,cancel_requested=False,attempts=0,request=request,snapshot=snapshot)
             session.add(job);created.append(job)
@@ -98,6 +123,10 @@ def execute(engine,job_id,owner,stopping=lambda:False):
     try:
         body={key:value for key,value in snapshot.items() if key!='sha256'}
         if digest(body)!=snapshot['sha256'] or snapshot['engine_version'] not in [VERSION,'spot-next-open-v2','spot-holdout-v1','spot-walk-forward-v1'] or digest(request)!=snapshot['request_sha256']:raise ValueError('Unsupported or altered job snapshot')
+        kind=request.get('research_type')
+        if not isinstance(kind,(str,type(None))) or kind not in ENGINES:raise ValueError('Unsupported research type')
+        allowed=[VERSION,'spot-next-open-v2'] if kind is None else [ENGINES[kind]]
+        if snapshot['engine_version'] not in allowed:raise ValueError('Research type/engine mismatch')
         runner=simulate;config_type=BacktestConfig;options={'strategy_id':snapshot['strategy'],'parameters':request.get('parameters')}
         if snapshot['strategy']!=request.get('strategy','ema_long_flat_v1'):raise ValueError('Strategy snapshot mismatch')
         if snapshot['engine_version']=='spot-next-open-v2':
