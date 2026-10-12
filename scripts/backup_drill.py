@@ -49,7 +49,10 @@ def catalog(connection):
     return {'schema':connection.scalar(text('SELECT version_num FROM alembic_version')),'tables':counts,'table_sha256':digests}
 
 
-def drill(directory,*,verify_restored=None):
+def drill(directory,*,verify_restored=None,expected_revocation_checkpoint=None):
+    if expected_revocation_checkpoint is not None:
+        from core.paper import revocation_checkpoint
+        expected_revocation_checkpoint=revocation_checkpoint.verify(expected_revocation_checkpoint)
     directory=Path(directory);directory.mkdir(parents=True,exist_ok=True,mode=0o700)
     if directory.is_symlink():raise ValueError('Backup directory must not be a symlink')
     os.chmod(directory,0o700)
@@ -76,6 +79,9 @@ def drill(directory,*,verify_restored=None):
         try:
             with restored.connect() as db:actual=catalog(db)
             if actual!=expected:raise RuntimeError('Restored schema/table counts differ from snapshot')
+            checkpoint_result=None
+            if expected_revocation_checkpoint is not None:
+                checkpoint_result=revocation_checkpoint.check(restored,expected_revocation_checkpoint)
             if verify_restored is not None:
                 additional=verify_restored(restored)
                 if not isinstance(additional,dict) or len(json.dumps(additional,sort_keys=True,allow_nan=False).encode())>16384:
@@ -89,6 +95,9 @@ def drill(directory,*,verify_restored=None):
                 'verification':'snapshot-schema-counts-and-row-content-sha256','row_content_verified':True,'offsite_retention_verified':False,
                 'isolated_restore_verified':True,'main_database_modified':False}
         if additional is not None:report['additional_verification']=additional
+        if checkpoint_result is not None:
+            report['version']='fc666-local-backup-drill-v2'
+            report['selected_revocation_checkpoint_verification']=checkpoint_result
         fd=os.open(manifest,os.O_WRONLY|os.O_CREAT|os.O_EXCL,0o600)
         with os.fdopen(fd,'w') as file:json.dump(report,file,sort_keys=True);file.flush();os.fsync(file.fileno())
         return report
@@ -98,8 +107,17 @@ def drill(directory,*,verify_restored=None):
 
 
 def main():
-    parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--directory',type=Path,default=ROOT/'.runtime/backups');args=parser.parse_args()
-    report=drill(args.directory);print(json.dumps({k:v for k,v in report.items() if k not in ['verified_table_counts','verified_table_sha256']},sort_keys=True))
+    parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--directory',type=Path,default=ROOT/'.runtime/backups')
+    parser.add_argument('--expected-revocation-checkpoint',type=Path,help='Protected externally trusted selected head; matching does not establish independent currentness')
+    args=parser.parse_args()
+    try:
+        from scripts.operator_revocation_checkpoint import read
+        expected=read(args.expected_revocation_checkpoint) if args.expected_revocation_checkpoint else None
+        report=drill(args.directory,expected_revocation_checkpoint=expected)
+    except Exception:
+        parser.exit(1,'Backup verification failed; inspect protected source, target and trusted checkpoint.\n')
+    print(json.dumps({k:v for k,v in report.items() if k not in ['verified_table_counts','verified_table_sha256']},sort_keys=True))
 
 
 if __name__=='__main__':main()
