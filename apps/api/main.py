@@ -36,7 +36,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(paper_router(engine))
     app.include_router(requested_paper_router(engine,config,health_cache=cache))
     from apps.api.segmented_paper import router_for as segmented_paper_router
-    app.include_router(segmented_paper_router(engine,config))
+    from apps.api.segmented_access import Access
+    app.state.segmented_operator_access = Access(config)
+    app.include_router(segmented_paper_router(engine,config,access=app.state.segmented_operator_access))
     app.include_router(portfolio_router(engine))
 
     @app.get("/health/live")

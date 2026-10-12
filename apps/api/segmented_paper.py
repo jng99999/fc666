@@ -1,11 +1,12 @@
 """Scoped single-operator evidence and root enrollment; no financial write API."""
-from hmac import compare_digest
+from contextlib import contextmanager
 from typing import Literal
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import JSONResponse
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy.exc import SQLAlchemyError
+from apps.api.segmented_access import Access, Denied
 from core.paper import segmented_ledger as ledger, segmented_worker as worker
 from core.paper import segmented_ledger_archive as financial, segmented_operational_archive as operational
 
@@ -19,20 +20,31 @@ class Enrollment(BaseModel):
     expected_root_sha256: str = Field(pattern=r'^[0-9a-f]{64}$')
 
 
-def router_for(engine, settings):
+def router_for(engine, settings, *, access=None):
     router = APIRouter()
+    access = access or Access(settings)
     bearer = HTTPBearer(auto_error=False)
 
-    def authenticate(credentials: HTTPAuthorizationCredentials | None = Depends(bearer)):
-        if settings.paper_operator_token is None:
-            raise HTTPException(503, 'Paper operator access is disabled', headers=HEADERS)
-        if credentials is None or not compare_digest(credentials.credentials.encode(), settings.paper_operator_token.get_secret_value().encode()):
-            raise HTTPException(401, 'Paper operator authentication required',
-                                headers={**HEADERS, 'WWW-Authenticate': 'Bearer'})
+    def deny(error):
+        details = {503: 'Paper operator access is disabled', 401: 'Paper operator authentication required',
+                   403: 'Paper operator grant denies this operation'}
+        raise HTTPException(error.status, details[error.status],
+                            headers={**HEADERS, **({'WWW-Authenticate': 'Bearer'} if error.status == 401 else {})})
 
-    def grant(identity, action):
-        if identity not in settings.paper_operator_accounts or action not in settings.paper_operator_actions:
-            raise HTTPException(403, 'Paper operator grant denies this operation', headers=HEADERS)
+    def authenticate(credentials: HTTPAuthorizationCredentials | None = Depends(bearer)):
+        try:
+            access.authenticate(credentials.credentials if credentials else None)
+        except Denied as error:
+            deny(error)
+        return credentials.credentials
+
+    @contextmanager
+    def grant(token, identity, action):
+        try:
+            with access.operation(token, identity, action):
+                yield
+        except Denied as error:
+            deny(error)
 
     def perform(call):
         try:
@@ -44,20 +56,20 @@ def router_for(engine, settings):
         except SQLAlchemyError:
             raise HTTPException(503, 'Independent local ledger temporarily unavailable', headers=HEADERS)
 
-    @router.get('/api/v1/paper-segmented/evidence', dependencies=[Depends(authenticate)])
+    @router.get('/api/v1/paper-segmented/evidence')
     def evidence(ledger_id: str = Query(..., min_length=11, max_length=128, pattern=r'^segmented:.+$'),
-                 scope: Literal['financial', 'operational'] = 'financial'):
-        grant(ledger_id, 'READ_SEGMENTED_EVIDENCE')
-        archive = operational if scope == 'operational' else financial
-        return JSONResponse(perform(lambda: archive.capture(engine, ledger_id)), headers=HEADERS)
+                 scope: Literal['financial', 'operational'] = 'financial', token: str = Depends(authenticate)):
+        with grant(token, ledger_id, 'READ_SEGMENTED_EVIDENCE'):
+            archive = operational if scope == 'operational' else financial
+            return JSONResponse(perform(lambda: archive.capture(engine, ledger_id)), headers=HEADERS)
 
-    @router.post('/api/v1/paper-segmented/worker-enrollments', dependencies=[Depends(authenticate)])
-    def enroll(value: Enrollment):
-        grant(value.ledger_id, 'ENROLL_SEGMENTED_WORKER')
-        accepted = perform(lambda: worker.enroll(engine, value.ledger_id, value.command_id,
-                                                expected_root_sha256=value.expected_root_sha256))
-        return JSONResponse({'version': 'paper-segmented-worker-enrollment-command-result-v1',
-                             'accepted_enrollment': accepted, 'operator_worker_binding_supported': False,
-                             'external_submission_allowed': False}, headers=HEADERS)
+    @router.post('/api/v1/paper-segmented/worker-enrollments')
+    def enroll(value: Enrollment, token: str = Depends(authenticate)):
+        with grant(token, value.ledger_id, 'ENROLL_SEGMENTED_WORKER'):
+            accepted = perform(lambda: worker.enroll(engine, value.ledger_id, value.command_id,
+                                                    expected_root_sha256=value.expected_root_sha256))
+            return JSONResponse({'version': 'paper-segmented-worker-enrollment-command-result-v1',
+                                 'accepted_enrollment': accepted, 'operator_worker_binding_supported': False,
+                                 'external_submission_allowed': False}, headers=HEADERS)
 
     return router
