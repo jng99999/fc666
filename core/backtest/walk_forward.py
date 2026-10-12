@@ -61,10 +61,15 @@ def simulate(bars,instrument,config,*,strategy_id,grid,train_bars,test_bars,chec
 def verify(report):
     if not isinstance(report,dict) or set(report)!={'run_id','manifest','dataset','folds','trading_enabled'}:raise ValueError('Invalid walk-forward envelope')
     import json
-    if len(json.dumps(report).encode())>MAX_BYTES:raise ValueError('Walk-forward exceeds32MiB')
+    if len(json.dumps(report,allow_nan=False).encode())>MAX_BYTES:raise ValueError('Walk-forward exceeds32MiB')
     m=report['manifest']
+    fields={'version','strategy','grid','config','instrument','train_bars','test_bars','selection','data_sha256','cold_test_windows','aggregate_compounded_return','trailing_unused_bars'}
+    if not isinstance(m,dict) or set(m)!=fields:raise ValueError('Invalid walk-forward manifest')
+    if not isinstance(report['dataset'],list) or not 6<=len(report['dataset'])<=1000:raise ValueError('Invalid walk-forward dataset bounds')
+    if not isinstance(report['folds'],list) or not 1<=len(report['folds'])<=8:raise ValueError('Invalid walk-forward fold bounds')
     if m['version']!=VERSION:raise ValueError('Unsupported walk-forward version')
     expected=simulate([Candle.model_validate(value) for value in report['dataset']],Instrument.model_validate(m['instrument']),
                       BacktestConfig.model_validate(m['config']),strategy_id=m['strategy'],grid=m['grid'],train_bars=m['train_bars'],test_bars=m['test_bars'])
-    if expected!=report:raise ValueError('Walk-forward export differs from chronological replay')
+    # Python equality treats True as 1 and 1.0 as 1; exports require exact JSON types.
+    if digest(expected)!=digest(report):raise ValueError('Walk-forward export differs from chronological replay')
     return deepcopy(expected)
