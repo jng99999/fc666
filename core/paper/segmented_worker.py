@@ -114,10 +114,12 @@ def _append(db, row, records, kind, identity, index, node_hash, payload, now):
     return deepcopy(value)
 
 
-def enroll(engine, ledger_id, command_id):
+def enroll(engine, ledger_id, command_id, *, expected_root_sha256=None):
     _identity(command_id)
     with transaction(engine) as db:
         row = ledger._lock(db, ledger_id); nodes = ledger._audit(db, row); records = audit(db, row, nodes)
+        if expected_root_sha256 is not None and expected_root_sha256 != row.root_sha256:
+            raise ValueError('Worker enrollment root checkpoint differs')
         if records:
             if records[0].command_id != command_id: raise ValueError('Conflicting enrollment retry')
             return deepcopy(records[0].payload)

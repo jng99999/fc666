@@ -14,6 +14,10 @@ NODE_BYTES=34*1024*1024
 LEDGERS=100
 
 
+class MissingLedger(ValueError):
+    pass
+
+
 def _id(value):
     if not isinstance(value,str) or not value.startswith('segmented:') or not 11<=len(value)<=128:
         raise ValueError('Independent segmented ledger identity required')
@@ -67,7 +71,7 @@ def _node(ledger_id,index,parent,command,report):
 def _lock(db,ledger_id):
     db.execute(text("SELECT set_config('lock_timeout','2000ms',true)"))
     row=db.scalar(select(Ledger).where(Ledger.ledger_id==_id(ledger_id)).with_for_update())
-    if row is None:raise ValueError('Unknown independent local ledger')
+    if row is None:raise MissingLedger('Unknown independent local ledger')
     return row
 
 
