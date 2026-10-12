@@ -31,6 +31,9 @@ class FinalizationCommand(BaseModel):
 
 
 def add_commands(router,engine,settings,*,health_cache=None):
+    from apps.api.requested_operator_fence import OperatorRouter
+    parent=router
+    router=OperatorRouter(engine,settings)
     bearer=HTTPBearer(auto_error=False)
     def authenticate(credentials:HTTPAuthorizationCredentials|None=Depends(bearer)):
         if settings is None or settings.paper_operator_token is None:
@@ -73,3 +76,4 @@ def add_commands(router,engine,settings,*,health_cache=None):
 
     from apps.api.requested_onboarding import add_onboarding
     add_onboarding(router,engine,settings,authenticate,health_cache=health_cache)
+    parent.include_router(router)
