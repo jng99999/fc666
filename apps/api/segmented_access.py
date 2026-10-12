@@ -1,10 +1,11 @@
 """Process-local atomic operator policy replacement; no public administration API."""
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 from dataclasses import dataclass
 from hmac import compare_digest
 from threading import RLock
 from pydantic import SecretStr
 from apps.api.settings import Settings
+from core.paper import segmented_revocations as revocations
 
 
 class Denied(ValueError):
@@ -31,7 +32,8 @@ def policy(settings):
 
 
 class Access:
-    def __init__(self, settings):
+    def __init__(self, settings, *, engine=None):
+        self._engine = engine
         self._lock = RLock()
         self._policy = policy(settings)
         self._revision = 0
@@ -64,10 +66,21 @@ class Access:
         # must authenticate and check grants again against the new policy.
         with self._lock:
             self._authenticate(token)
-            if identity not in self._policy.accounts or action not in self._policy.actions:
-                raise Denied(403)
-            self._active += 1
             try:
-                yield self._revision
-            finally:
-                self._active -= 1
+                with revocations.guard(self._engine,token,identity,action) if self._engine is not None else nullcontext():
+                    if identity not in self._policy.accounts or action not in self._policy.actions:
+                        raise Denied(403)
+                    self._active += 1
+                    try:
+                        yield self._revision
+                    finally:
+                        self._active -= 1
+            except revocations.Revoked as error:
+                raise Denied(error.status) from None
+
+    def revoke(self, command_id, *, ledger_id='*', action='*'):
+        with self._lock:
+            if self._active or self._engine is None or self._policy.token is None:
+                raise ValueError('Durable revocation requires an idle configured database policy')
+            return revocations.revoke(self._engine,self._policy.token.get_secret_value(),command_id,
+                                      ledger_id=ledger_id,action=action)

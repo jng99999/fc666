@@ -22,7 +22,7 @@ class Enrollment(BaseModel):
 
 def router_for(engine, settings, *, access=None):
     router = APIRouter()
-    access = access or Access(settings)
+    access = access or Access(settings,engine=engine)
     bearer = HTTPBearer(auto_error=False)
 
     def deny(error):
@@ -45,6 +45,10 @@ def router_for(engine, settings, *, access=None):
                 yield
         except Denied as error:
             deny(error)
+        except SQLAlchemyError:
+            raise HTTPException(503, 'Operator revocation state temporarily unavailable', headers=HEADERS)
+        except (ValueError, TypeError, KeyError):
+            raise HTTPException(409, 'Operator revocation state cannot be verified', headers=HEADERS)
 
     def perform(call):
         try:

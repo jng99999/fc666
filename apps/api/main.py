@@ -37,7 +37,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(requested_paper_router(engine,config,health_cache=cache))
     from apps.api.segmented_paper import router_for as segmented_paper_router
     from apps.api.segmented_access import Access
-    app.state.segmented_operator_access = Access(config)
+    app.state.segmented_operator_access = Access(config,engine=engine)
     app.include_router(segmented_paper_router(engine,config,access=app.state.segmented_operator_access))
     app.include_router(portfolio_router(engine))
 
@@ -89,6 +89,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 conn.execute(text("SELECT ledger_id FROM segmented_paper_ledgers LIMIT 0"))
                 conn.execute(text("SELECT ledger_id,commit_index FROM segmented_paper_commits LIMIT 0"))
                 conn.execute(text("SELECT ledger_id FROM segmented_paper_worker_records LIMIT 0"))
+                conn.execute(text("SELECT sequence FROM segmented_operator_revocations LIMIT 0"))
                 checks["schema"] = conn.execute(text("SELECT version_num FROM alembic_version")).scalar() == SCHEMA_REVISION
         except Exception:
             logger.warning("readiness_dependency_unavailable", extra={"dependency": "database"})

@@ -502,3 +502,17 @@ class SegmentedPaperWorkerRecord(Base):
                      CheckConstraint('sequence>=0 AND sequence<576', name='ck_segmented_worker_sequence'),
                      CheckConstraint("kind IN ('ENROLL','CLAIM','ACCEPT')", name='ck_segmented_worker_kind'),
                      CheckConstraint('octet_length(payload::text)<=16384', name='ck_segmented_worker_bytes'))
+
+
+class SegmentedOperatorRevocationRecord(Base):
+    __tablename__ = 'segmented_operator_revocations'
+    sequence: Mapped[int] = mapped_column(Integer, primary_key=True)
+    command_id: Mapped[str] = mapped_column(String(128), unique=True)
+    subject_sha256: Mapped[str] = mapped_column(String(64))
+    ledger_id: Mapped[str] = mapped_column(String(128))
+    action: Mapped[str] = mapped_column(String(64))
+    payload: Mapped[dict] = mapped_column(JSON)
+    payload_sha256: Mapped[str] = mapped_column(String(64))
+    __table_args__ = (UniqueConstraint('subject_sha256', 'ledger_id', 'action', name='uq_segmented_revocation_scope'),
+                     CheckConstraint('sequence>=0 AND sequence<1024', name='ck_segmented_revocation_sequence'),
+                     CheckConstraint('octet_length(payload::text)<=4096', name='ck_segmented_revocation_bytes'))
