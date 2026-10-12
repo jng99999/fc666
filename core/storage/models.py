@@ -516,3 +516,14 @@ class SegmentedOperatorRevocationRecord(Base):
     __table_args__ = (UniqueConstraint('subject_sha256', 'ledger_id', 'action', name='uq_segmented_revocation_scope'),
                      CheckConstraint('sequence>=0 AND sequence<1024', name='ck_segmented_revocation_sequence'),
                      CheckConstraint('octet_length(payload::text)<=4096', name='ck_segmented_revocation_bytes'))
+
+
+class SegmentedOperatorRevocationHead(Base):
+    __tablename__ = 'segmented_operator_revocation_head'
+    identity: Mapped[str] = mapped_column(String(16), primary_key=True)
+    revision: Mapped[int] = mapped_column(Integer)
+    root_sha256: Mapped[str|None] = mapped_column(String(64), nullable=True)
+    head_sha256: Mapped[str|None] = mapped_column(String(64), nullable=True)
+    __table_args__ = (CheckConstraint("identity='global'",name='ck_revocation_head_identity'),
+                     CheckConstraint('revision>=0 AND revision<=1024',name='ck_revocation_head_revision'),
+                     CheckConstraint("(revision=0 AND root_sha256 IS NULL AND head_sha256 IS NULL) OR (revision>0 AND root_sha256 ~ '^[0-9a-f]{64}$' AND head_sha256 ~ '^[0-9a-f]{64}$' AND root_sha256 IS NOT NULL AND head_sha256 IS NOT NULL)",name='ck_revocation_head_hashes'))

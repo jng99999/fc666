@@ -7,7 +7,7 @@ from sqlalchemy import select,text
 from core.paper.requested_journal import transaction
 from core.paper.fault_adapter import sha
 from core.paper.segmented_ledger import _id
-from core.storage.models import SegmentedOperatorRevocationRecord as Record
+from core.storage.models import SegmentedOperatorRevocationRecord as Record, SegmentedOperatorRevocationHead as Head
 
 VERSION='paper-segmented-operator-revocation-v1'
 LIMIT=1024
@@ -55,6 +55,10 @@ def audit(db):
         if value['command_id'] in identities or scope in scopes:raise ValueError('Duplicate revocation identity/scope')
         identities.add(value['command_id']);scopes.add(scope)
         parent=value['sha256'];previous=value['recorded_us']
+    checkpoint=db.get(Head,'global')
+    if (checkpoint is None or checkpoint.revision!=len(records) or checkpoint.head_sha256!=parent
+        or checkpoint.root_sha256!=(records[0].payload_sha256 if records else None)):
+        raise ValueError('Revocation checkpoint differs from retained evidence')
     return records
 
 
@@ -79,6 +83,10 @@ def revoke(engine,token,command_id,*,ledger_id='*',action='*'):
         value={**body,'sha256':sha(body)}
         db.add(Record(sequence=len(records),command_id=command_id,subject_sha256=digest,ledger_id=ledger_id,
                       action=action,payload=value,payload_sha256=value['sha256']))
+        checkpoint=db.get(Head,'global')
+        checkpoint.revision=len(records)+1
+        checkpoint.head_sha256=value['sha256']
+        if not records:checkpoint.root_sha256=value['sha256']
         db.flush();audit(db)
         return deepcopy(value)
 

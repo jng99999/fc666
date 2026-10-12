@@ -90,6 +90,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 conn.execute(text("SELECT ledger_id,commit_index FROM segmented_paper_commits LIMIT 0"))
                 conn.execute(text("SELECT ledger_id FROM segmented_paper_worker_records LIMIT 0"))
                 conn.execute(text("SELECT sequence FROM segmented_operator_revocations LIMIT 0"))
+                if conn.execute(text("SELECT revision FROM segmented_operator_revocation_head WHERE identity='global'")).scalar() is None:
+                    raise ValueError("Required revocation checkpoint missing")
                 checks["schema"] = conn.execute(text("SELECT version_num FROM alembic_version")).scalar() == SCHEMA_REVISION
         except Exception:
             logger.warning("readiness_dependency_unavailable", extra={"dependency": "database"})
