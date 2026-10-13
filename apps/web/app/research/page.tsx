@@ -1,4 +1,5 @@
 "use client";
+import VerifyResult from './VerifyResult';
 import {useState,useEffect,type FormEvent} from 'react';
 import {z} from 'zod';
 import BatchResearch from './BatchResearch';
@@ -72,6 +73,6 @@ export default function Research(){
  <h3>完整交易（未平仓及部分退出不计入）</h3><div className="research-table"><table><thead><tr><th>开仓 UTC</th><th>平仓 UTC</th><th>净收益</th><th>费用</th><th>持有秒数</th><th>退出成交次数</th></tr></thead><tbody>{run.analysis.closed_trades.map((trade,i)=><tr key={i}><td>{trade.entry_at}</td><td>{trade.exit_at}</td><td>{trade.net_pnl}</td><td>{trade.fees}</td><td>{trade.holding_seconds}</td><td>{trade.exit_count}</td></tr>)}</tbody></table></div>
  <p>{run.orders.filter(o=>o.status==='REJECTED').length} 次拒绝 · {run.orders.filter(o=>o.status==='PARTIAL_CANCELLED').length} 次部分成交后取消。结束仓位按最后收盘价标记，未强制清仓。</p>
  <p>模拟滑点与tick取整总成本：{String(run.metrics.slippage_cost??"不可用")} USDT；成本已反映在成交价和收益中，不重复扣款。</p><h3>模拟成交记录</h3><div className="research-table"><table><thead><tr><th>方向</th><th>决策 UTC</th><th>成交 UTC</th><th>数量</th><th>价格</th><th>费用</th></tr></thead><tbody>{run.fills.map((fill,i)=><tr key={i}><td>{fill.side}</td><td>{fill.decision_at}</td><td>{fill.execution_at}</td><td>{fill.quantity}</td><td>{fill.price}</td><td>{fill.fee}</td></tr>)}</tbody></table></div>{run.fills.length===0?<p>该参数与时间窗口没有成交。</p>:null}
- <details><summary>数据与运行清单</summary><p>run_id: {run.run_id}</p><p>策略：{String(run.manifest.strategy)} · 参数：{JSON.stringify(run.manifest.parameters??{})} · 引擎：{run.manifest.engine_version}</p><p>data_sha256: {run.manifest.data_sha256}</p><p>{run.manifest.start} → {run.manifest.end}</p><ul>{run.manifest.assumptions.map(s=><li key={s}>{s}</li>)}</ul></details><button onClick={()=>{const blob=new Blob([JSON.stringify(run,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`fc666-${run.run_id}.json`;a.click();URL.revokeObjectURL(url);}}>下载结果与清单</button></section>:null}
+ <details><summary>数据与运行清单</summary><p>run_id: {run.run_id}</p><p>策略：{String(run.manifest.strategy)} · 参数：{JSON.stringify(run.manifest.parameters??{})} · 引擎：{run.manifest.engine_version}</p><p>data_sha256: {run.manifest.data_sha256}</p><p>{run.manifest.start} → {run.manifest.end}</p><ul>{run.manifest.assumptions.map(s=><li key={s}>{s}</li>)}</ul></details>{activeId?<VerifyResult key={activeId+run.run_id} jobId={activeId} runId={run.run_id}/>:null}<button onClick={()=>{const blob=new Blob([JSON.stringify(run,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`fc666-${run.run_id}.json`;a.click();URL.revokeObjectURL(url);}}>下载结果与清单</button></section>:null}
  </main>;
 }

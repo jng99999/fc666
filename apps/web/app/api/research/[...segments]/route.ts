@@ -4,7 +4,7 @@ function pathFor(segments:string[],method:string){
  if(segments.length===1&&['jobs','batches','holdouts','walk-forwards'].includes(segments[0])&&method==='POST')return segments[0];
  if(!['jobs','batches'].includes(segments[0])||! /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(segments[1]??''))return null;
  if(segments.length===2&&method==='GET')return segments.join('/');
- if(segments.length===3&&((segments[0]==='jobs'&&segments[2]==='result'&&method==='GET')||(segments[2]==='cancel'&&method==='POST')))return segments.join('/');
+ if(segments.length===3&&((segments[0]==='jobs'&&segments[2]==='result'&&method==='GET')||(segments[2]==='cancel'&&method==='POST')||(segments[0]==='jobs'&&segments[2]==='verify'&&method==='POST')))return segments.join('/');
  return null;
 }
 async function proxy(request:Request,context:{params:Promise<{segments:string[]}>}){
