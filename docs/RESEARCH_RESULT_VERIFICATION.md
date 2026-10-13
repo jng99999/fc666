@@ -9,3 +9,11 @@ A successful response contains `run_id`, `engine_version`, `result_sha256`, `sna
 Ordinary result reads remain unchanged and do not silently run CPU replay. The ordinary, holdout and walk-forward result panels expose “复验冻结结果” through the explicitly allowed jobs/UUID/verify POST proxy route. The button disables while a request is pending, validates the complete receipt and its run ID, and clears its state when the displayed job/run changes. Malformed or unsuccessful responses show failure and allow retry. The response verifies the retained backend report; it does not hash the browser rendering. Batch summaries expose independent controls for successful members with retained run IDs. A member's failed recheck does not change another member's verification state. Downloads additionally require the returned run ID to match that member. There is no batch-wide proof or automatic parameter recommendation. Existing queue workers continue to use the same result formats and engine versions. No migration or setup configuration change is required.
 
 This compares a retained snapshot with its retained result. Digests do not authenticate the source, and coordinated replacement of both input and result may still be internally consistent. It is not proof of historical rule accuracy, statistical validity, profitability or trading authorization. API-wide authentication and concurrency controls remain separate deployment work.
+
+Ordinary and holdout exports can also be checked without a database or network:
+
+```sh
+.venv/bin/python -m scripts.reproduce_backtest /path/to/report.json
+```
+
+The offline tool retains ordinary v1/v2/v3 and holdout v1 support. It reads a regular non-symlink file with a hard 4 MiB bound, rejects duplicate fields and non-finite numbers, validates dataset bounds before replay and compares canonical JSON digests. Errors omit report contents. Walk-forward exports use the separate `scripts.verify_walk_forward` command and its 32 MiB bound. Successful offline replay is consistency evidence, not authenticated provenance.
