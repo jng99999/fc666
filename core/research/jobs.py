@@ -1,6 +1,7 @@
 """PostgreSQL queue with immutable input snapshots and fenced expiring leases."""
 from datetime import datetime,timedelta,timezone
 from uuid import uuid4
+import json
 from sqlalchemy import select,or_,func,text
 from sqlalchemy.orm import Session
 from core.storage.models import ResearchJobRecord as Job,ResearchWorkerRecord as Worker
@@ -14,6 +15,18 @@ class Cancelled(Exception):pass
 class LostLease(Exception):pass
 
 ENGINES={None:VERSION,'holdout':'spot-holdout-v1','walk_forward':'spot-walk-forward-v1'}
+SNAPSHOT_FIELDS={'request_sha256','engine_version','strategy','dataset','instrument','sha256'}
+MAX_INPUT_BYTES=4*1024*1024
+
+def validate_snapshot(request,snapshot):
+    if not isinstance(request,dict) or not isinstance(snapshot,dict) or set(snapshot)!=SNAPSHOT_FIELDS:
+        raise ValueError('Invalid research snapshot envelope')
+    dataset=snapshot['dataset']
+    if not isinstance(dataset,list) or not 2<=len(dataset)<=1000:raise ValueError('Invalid research source bounds')
+    if len(json.dumps([request,snapshot],allow_nan=False).encode())>MAX_INPUT_BYTES:
+        raise ValueError('Research input exceeds 4 MiB')
+    if digest({k:v for k,v in snapshot.items() if k!='sha256'})!=snapshot['sha256'] or digest(request)!=snapshot['request_sha256']:
+        raise ValueError('Altered research snapshot')
 
 def validate_request(request,bars,instrument):
     if not isinstance(request,dict) or 'config' not in request:raise ValueError('Research configuration required')
@@ -62,6 +75,7 @@ def enqueue_many(engine,requests,bars,instrument):
         for request,version in zip(requests,versions):
             snapshot={'request_sha256':digest(request),'engine_version':version,'strategy':request.get('strategy','ema_long_flat_v1'),'dataset':dataset,'instrument':instrument.model_dump(mode='json')}
             snapshot['sha256']=digest(snapshot)
+            validate_snapshot(request,snapshot)
             job=Job(job_id=str(uuid4()),created_at=stamp,updated_at=stamp,status='QUEUED',progress=0,cancel_requested=False,attempts=0,request=request,snapshot=snapshot)
             session.add(job);created.append(job)
         session.flush();return [view(job) for job in created]
@@ -121,8 +135,8 @@ def execute(engine,job_id,owner,stopping=lambda:False):
             job.progress=min(99,int(done*100/total));job.updated_at=now();job.lease_until=now()+timedelta(seconds=LEASE_SECONDS)
         heartbeat(engine,owner)
     try:
-        body={key:value for key,value in snapshot.items() if key!='sha256'}
-        if digest(body)!=snapshot['sha256'] or snapshot['engine_version'] not in [VERSION,'spot-next-open-v2','spot-holdout-v1','spot-walk-forward-v1'] or digest(request)!=snapshot['request_sha256']:raise ValueError('Unsupported or altered job snapshot')
+        validate_snapshot(request,snapshot)
+        if snapshot['engine_version'] not in [VERSION,'spot-next-open-v2','spot-holdout-v1','spot-walk-forward-v1']:raise ValueError('Unsupported engine version')
         kind=request.get('research_type')
         if not isinstance(kind,(str,type(None))) or kind not in ENGINES:raise ValueError('Unsupported research type')
         allowed=[VERSION,'spot-next-open-v2'] if kind is None else [ENGINES[kind]]
