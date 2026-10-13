@@ -1,0 +1,11 @@
+# Retained research result verification
+
+`POST /api/v1/research/jobs/{job_id}/verify` explicitly replays a successful retained job. It reads the request, frozen snapshot and result in one database fetch, releases the database session, and computes without writing task state or market data.
+
+Supported pinned engines are ordinary current v3 and legacy v2, fixed-parameter holdout v1 and walk-forward v1. Unknown/mismatched task types and engines, altered snapshot/request digests, invalid bounds, and results differing from complete replay are rejected. Comparison uses canonical JSON digests, including JSON types. The serialized request/snapshot/result envelope is bounded to 32 MiB and source data to 2..1000 bars. Walk-forward retains its existing candidate/window limits.
+
+A successful response contains `run_id`, `engine_version`, `result_sha256`, `snapshot_sha256`, `consistency_verified: true`, `provenance_authenticated: false`, and `trading_enabled: false`; responses use `Cache-Control: no-store`. Missing jobs return 404, non-successful jobs or verification failures return 409, invalid UUIDs return 422. Verification failures do not return retained input contents.
+
+Ordinary result reads remain unchanged and do not silently run CPU replay. The new endpoint is available in the backend API; a browser action and frontend proxy route are not added in this slice. Existing queue workers continue to use the same result formats and engine versions. No migration or setup configuration change is required.
+
+This compares a retained snapshot with its retained result. Digests do not authenticate the source, and coordinated replacement of both input and result may still be internally consistent. It is not proof of historical rule accuracy, statistical validity, profitability or trading authorization. API-wide authentication and concurrency controls remain separate deployment work.

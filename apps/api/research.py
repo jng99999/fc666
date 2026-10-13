@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 from typing import Literal
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 from sqlalchemy import select
 from uuid import UUID
@@ -187,4 +188,17 @@ def router_for(engine):
         try:return jobs.cancel(engine,str(job_id))
         except KeyError:raise HTTPException(404,'Task not found')
         except ValueError as error:raise HTTPException(409,str(error))
+
+    @router.post('/api/v1/research/jobs/{job_id}/verify')
+    def verify_job(job_id:UUID):
+        from core.research.verification import verify
+        with Session(engine) as session:
+            job=session.get(Job,str(job_id))
+            if job is None:raise HTTPException(404,'Task not found')
+            if job.status!='SUCCEEDED':raise HTTPException(409,'Task has no successful result')
+            request,snapshot,result=job.request,job.snapshot,job.result
+        # Release the database session before bounded CPU replay. No state is written.
+        try:verified=verify(request,snapshot,result)
+        except (ValueError,KeyError,TypeError):raise HTTPException(409,'Retained research verification failed')
+        return JSONResponse(verified,headers={'Cache-Control':'no-store'})
     return router
