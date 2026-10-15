@@ -10,7 +10,7 @@ from core.research import jobs, batches
 from sqlalchemy.orm import Session
 from core.models import Candle, Instrument
 from core.storage.models import CandleRecord, InstrumentRecord
-from core.exchange.binance import SYMBOLS
+from core.exchange.public import SYMBOLS
 from core.backtest.spot import BacktestConfig, simulate
 from core.strategy.registry import DEFINITIONS, resolve
 

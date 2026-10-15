@@ -8,7 +8,7 @@ from redis.asyncio import Redis as AsyncRedis
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from core.models import Instrument,Candle
-from core.exchange.binance import SYMBOLS,INTERVALS
+from core.exchange.public import SYMBOLS,INTERVALS
 from core.storage.models import InstrumentRecord,CandleRecord
 from core.market_data import quality
 

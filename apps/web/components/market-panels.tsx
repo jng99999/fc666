@@ -1,7 +1,7 @@
 "use client";
 import {useEffect,useState} from "react";
 import {useMarketStore} from "../lib/market-store";
-import {keyFor,Symbols,type SymbolName,type TickerSnapshot,type BookSnapshot,type TradeSnapshot,type Snapshot} from "../lib/market";
+import {keyFor,Symbols,MarketProvider,type SymbolName,type TickerSnapshot,type BookSnapshot,type TradeSnapshot,type Snapshot} from "../lib/market";
 export function decimalDisplay(value:string|undefined) {
   if(value===undefined)return "—";
   const [whole,fraction] = value.split(".");
@@ -20,7 +20,7 @@ function WatchRow({symbol,selected,onSelect}:{symbol:SymbolName;selected:boolean
   return <button className={`watch-row ${selected?"selected":""}`} onClick={onSelect} aria-pressed={selected}><span>{symbol.replace("USDT","/USDT")}</span><span className="mono">{decimalDisplay(value?.payload.price)}</span><small className={Number(value?.payload.change_percent ?? 0)<0?"sell":"buy"}>{value?`${value.payload.change_percent}%`:"数据不可用"}</small></button>;
 }
 export function Watchlist({symbol,onSelect}:{symbol:SymbolName;onSelect:(symbol:SymbolName)=>void}) {
-  return <><h2 className="panel-title">自选市场 <span>SPOT</span></h2>{Symbols.map(s=><WatchRow key={s} symbol={s} selected={s===symbol} onSelect={()=>onSelect(s)}/>)}<div className="panel-note"><strong>公共行情 · 只读</strong><p>BTC / ETH 现货。衍生品、账户和交易执行尚未接入。</p><a href="/system">查看系统服务状态 ↗</a></div></>;
+  return <><h2 className="panel-title">自选市场 <span>SPOT</span></h2>{Symbols.map(s=><WatchRow key={s} symbol={s} selected={s===symbol} onSelect={()=>onSelect(s)}/>)}<div className="panel-note"><strong>{MarketProvider === 'bitget' ? 'Bitget' : 'Binance'} 公共行情 · 只读</strong><p>BTC / ETH 现货。衍生品、账户和交易执行尚未接入。</p><a href="/system">查看系统服务状态 ↗</a></div></>;
 }
 export function TickerHeader({symbol}:{symbol:SymbolName}) {
   const value=useFresh(symbol,"ticker") as TickerSnapshot|undefined;
@@ -28,7 +28,7 @@ export function TickerHeader({symbol}:{symbol:SymbolName}) {
 }
 export function BookPanel({symbol}:{symbol:SymbolName}) {
   const value=useFresh(symbol,"book") as BookSnapshot|undefined;
-  return <section className="book-panel" data-received-at={value?.received_at} data-generation={value?.generation} data-sequence={value?.sequence}><h2 className="panel-title">订单簿 <span>{value?"已同步":"不可用"}</span></h2>{!value?<p className="empty">订单簿未就绪或已失效。正在等待重新同步。</p>:<><div className="book-columns"><span>价格 (USDT)</span><span>数量</span></div><div className="book-side asks" data-testid="orderbook-asks">{value.payload.asks.slice(0,10).reverse().map(([p,q])=><div className="book-level" key={p}><span className="sell">{decimalDisplay(p)}</span><span>{decimalDisplay(q)}</span></div>)}</div><div className="book-divider">最优买卖价 · 实际市场深度</div><div className="book-side bids" data-testid="orderbook-bids">{value.payload.bids.slice(0,10).map(([p,q])=><div className="book-level" key={p}><span className="buy">{decimalDisplay(p)}</span><span>{decimalDisplay(q)}</span></div>)}</div><p className="depth-note">显示 10 档；初始快照最多 1,000 档，非完整市场流动性。</p></>}</section>;
+  return <section className="book-panel" data-received-at={value?.received_at} data-generation={value?.generation} data-sequence={value?.sequence}><h2 className="panel-title">订单簿 <span>{value?"已同步":"不可用"}</span></h2>{!value?<p className="empty">订单簿未就绪或已失效。正在等待重新同步。</p>:<><div className="book-columns"><span>价格 (USDT)</span><span>数量</span></div><div className="book-side asks" data-testid="orderbook-asks">{value.payload.asks.slice(0,10).reverse().map(([p,q])=><div className="book-level" key={p}><span className="sell">{decimalDisplay(p)}</span><span>{decimalDisplay(q)}</span></div>)}</div><div className="book-divider">最优买卖价 · 实际市场深度</div><div className="book-side bids" data-testid="orderbook-bids">{value.payload.bids.slice(0,10).map(([p,q])=><div className="book-level" key={p}><span className="buy">{decimalDisplay(p)}</span><span>{decimalDisplay(q)}</span></div>)}</div><p className="depth-note">显示 10 档；快照最多 {value.payload.snapshot_depth_limit.toLocaleString()} 档，非完整市场流动性。</p></>}</section>;
 }
 export function TradesPanel({symbol}:{symbol:SymbolName}) {
   const value=useFresh(symbol,"trade") as TradeSnapshot|undefined;

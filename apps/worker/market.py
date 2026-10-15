@@ -16,6 +16,7 @@ from core.storage.models import CandleRecord
 from websockets.sync.client import connect
 from apps.api.settings import Settings
 from core.exchange.binance import BinancePublic,SYMBOLS,INTERVALS,MarketDataError,RateLimited,normalize_candle,stream_event,utc_ms
+from core.exchange.public import SYMBOLS, PROVIDER, public_adapter
 from core.market_data.orderbook import OrderBook
 from core.market_data.storage import save_instruments,save_candles,gap_report,DataConflict,reconcile_confirmed_rest
 
@@ -148,7 +149,7 @@ def main():
     logging.basicConfig(level=logging.INFO,format="%(asctime)s %(levelname)s %(name)s %(message)s")
     settings=Settings();cache=Redis.from_url(settings.redis_url,socket_timeout=3,socket_connect_timeout=3)
     engine=create_engine(settings.database_url.get_secret_value(),hide_parameters=True,pool_pre_ping=True,connect_args={"connect_timeout":2})
-    adapter=BinancePublic();stop=threading.Event()
+    adapter=public_adapter();stop=threading.Event()
     for sig in (signal.SIGTERM,signal.SIGINT): signal.signal(sig,lambda *_:stop.set())
     try:
         # Rules must come from the exchange before any candle is persisted.
@@ -159,7 +160,10 @@ def main():
                 log.warning("market_initialization_unavailable reason=%s",type(exc).__name__)
                 stop.wait(exc.seconds if isinstance(exc,RateLimited) else 15)
         if stop.is_set(): return
-        threads=[threading.Thread(target=consume_symbol,args=(s,adapter,engine,cache,stop)) for s in SYMBOLS]
+        consumer=consume_symbol
+        if PROVIDER=='bitget':
+            from apps.worker.bitget_market import consume_symbol as consumer
+        threads=[threading.Thread(target=consumer,args=(s,adapter,engine,cache,stop)) for s in SYMBOLS]
         for thread in threads: thread.start()
         while any(t.is_alive() for t in threads):
             for thread in threads: thread.join(timeout=1)
