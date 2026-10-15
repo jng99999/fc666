@@ -1,6 +1,6 @@
 name: fc666-test
 x-app: &app
-  image: fc666-test-backend:6c94ec3-bitget
+  image: fc666-test-backend:closed-bars-20261015
   build:
     context: ..
     dockerfile: Dockerfile.backend

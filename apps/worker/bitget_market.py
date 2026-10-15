@@ -31,13 +31,15 @@ def consume_symbol(symbol, adapter, engine, cache, stop):
                     now = adapter.server_time()
                     for interval in INTERVALS:
                         bars = adapter.recent_candles(symbol, interval, now)
-                        closed = [bar for bar in bars if bar.is_closed and int(bar.close_time.timestamp()*1000) <= now-60000]
+                        # New closed bars are needed immediately by realtime Paper and valuation.
+                        # The 60-second settlement gate belongs only to correcting stored bars.
+                        closed = [bar for bar in bars if bar.is_closed]
                         try:
                             save_candles(engine, closed)
                         except DataConflict:
                             # Reuse two-observation correction workflow after the settlement delay.
                             confirmation = [bar for bar in adapter.recent_candles(symbol, interval, now)
-                                if bar.is_closed and int(bar.close_time.timestamp()*1000) <= now-60000]
+                                if bar.is_closed]
                             reconcile_confirmed_rest(engine, closed, confirmation, observed_at=utc_ms(now))
                             save_candles(engine, closed)
                         if bars:

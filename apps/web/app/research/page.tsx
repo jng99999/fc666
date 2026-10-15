@@ -44,19 +44,20 @@ export default function Research(){
  }
  async function cancel(){if(!job)return;try{const response=await fetch(`/api/research/jobs/${job.job_id}/cancel`,{method:'POST'});if(!response.ok)throw new Error('任务已结束或无法取消');setJob(JobSchema.parse(await response.json()));}catch(e){setError(e instanceof Error?e.message:'取消失败');}}
  function restore(item:Job){setRun(null);setError('');setJob(item);setBusy(!['SUCCEEDED','FAILED','CANCELLED'].includes(item.status));localStorage.setItem(ACTIVE_JOB,item.job_id);setActiveId(null);setTimeout(()=>setActiveId(item.job_id),0);}
- return <main className="research-page"><h1>现货历史回测</h1><p>EMA / SMA Long / Flat v1 内置基线策略；闭合柱决策，下一柱开盘模拟成交。仅支持现货做多/空仓，不含杠杆、卖空和真实下单。</p>
- <form onSubmit={submit} className="research-form">
+ return <main className="research-page research-workbench"><div className="page-heading"><div><h1>策略研究</h1><p>基于真实历史数据比较 EMA / SMA 现货策略，固定输入、保存结果并支持复验。实盘关闭。</p></div><a className="secondary" href="/analysis">查看行情分析 →</a></div>
+ <form onSubmit={submit} className="research-form research-configuration"><div className="research-section-heading"><h2>单次历史回测</h2><p>先设置市场与策略，再配置资金和成本。批次研究沿用这里的市场设置。</p></div>
+ <fieldset disabled={busy}><legend>市场与策略</legend><div className="research-fields">
  <label>策略<select aria-label="策略" value={strategy} onChange={e=>setStrategy(e.target.value)}><option value="ema_long_flat_v1">EMA Long / Flat v1</option><option value="sma_long_flat_v1">SMA Long / Flat v1</option></select></label>
  <label>交易对<select value={symbol} onChange={e=>setSymbol(e.target.value)}><option>BTCUSDT</option><option>ETHUSDT</option></select></label>
  <label>周期<select value={timeframe} onChange={e=>setTimeframe(e.target.value)}>{['1m','5m','15m','1h','4h','1d'].map(v=><option key={v}>{v}</option>)}</select></label>
  <label>历史柱数<input required type="number" min="2" max="1000" value={limit} onChange={e=>setLimit(e.target.value)}/></label>
  {strategy==='sma_long_flat_v1'?<><label>SMA 快周期<input required type="number" min="2" max="499" value={fast} onChange={e=>setFast(e.target.value)}/></label><label>SMA 慢周期<input required type="number" min={Number(fast)+1} max="500" value={slow} onChange={e=>setSlow(e.target.value)}/></label></>:null}
  <label>{strategy==='ema_long_flat_v1'?'EMA 周期':'市场分类周期'}<input required type="number" min="2" max="500" value={period} onChange={e=>setPeriod(e.target.value)}/></label>
- <label>初始资金<input required inputMode="decimal" value={cash} onChange={e=>setCash(e.target.value)}/></label>
+ </div></fieldset><fieldset disabled={busy}><legend>资金与成本</legend><div className="research-fields"><label>初始资金（USDT）<input required inputMode="decimal" value={cash} onChange={e=>setCash(e.target.value)}/></label>
  <label>费率<input required inputMode="decimal" value={fee} onChange={e=>setFee(e.target.value)}/></label>
  <label>滑点率<input required inputMode="decimal" value={slippage} onChange={e=>setSlippage(e.target.value)}/></label>
  <label>截止时间（含时区，可空）<input placeholder="2026-10-05T12:00:00Z" value={cutoff} onChange={e=>setCutoff(e.target.value)}/></label>
- <button disabled={busy} type="submit">{busy?'计算中…':'运行历史回测'}</button></form><p>预算上限为可用资金的50%，单次成交容量用上一闭合柱成交量的1%作为研究代理；不是开盘时真实流动性保证。</p>
+ </div></fieldset><div className="research-submit"><button disabled={busy} type="submit">{busy?'计算中…':'运行历史回测'}</button><small>闭合柱决策，下一柱开盘模拟成交；仅现货做多 / 空仓。</small></div></form><p>预算上限为可用资金的50%，单次成交容量用上一闭合柱成交量的1%作为研究代理；不是开盘时真实流动性保证。</p>
  <BatchResearch base={{strategy,parameters:strategy==='ema_long_flat_v1'?{period:Number(period)}:{fast:Number(fast),slow:Number(slow)},symbol,timeframe,limit:Number(limit),as_of:cutoff||null,config:{initial_cash:cash,fee_rate:fee,slippage_rate:slippage,period:Number(period),allocation:'0.5',participation:'0.01'}}}/>
  <HoldoutResearch base={{strategy,parameters:strategy==='ema_long_flat_v1'?{period:Number(period)}:{fast:Number(fast),slow:Number(slow)},symbol,timeframe,limit:Number(limit),as_of:cutoff||null,config:{initial_cash:cash,fee_rate:fee,slippage_rate:slippage,period:Number(period),allocation:'0.5',participation:'0.01'}}}/>
  <WalkForwardResearch base={{strategy,parameters:strategy==='ema_long_flat_v1'?{period:Number(period)}:{fast:Number(fast),slow:Number(slow)},symbol,timeframe,limit:Number(limit),as_of:cutoff||null,config:{initial_cash:cash,fee_rate:fee,slippage_rate:slippage,period:Number(period),allocation:'0.5',participation:'0.01'}}}/>
