@@ -74,3 +74,30 @@
 .terminal-controls nav{display:flex;align-items:center;gap:6px;margin-left:auto}.terminal .terminal-controls button{padding:4px 9px;font-size:11px;border-radius:6px}
 @media(max-width:1050px){.workspace-header{gap:18px;padding-inline:20px}.workspace-brand span,.workspace-mode>span{display:none}.workspace-navigation a{padding:8px 11px}.portfolio-workbench{grid-template-columns:minmax(0,1.3fr) minmax(280px,1fr)}}
 @media(max-width:760px){.workspace-header{height:auto;min-height:94px;flex-wrap:wrap;gap:0;padding:10px 16px 0}.workspace-brand{font-size:21px;order:0}.workspace-mode{order:1}.workspace-navigation{order:2;flex-basis:100%;overflow-x:auto;gap:2px;padding:6px 0;align-items:center}.workspace-navigation a{padding:7px 10px;font-size:12px}.account-navigation{padding-inline:16px;gap:24px}.research-page,body>main:not(.terminal){padding:22px 16px 36px}.research-page h1,body>main:not(.terminal) h1{font-size:23px}.portfolio-workbench{grid-template-columns:minmax(0,1fr)}.page-heading{flex-wrap:wrap;gap:14px}.page-heading>a{font-size:12px}.portfolio-panel-heading,.portfolio-limits,.portfolio-selected{padding:16px}.portfolio-pagination{padding:12px 16px;flex-wrap:wrap}.portfolio-empty{padding:32px 20px}.portfolio-result-empty{align-items:flex-start;flex-direction:column;gap:14px}.research-page>section{padding:16px}.terminal{height:auto;min-height:calc(100dvh - 94px)}.terminal .terminal-controls{padding-inline:16px}.terminal-controls .read-only{display:none}.portfolio-pagination small{margin-left:0;flex-basis:100%}}
+
+/* Touch targets and readable form controls without iOS focus zoom. */
+.matrix-result-actions{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:14px}
+.matrix-result-actions label{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.table-scroll-hint{display:none}
+@media(max-width:850px){
+ .chart-panel:not(:fullscreen) .chart-toolbar>label{display:none}
+ .terminal .timeframes{margin-left:0;display:flex;flex:1;justify-content:space-between;min-width:0}
+ .terminal .timeframes button,.terminal .mobile-tabs button,.terminal .mobile-tabs select{min-height:44px}
+ .terminal .chart-toolbar{gap:6px;padding:8px}
+ .terminal .chart-toolbar>button{min-height:44px;padding-inline:8px}
+ .terminal .terminal-bottom [role=tablist]{overflow-x:auto}
+ .terminal .terminal-bottom [role=tablist] button{min-height:44px;flex-shrink:0}
+}
+@media(max-width:760px){
+ .workspace-navigation a,.account-navigation a{min-height:44px;display:flex;align-items:center}
+ .workspace-header{min-height:106px}
+ .research-page{overflow-wrap:anywhere}
+ .research-page input:not([type=checkbox]),.research-page select,.research-page textarea{font-size:16px;max-width:100%;min-height:44px}
+ .research-page button,.research-page a.primary,.research-page a.secondary{min-height:44px}
+ .research-page input[type=checkbox]{flex-shrink:0}
+ .matrix-options{gap:0 12px}.matrix-options label,.matrix-variant>label{min-height:44px}
+ .research-fields>*{min-width:0}.research-fields input,.research-fields select{width:100%}
+ .table-scroll-hint{display:block;font-size:12px;color:var(--muted)}
+ .terminal{min-height:calc(100dvh - 106px)}
+}
+@media(max-width:400px){.research-fields{grid-template-columns:minmax(0,1fr)}}
