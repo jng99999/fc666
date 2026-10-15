@@ -1,5 +1,5 @@
 "use client";
-import {useEffect,useState} from 'react';
+import {useEffect,useRef,useState} from 'react';
 import {z} from 'zod';
 const Status=z.enum(['READY','ENDED','RUNNING','PAUSED','STOPPED','BLOCKED','LIMIT_REACHED']);
 const List=z.object({items:z.array(z.object({session_id:z.uuid(),symbol:z.string(),timeframe:z.string(),status:Status,revision:z.number().int(),integrity:z.enum(['VERIFIED','INVALID']),created_at:z.string(),account:z.object({cash:z.string(),quantity:z.string(),equity:z.string()}).nullable()})),next_cursor:z.string().nullable(),trading_enabled:z.literal(false)});
@@ -8,8 +8,9 @@ const labels:Record<string,string>={READY:'可推进',ENDED:'历史已结束',RU
 
 export function AccountList({kind,selected,busy,revision,onSelect,layout='table'}:{kind:'sessions'|'streams';selected?:string;busy:boolean;revision?:number;onSelect:(id:string)=>Promise<void>;layout?:'table'|'cards'}){
  const [status,setStatus]=useState(''),[cursor,setCursor]=useState<string|null>(null),[data,setData]=useState<z.infer<typeof List>|null>(null),[error,setError]=useState(''),[loading,setLoading]=useState(false),[refresh,setRefresh]=useState(0);
- useEffect(()=>{const abort=new AbortController();setLoading(true);setError('');setData(null);const query=new URLSearchParams({limit:'10'});if(status)query.set('status',status);if(cursor)query.set('cursor',cursor);
- void fetch(`/api/paper/${kind}?${query}`,{cache:'no-store',signal:abort.signal}).then(async response=>{if(!response.ok)throw new Error();return List.parse(await response.json());}).then(value=>{if(!abort.signal.aborted)setData(value);}).catch(()=>{if(!abort.signal.aborted)setError('账户列表读取失败，请重试');}).finally(()=>{if(!abort.signal.aborted)setLoading(false);});return()=>abort.abort();},[kind,status,cursor,refresh,selected,revision]);
+ const listScope=useRef('');
+ useEffect(()=>{const abort=new AbortController();setLoading(true);setError('');const scope=JSON.stringify([kind,status,cursor,layout]);if(layout==='table'||scope!==listScope.current)setData(null);listScope.current=scope;const query=new URLSearchParams({limit:'10'});if(status)query.set('status',status);if(cursor)query.set('cursor',cursor);
+ void fetch(`/api/paper/${kind}?${query}`,{cache:'no-store',signal:abort.signal}).then(async response=>{if(!response.ok)throw new Error();return List.parse(await response.json());}).then(value=>{if(!abort.signal.aborted)setData(value);}).catch(()=>{if(!abort.signal.aborted)setError('账户列表读取失败，请重试');}).finally(()=>{if(!abort.signal.aborted)setLoading(false);});return()=>abort.abort();},[kind,status,cursor,refresh,selected,revision,layout]);
  const options=kind==='sessions'?['READY','ENDED']:['RUNNING','PAUSED','STOPPED','BLOCKED','LIMIT_REACHED'];
  if(layout==='cards')return <section data-testid="paper-accounts" className="paper-account-picker"><h2>选择模拟账户</h2><div className="paper-picker-filter"><label>状态筛选<select aria-label="账户状态筛选" value={status} onChange={event=>{setStatus(event.target.value);setCursor(null);}}><option value="">全部状态</option>{options.map(value=><option key={value} value={value}>{labels[value]}</option>)}</select></label><button className="secondary" disabled={loading} onClick={()=>setRefresh(value=>value+1)}>刷新账户列表</button></div>
   {error?<p role="alert">{error}</p>:null}{loading?<p role="status">正在读取账户列表…</p>:null}
