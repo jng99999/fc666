@@ -14,7 +14,7 @@ export default function StopAccountDialog({target,busy,error,onCancel,onConfirm}
    <input id="paper-stop-code" autoComplete="off" autoCapitalize="none" spellCheck={false} maxLength={4} value={confirmation} disabled={busy} onChange={event=>setConfirmation(event.target.value)} aria-describedby="paper-stop-hint"/>
    <p id="paper-stop-hint">临时停用请取消，改用“暂停实时成交”。</p>
    {error?<p role="alert">{error}</p>:null}
-   <div className="paper-stop-actions"><button ref={cancel} type="button" className="secondary" disabled={busy} onClick={onCancel}>取消，保留运行</button><button type="submit" className="danger" disabled={busy||!stopConfirmationReady(target,confirmation)}>{busy?'正在核对并停止…':`确认停止 ${target.symbol}`}</button></div>
+   <div className="paper-stop-actions"><button ref={cancel} type="button" className="secondary" disabled={busy} onClick={onCancel}>取消</button><button type="submit" className="danger" disabled={busy||!stopConfirmationReady(target,confirmation)}>{busy?'正在核对并停止…':`确认停止 ${target.symbol}`}</button></div>
   </form>
  </dialog>;
 }
