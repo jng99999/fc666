@@ -9,6 +9,7 @@ from core.paper import sessions, streams, accounts, recovery, intents, preparati
 
 
 class PaperRequest(RunRequest):
+    strategy: Literal['ema_long_flat_v1','sma_long_flat_v1']='ema_long_flat_v1'
     risk: RiskLimits = Field(default_factory=RiskLimits)
 
 

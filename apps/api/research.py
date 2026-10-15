@@ -16,9 +16,9 @@ from core.strategy.registry import DEFINITIONS, resolve
 
 class RunRequest(BaseModel):
     model_config=ConfigDict(extra='forbid')
-    strategy: Literal['ema_long_flat_v1','sma_long_flat_v1']='ema_long_flat_v1'
+    strategy: str='ema_long_flat_v1'
     parameters: dict | None=None
-    symbol: Literal['BTCUSDT','ETHUSDT']='BTCUSDT'
+    symbol: Literal[tuple(SYMBOLS)]='BTCUSDT'
     timeframe: Literal['1m','5m','15m','1h','4h','1d']='1h'
     limit: int=Field(default=120,ge=2,le=1000,strict=True)
     as_of: datetime | None=None
@@ -47,7 +47,7 @@ class HoldoutRequest(BaseModel):
 
 class Variant(BaseModel):
     model_config=ConfigDict(extra='forbid')
-    strategy: Literal['ema_long_flat_v1','sma_long_flat_v1']
+    strategy: str
     parameters: dict
 
     @model_validator(mode='after')

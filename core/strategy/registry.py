@@ -7,6 +7,8 @@ from types import MappingProxyType
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from core.strategy.contracts import EmaLongFlat, StrategyContext, TargetSignal
+from core.strategy.research import (RsiParameters, BollingerParameters, ChannelParameters,
+                                    RsiLongFlat, BollingerLongFlat, ChannelLongFlat)
 
 
 class EmaParameters(BaseModel):
@@ -85,7 +87,23 @@ DEFINITIONS = MappingProxyType({
     'sma_long_flat_v1': Definition('sma_long_flat_v1', 1,
         'Finalized fast SMA above slow SMA -> LONG; otherwise FLAT; slow-window warmup -> no signal',
         SmaParameters, SmaLongFlat, True),
+    'rsi_long_flat_v1': Definition('rsi_long_flat_v1', 1,
+        'Wilder RSI <= lower enters LONG; >= upper exits; otherwise hold; period+1 closes warmup',
+        RsiParameters, RsiLongFlat, True),
+    'bollinger_long_flat_v1': Definition('bollinger_long_flat_v1', 1,
+        'Close below SMA minus deviations*population standard deviation enters; close >= SMA exits',
+        BollingerParameters, BollingerLongFlat, True),
+    'channel_long_flat_v1': Definition('channel_long_flat_v1', 1,
+        'Close above prior entry-window highs enters; below prior exit-window lows exits; equality holds',
+        ChannelParameters, ChannelLongFlat, True),
 })
+
+
+def lookback(strategy: str, parameters: dict) -> int:
+    validated = resolve(strategy).create(parameters)[1]
+    if strategy in {'rsi_long_flat_v1', 'channel_long_flat_v1'}:
+        return (validated.period if strategy == 'rsi_long_flat_v1' else validated.entry) + 1
+    return validated.slow if strategy == 'sma_long_flat_v1' else validated.period
 
 
 def resolve(strategy: str) -> Definition:

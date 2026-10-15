@@ -7,7 +7,7 @@ import httpx
 from core.exchange.binance import INTERVALS, MarketDataError, RateLimited, utc_ms
 from core.models import Candle, Instrument
 
-SYMBOLS = {'BTCUSDT': 'bitget:spot:BTC-USDT', 'ETHUSDT': 'bitget:spot:ETH-USDT'}
+from core.exchange.catalog import BITGET_SYMBOLS as SYMBOLS
 GRANULARITY = {'1m': '1min', '5m': '5min', '15m': '15min', '1h': '1h', '4h': '4h', '1d': '1Dutc'}
 
 def normalize_candle(symbol, interval, row, server_time):
@@ -25,18 +25,29 @@ class BitgetPublic:
             verify=ssl.create_default_context(), follow_redirects=False)
         self.lock = threading.Lock()
         self.next_request = 0.0
+        self.history_lock = threading.Lock()
+        self.next_history_request = 0.0
 
     def close(self):
         if self.owned:
             self.client.close()
 
     def get(self, path, params=None):
-        # Shared across both symbol threads: at most five public requests/second.
+        # Historical backfill has a separate conservative budget. Eight startup
+        # threads and a concurrent importer must not burst into this endpoint.
+        # Do not hold the live-request lock while waiting for a historical slot.
+        if path == '/api/v2/spot/market/history-candles':
+            with self.history_lock:
+                delay = self.next_history_request - time.monotonic()
+                if delay > 0:
+                    time.sleep(delay)
+                self.next_history_request = time.monotonic() + .5
+        # Shared across all symbol threads; below Bitget's 20 requests/s/IP limit.
         with self.lock:
             delay = self.next_request - time.monotonic()
             if delay > 0:
                 time.sleep(delay)
-            self.next_request = time.monotonic() + .2
+            self.next_request = time.monotonic() + .1
         try:
             response = self.client.get(path, params=params)
         except httpx.HTTPError as exc:

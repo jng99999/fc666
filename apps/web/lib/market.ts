@@ -1,12 +1,12 @@
 import {z} from "zod";
-export const Symbols = ["BTCUSDT","ETHUSDT"] as const;
+export const MarketProvider = z.enum(['binance','bitget']).parse(process.env.NEXT_PUBLIC_MARKET_PROVIDER ?? 'binance');
+export const Symbols = MarketProvider==='bitget' ? ["BTCUSDT","ETHUSDT","SOLUSDT","XRPUSDT","BNBUSDT","DOGEUSDT","ADAUSDT","AVAXUSDT"] as const : ["BTCUSDT","ETHUSDT"] as const;
 export const Intervals = ["1m","5m","15m","1h","4h","1d"] as const;
 export type SymbolName = typeof Symbols[number];
 export type Interval = typeof Intervals[number];
 const decimal = z.string().regex(/^-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?$/).refine(v => Number.isFinite(Number(v)));
 const positive = decimal.refine(v => Number(v)>0);
 const nonnegative = decimal.refine(v => Number(v)>=0);
-export const MarketProvider = z.enum(['binance','bitget']).parse(process.env.NEXT_PUBLIC_MARKET_PROVIDER ?? 'binance');
 export const CandleSchema = z.object({instrument_id:z.string().startsWith(`${MarketProvider}:spot:`),timeframe:z.enum(Intervals),open_time:z.iso.datetime({offset:true}),close_time:z.iso.datetime({offset:true}),open:positive,high:positive,low:positive,close:positive,volume:nonnegative,is_closed:z.boolean(),source:z.literal(`${MarketProvider}.public`)});
 export type Candle = z.infer<typeof CandleSchema>;
 const Base = z.object({schema_version:z.literal(1),type:z.literal("snapshot"),symbol:z.enum(Symbols),instrument_id:z.string(),generation:z.string(),sequence:z.number().int().positive(),received_at:z.iso.datetime({offset:true}),event_time:z.iso.datetime({offset:true}).nullable(),quality:z.literal("healthy")});

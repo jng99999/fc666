@@ -7,7 +7,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 from sqlalchemy import select, func
 from sqlalchemy.orm import Session
 from core.models import Candle, Instrument
-from core.exchange.public import PROVIDER
+from core.exchange.public import PROVIDER, SYMBOLS
 from core.backtest.spot import digest
 from core.paper import streams
 from core.storage.models import PaperStreamRecord, PaperWorkerRecord, CandleRecord, InstrumentRecord
@@ -88,7 +88,7 @@ def evaluate(snapshot):
                 row.update(ledger_clock=clock.isoformat(),symbol=instrument.native_symbol,base=instrument.base,
                     initial_cash=str(config.initial_cash),entry_halted=visible['risk']['entry_halted'],
                     **{key:visible['account'][key] for key in ['cash','quantity','cost_basis','realized_pnl','fees']})
-                if instrument.exchange!=PROVIDER or instrument.market_type!='SPOT' or instrument.quote!='USDT' or instrument.base not in ['BTC','ETH'] or instrument.native_symbol!=instrument.base+'USDT' or instrument.instrument_id!=f'{PROVIDER}:spot:{instrument.base}-USDT': reason='UNSUPPORTED_INSTRUMENT'
+                if instrument.exchange!=PROVIDER or instrument.market_type!='SPOT' or instrument.quote!='USDT' or instrument.native_symbol!=instrument.base+'USDT' or SYMBOLS.get(instrument.native_symbol)!=instrument.instrument_id: reason='UNSUPPORTED_INSTRUMENT'
                 elif raw['status']=='BLOCKED': reason='ACCOUNT_BLOCKED'
                 elif entry['instrument'] is None or Instrument.model_validate(entry['instrument'])!=instrument: reason='RULES_CHANGED'
                 elif [Candle.model_validate(item) for item in entry['accepted']]!=accepted: reason='ACCEPTED_DATA_CHANGED'

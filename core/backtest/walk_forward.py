@@ -2,7 +2,7 @@
 from copy import deepcopy
 from decimal import Decimal
 from core.backtest.spot import BacktestConfig,simulate as spot,digest
-from core.strategy.registry import resolve
+from core.strategy.registry import resolve, lookback as strategy_lookback
 from core.models import Candle,Instrument
 
 VERSION='spot-walk-forward-v1'
@@ -15,7 +15,7 @@ def validate(bars,instrument,strategy_id,grid,train_bars,test_bars):
         raise ValueError('Bounded complete training/test windows and1..8 candidates required')
     parameters=[resolve(strategy_id).create(value)[1].model_dump(mode='json') for value in grid]
     if len({digest(value) for value in parameters})!=len(parameters):raise ValueError('Duplicate parameter candidate')
-    lookback=max(p['period'] if strategy_id=='ema_long_flat_v1' else p['slow'] for p in parameters)
+    lookback=max(strategy_lookback(strategy_id,p) for p in parameters)
     if min(train_bars,test_bars)<lookback+1:raise ValueError('Every window needs lookback plus next-open bar')
     folds=(len(bars)-train_bars)//test_bars
     if not 1<=folds<=8:raise ValueError('Require1..8 complete out-of-sample folds')

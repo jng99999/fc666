@@ -86,7 +86,7 @@ def simulate(bars: list[Candle], instrument: Instrument, config: BacktestConfig,
                             orders.append({**order,'status':'FILLED' if size>=wanted_step else 'PARTIAL_CANCELLED','quantity':str(size)})
             result=indicator.push(bar)
             market_states.append(result['regime'])
-            pending=strategy.decide(StrategyContext(bar.close_time,bar.close,result['values']['ema']))
+            pending=strategy.decide(StrategyContext(bar.close_time,bar.close,result['values']['ema'],bar.high,bar.low))
             if pending:signals.append({'target':pending.target,'available_at':pending.available_at.isoformat()})
             value=cash+quantity*bar.close;peak=max(peak,value);drawdown=max(drawdown,(peak-value)/peak)
             equity.append({'as_of':bar.close_time.isoformat(),'cash':str(cash),'quantity':str(quantity),'equity':str(value)})

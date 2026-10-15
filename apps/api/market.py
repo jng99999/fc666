@@ -12,7 +12,7 @@ from core.exchange.public import SYMBOLS,INTERVALS
 from core.storage.models import InstrumentRecord,CandleRecord
 from core.market_data import quality
 
-Symbol=Literal["BTCUSDT","ETHUSDT"]
+Symbol=Literal[tuple(SYMBOLS)]
 Interval=Literal["1m","5m","15m","1h","4h","1d"]
 CHANNELS={"ticker","trade","book",*[f"candle.{i}" for i in INTERVALS]}
 
@@ -85,7 +85,7 @@ def router_for(engine,cache,redis_url):
                 await socket.close(code=1008,reason="Subscription required");return
             symbols=request.get("symbols",[]) if isinstance(request,dict) else []
             channels=request.get("channels",[]) if isinstance(request,dict) else []
-            if not isinstance(request,dict) or request.get("action")!="subscribe" or not isinstance(symbols,list) or not isinstance(channels,list) or not 1<=len(symbols)<=2 or not 1<=len(channels)<=9 or any(s not in SYMBOLS for s in symbols if isinstance(s,str)) or any(not isinstance(s,str) for s in symbols) or any(not isinstance(c,str) or c not in CHANNELS for c in channels):
+            if not isinstance(request,dict) or request.get("action")!="subscribe" or not isinstance(symbols,list) or not isinstance(channels,list) or not 1<=len(symbols)<=len(SYMBOLS) or not 1<=len(channels)<=9 or any(s not in SYMBOLS for s in symbols if isinstance(s,str)) or any(not isinstance(s,str) for s in symbols) or any(not isinstance(c,str) or c not in CHANNELS for c in channels):
                 await socket.close(code=1008,reason="Invalid subscription");return
             keys=[f"market:{s}:{c}" for s in dict.fromkeys(symbols) for c in dict.fromkeys(channels)]
             await socket.send_json({"type":"subscribed","symbols":symbols,"channels":channels,"delivery":"latest_snapshot","schema_version":1})

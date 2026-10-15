@@ -10,6 +10,18 @@ def adapter(handler):
 def reply(data):
     return httpx.Response(200, json={'code': '00000', 'data': data})
 
+def test_history_budget_reserves_separate_slots_without_delaying_live(monkeypatch):
+    from core.exchange import bitget
+    clock=[0.0];calls=[]
+    monkeypatch.setattr(bitget.time,'monotonic',lambda:clock[0])
+    monkeypatch.setattr(bitget.time,'sleep',lambda delay:clock.__setitem__(0,clock[0]+delay))
+    feed=adapter(lambda request:(calls.append((request.url.path,clock[0])) or reply([])))
+    feed.get('/api/v2/spot/market/history-candles')
+    feed.get('/api/v2/spot/market/tickers')
+    feed.get('/api/v2/spot/market/history-candles')
+    assert calls[1][1]==pytest.approx(.1)
+    assert calls[2][1]==pytest.approx(.5)
+
 def test_provider_identity_and_utc_finality():
     assert GRANULARITY['1d'] == '1Dutc'
     bar = normalize_candle('BTCUSDT', '1m', ['60000', '100', '102', '99', '101', '1.23456789'], 120000)

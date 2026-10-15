@@ -9,6 +9,7 @@ const volatility={LOW:'低波动',NORMAL:'常规波动',HIGH:'高波动',UNAVAIL
 export default function Analysis(){
  const [symbol,setSymbol]=useState<SymbolName>('BTCUSDT'),[timeframe,setTimeframe]=useState<Interval>('1h'),[refresh,setRefresh]=useState(0);
  const [data,setData]=useState<ReturnType<typeof summarizeMarket>|null>(null),[loading,setLoading]=useState(true),[error,setError]=useState('');
+ useEffect(()=>{const requested=new URLSearchParams(location.search).get('symbol');const selected=Symbols.find(value=>value===requested);if(selected)setSymbol(selected);},[]);
  useEffect(()=>{const abort=new AbortController();let timer:ReturnType<typeof setTimeout>;
   async function load(){setLoading(true);setData(null);setError('');try{
    const signal=AbortSignal.any([abort.signal,AbortSignal.timeout(15000)]);
@@ -18,7 +19,7 @@ export default function Analysis(){
   }catch(e){if(!abort.signal.aborted)setError(e instanceof Error?e.message:'行情分析服务不可用。');}finally{if(!abort.signal.aborted){setLoading(false);timer=setTimeout(()=>void load(),30000);}}}
   void load();return()=>{abort.abort();clearTimeout(timer);};
  },[symbol,timeframe,refresh]);
- return <main className="research-page analysis-page"><div className="page-heading"><div><h1>行情分析</h1><p>{MarketProvider==='bitget'?'Bitget':'Binance'} 现货 · 使用真实已闭合 K 线和服务器指标，每 30 秒重新读取。</p></div><Link className="secondary" href="/research">进入策略回测 →</Link></div>
+ return <main className="research-page analysis-page"><div className="page-heading"><div><h1>行情分析</h1><p>{MarketProvider==='bitget'?'Bitget':'Binance'} 现货 · 使用真实已闭合 K 线和服务器指标，每 30 秒重新读取。</p></div><Link className="secondary" href={`/research?symbol=${symbol}`}>回测当前产品 →</Link></div>
  <section className="analysis-toolbar"><label>分析交易对<select value={symbol} onChange={e=>setSymbol(e.target.value as SymbolName)}>{Symbols.map(value=><option key={value}>{value}</option>)}</select></label><label>分析周期<select value={timeframe} onChange={e=>setTimeframe(e.target.value as Interval)}>{Intervals.map(value=><option key={value}>{value}</option>)}</select></label><button disabled={loading} onClick={()=>setRefresh(value=>value+1)}>{loading?'读取中…':'刷新分析'}</button></section>
  {loading?<section role="status">正在读取闭合 K 线与指标，旧分析已清除…</section>:error?<section role="alert"><h2>暂时无法生成分析</h2><p>{error}</p><button className="secondary" onClick={()=>setRefresh(value=>value+1)}>重试分析</button></section>:data?<>
  <section data-testid="market-analysis"><div className="page-heading"><div><h2>{symbol} · {timeframe} · {trends[data.row.regime.label]}</h2><p>分析时点 UTC：{data.last.close_time} · 闭合收盘 {number(Number(data.last.close))} USDT</p></div><span className="badge">{volatility[data.row.regime.volatility]}</span></div>
