@@ -23,7 +23,9 @@ export type CandleSnapshot = z.infer<typeof LiveCandle>;
 export async function getCandles(symbol:SymbolName,timeframe:Interval,signal:AbortSignal,limit=1000): Promise<Candle[]> {
   const response=await fetch(`/api/market/candles?symbol=${symbol}&timeframe=${timeframe}&limit=${limit}`,{signal,cache:"no-store"});
   if (!response.ok) throw new Error("历史数据服务不可用");
-  return z.array(CandleSchema).parse(await response.json());
+  const bars=z.array(CandleSchema).parse(await response.json());
+  if(bars.some(bar=>bar.instrument_id!==`${MarketProvider}:spot:${symbol.slice(0,-4)}-USDT`||bar.timeframe!==timeframe))throw new Error('K 线响应与请求的市场或周期不一致');
+  return bars;
 }
 export const keyFor = (symbol:SymbolName,channel:string) => `${symbol}:${channel}`;
 
@@ -33,5 +35,7 @@ export type IndicatorRow=z.infer<typeof IndicatorSchema>["rows"][number];
 export async function getIndicators(symbol:SymbolName,timeframe:Interval,signal:AbortSignal,limit=1000,period=20){
   const response=await fetch(`/api/market/indicators?symbol=${symbol}&timeframe=${timeframe}&limit=${limit}&period=${period}`,{signal,cache:"no-store"});
   if(!response.ok)throw new Error(response.status===409?"历史数据有缺口，指标不可用":"指标服务不可用");
-  return IndicatorSchema.parse(await response.json());
+  const data=await response.json();
+  if(!z.object({symbol:z.literal(symbol),timeframe:z.literal(timeframe),period:z.literal(period)}).safeParse(data).success)throw new Error('指标响应与请求的市场或周期不一致');
+  return IndicatorSchema.parse(data);
 }

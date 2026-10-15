@@ -14,7 +14,7 @@ export default function Analysis(){
    const signal=AbortSignal.any([abort.signal,AbortSignal.timeout(15000)]);
    const [bars,indicators]=await Promise.all([getCandles(symbol,timeframe,signal,120),getIndicators(symbol,timeframe,signal,120,20)]);
    const row=indicators.rows.at(-1);if(!row)throw new Error('指标服务未返回闭合数据。');
-   const next=summarizeMarket(bars,row,timeframe,Date.now());if(!abort.signal.aborted)setData(next);
+   const next=summarizeMarket(bars,row,timeframe,Date.now(),`${MarketProvider}:spot:${symbol.slice(0,-4)}-USDT`);if(!abort.signal.aborted)setData(next);
   }catch(e){if(!abort.signal.aborted)setError(e instanceof Error?e.message:'行情分析服务不可用。');}finally{if(!abort.signal.aborted){setLoading(false);timer=setTimeout(()=>void load(),30000);}}}
   void load();return()=>{abort.abort();clearTimeout(timer);};
  },[symbol,timeframe,refresh]);
