@@ -11,7 +11,7 @@ test('closed window and volume exclude current unfinished candle',()=>{
  const {bars,row,now}=input();
  const pending={...bars.at(-1),open_time:stamp(21*60000),close_time:stamp(22*60000),close:'9999',is_closed:false};
  const result=summarizeMarket([...bars,pending],row,'1m',now);
- assert.equal(result.closedCount,21);assert.equal(result.volumeRatio,2);assert.equal(result.high,102);assert.equal(result.low,99);assert.equal(result.change,1.0000000000000009);
+ assert.equal(result.closedCount,21);assert.equal(result.volumeRatio,2);assert.equal(result.high,102);assert.equal(result.low,99);assert.ok(Math.abs(result.change-1)<1e-10);
 });
 test('stale, gapped, short and misaligned data do not produce analysis',()=>{
  const {bars,row,now}=input();

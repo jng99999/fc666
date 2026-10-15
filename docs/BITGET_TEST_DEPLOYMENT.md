@@ -50,3 +50,13 @@ Public health, schema, Redis, market, research, and Paper worker checks passed. 
 Focused tests: 45 adapter/model/worker cases plus 44 non-database market-quality cases passed; the six Bitget cases were rerun after the pagination fix. Local frontend build/typecheck and cloud builds passed. Full repository CI, mobile/device acceptance, prolonged soak testing, and disaster restoration are separate checks. An initial database dump was created and its archive listing was read; restoration was not claimed.
 
 Runtime settings reject `LIVE_TRADING=true` and disallow `TRADING_MODE=LIVE`. Client labels are informational; server settings and absent execution functionality enforce the disabled state.
+
+## Realtime acceptance follow-up
+
+The `closed-bars-20261015` backend image removes an unintended one-minute delay for **new** closed Bitget candles. Live candles are never persisted; stored-bar corrections still require two matching observations and the existing 60-second correction gate. A newly closed bar can arrive after a valuation request, so a transient unavailable valuation is retained rather than substituting an older quote. Exchange corrections continue to invalidate accepted account history when appropriate.
+
+The test deployment created a real Paper stream (`8d708fdb-f038-43a6-8c6f-dfbaf8b6db17`) from 120 real Bitget BTC 1m seed bars. Its background clock progressed, and the portfolio returned `COMPLETE` using the common closed-minute quote. Scenario `2cdc4ee8-ac21-4ec0-a229-f6614c265a27` and snapshot `b3dffabe-5d11-4324-a1b7-5db51f9a4cba` were saved, reloaded and retried with the original request IDs; retries returned the same records. They are synthetic test balances, not exchange accounts.
+
+The frontend now exposes `/analysis`, using existing closed-only server indicators and public candle data; it rejects short, gapped, stale or mismatched inputs. `/research` groups market/strategy and funding/cost inputs, with an editable 2–8 variant batch table and optional JSON editor. AI providers and credentials remain unconfigured.
+
+Backend changes were tested in an isolated container with 47 focused adapter/worker/model tests passing. Frontend calculation boundary tests, production build and typecheck passed. Test app containers were recreated with unchanged environment, init, command, mounts, resources, ports and security settings; database/cache volumes were preserved. No schema migration was required.
