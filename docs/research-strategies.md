@@ -59,3 +59,33 @@ All numbers are strict bounded integers, RSI lower < upper, SMA fast < slow, cha
 These are baselines, not profitable strategy recommendations. Mean reversion can accumulate
 losses in trends; breakout systems can whipsaw. Compare costs, holdouts and turnover, not only
 in-sample returns. AI is unconfigured and live trading remains disabled.
+
+## Additional GitHub research: drawdown diagnostics
+
+Reviewed and pinned on 2026-10-15:
+
+- [QuantStats stats.py](https://github.com/ranaroussi/quantstats/blob/9ef4c6d0a4ffe7831f6ebba6a5824fd33a90c05a/quantstats/stats.py),
+  `ulcer_index` and `recovery_factor`; [Apache-2.0 license](https://github.com/ranaroussi/quantstats/blob/9ef4c6d0a4ffe7831f6ebba6a5824fd33a90c05a/LICENSE.txt).
+- [ffn core.py](https://github.com/pmorissette/ffn/blob/383fc82319ee8d1a58300457dcf01ded2fd2049c/ffn/core.py),
+  `to_drawdown_series` and `drawdown_details`; [MIT license](https://github.com/pmorissette/ffn/blob/383fc82319ee8d1a58300457dcf01ded2fd2049c/LICENSE).
+
+Independent TypeScript implementation, no copied upstream source or installed dependency.
+`drawdown-report-v1` reads the original frozen result's positive drawdown fractions and
+compounded total return. It never rewrites the stored engine result, run_id or verification hash.
+The separate JSON export includes its version, source run_id, source links and conventions.
+
+Explicit differences from upstream (results are not claimed to match those libraries):
+
+- Ulcer is population RMS `sqrt(sum(dd²)/N)`, including all observed closes. QuantStats' pinned
+  implementation divides by N-1 instead.
+- Return/drawdown is signed compounded total return / maximum drawdown; no drawdown yields
+  null. The pinned QuantStats recovery factor uses absolute summed returns, which would
+  hide a loss sign, so this platform deliberately uses a different label and formula.
+- An episode starts at the first underwater observation, ends at the first observed recovery
+  to the high-water mark, or the final observed close. A trailing episode remains explicitly
+  unrecovered. Duration is actual elapsed seconds (not rounded calendar days); a single
+  underwater final sample has zero observed duration, not a predicted recovery time.
+- Underwater fraction counts samples, not wall-clock time. Empty/short, non-finite, blank,
+  timezone-free, duplicate/out-of-order or out-of-range observations make the report unavailable.
+
+Existing five strategies, Paper limits, frozen ledgers, backend and LIVE_TRADING=false are unchanged.
