@@ -36,6 +36,24 @@ class ChannelParameters(BaseModel):
         return self
 
 
+class MacdParameters(BaseModel):
+    model_config = ConfigDict(frozen=True, extra='forbid')
+    fast: int = Field(default=12, ge=2, le=500, strict=True)
+    slow: int = Field(default=26, ge=2, le=500, strict=True)
+    signal: int = Field(default=9, ge=2, le=500, strict=True)
+
+    @model_validator(mode='after')
+    def ordered(self):
+        if self.fast >= self.slow:
+            raise ValueError('fast must be smaller than slow')
+        return self
+
+
+class RocParameters(BaseModel):
+    model_config = ConfigDict(frozen=True, extra='forbid')
+    period: int = Field(default=20, ge=2, le=500, strict=True)
+
+
 class ClosedRule:
     def __init__(self, parameters):
         self.parameters = parameters
@@ -138,4 +156,60 @@ class ChannelLongFlat(ClosedRule):
                 self.target = 'FLAT'
         self.highs.append(context.high)
         self.lows.append(context.low)
+        return self.signal(context) if ready else None
+
+
+class SeededEma:
+    """SMA seed followed by alpha=2/(period+1), evaluated in the caller's Decimal context."""
+    def __init__(self, period):
+        self.period = period
+        self.samples = 0
+        self.total = Decimal(0)
+        self.value = None
+
+    def update(self, value):
+        if self.value is None:
+            self.samples += 1
+            self.total += value
+            if self.samples == self.period:
+                self.value = self.total / self.period
+        else:
+            self.value += Decimal(2) / (self.period + 1) * (value - self.value)
+        return self.value
+
+
+class MacdLongFlat(ClosedRule):
+    def __init__(self, parameters):
+        super().__init__(parameters)
+        self.fast = SeededEma(parameters.fast)
+        self.slow = SeededEma(parameters.slow)
+        self.signal_line = SeededEma(parameters.signal)
+
+    def decide(self, context: StrategyContext):
+        self.check(context)
+        with localcontext() as precision:
+            precision.prec = 60
+            fast, slow = self.fast.update(context.close), self.slow.update(context.close)
+            if fast is None or slow is None:
+                return None
+            macd = fast - slow
+            signal = self.signal_line.update(macd)
+            if signal is None:
+                return None
+            self.target = 'LONG' if macd > signal else 'FLAT'
+        return self.signal(context)
+
+
+class RocLongFlat(ClosedRule):
+    def __init__(self, parameters):
+        super().__init__(parameters)
+        self.closes = deque(maxlen=parameters.period)
+
+    def decide(self, context: StrategyContext):
+        self.check(context)
+        ready = len(self.closes) == self.parameters.period
+        if ready:
+            # Positive prices: sign of ROC equals sign of close-close[N], without division rounding.
+            self.target = 'LONG' if context.close > self.closes[0] else 'FLAT'
+        self.closes.append(context.close)
         return self.signal(context) if ready else None

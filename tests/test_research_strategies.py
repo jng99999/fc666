@@ -17,6 +17,8 @@ def decisions(name, values, parameters):
     ('rsi_long_flat_v1',{'period':3,'lower':30,'upper':70}),
     ('bollinger_long_flat_v1',{'period':4,'deviations':1}),
     ('channel_long_flat_v1',{'entry':3,'exit':2}),
+    ('macd_long_flat_v1',{'fast':2,'slow':3,'signal':2}),
+    ('roc_long_flat_v1',{'period':3}),
 ])
 def test_causal_prefix_and_next_open_fills(name,parameters):
     values=[10,10,10,6,5,11,15,14,8,5,4,12,16]
@@ -61,12 +63,17 @@ def test_bands_population_variance_and_channel_excludes_decision_bar():
     ('rsi_long_flat_v1',{'period':True}),
     ('bollinger_long_flat_v1',{'deviations':0}),
     ('channel_long_flat_v1',{'entry':5,'exit':10}),
+    ('macd_long_flat_v1',{'fast':12,'slow':12}),
+    ('macd_long_flat_v1',{'signal':True}),
+    ('macd_long_flat_v1',{'signal':1}),
+    ('roc_long_flat_v1',{'period':501}),
+    ('roc_long_flat_v1',{'period':'20'}),
 ])
 def test_invalid_parameters(name,parameters):
     with pytest.raises(ValueError):resolve(name).create(parameters)
 
 
-@pytest.mark.parametrize('name',['rsi_long_flat_v1','bollinger_long_flat_v1','channel_long_flat_v1'])
+@pytest.mark.parametrize('name',['rsi_long_flat_v1','bollinger_long_flat_v1','channel_long_flat_v1','macd_long_flat_v1','roc_long_flat_v1'])
 def test_bad_context_does_not_advance(name):
     strategy,_=resolve(name).create({})
     b=bars([10])[0]
@@ -96,8 +103,54 @@ def test_request_contracts_support_research_without_expanding_paper_strategies()
         assert RunRequest(symbol=symbol,strategy='rsi_long_flat_v1').parameters['period']==14
         assert StreamRequest(symbol=symbol).symbol==symbol
         assert ReplayRequest(symbol=symbol).symbol==symbol
-    for name in ('rsi_long_flat_v1','bollinger_long_flat_v1','channel_long_flat_v1'):
+    for name in ('rsi_long_flat_v1','bollinger_long_flat_v1','channel_long_flat_v1','macd_long_flat_v1','roc_long_flat_v1'):
         assert Variant(strategy=name,parameters={}).strategy==name
         with pytest.raises(ValueError):StreamRequest(strategy=name)
     with pytest.raises(ValueError):RunRequest(symbol='UNKNOWNUSDT')
     with pytest.raises(ValueError):RunRequest(strategy='unknown')
+
+
+def test_macd_independent_fraction_reference_and_exact_warmup():
+    from fractions import Fraction
+    values=[10,12,11,15,7,9,18,13,6,8,16]
+    def ema(sequence,period):
+        result=[None]*(period-1)
+        value=sum(map(Fraction,sequence[:period]))/period
+        result.append(value)
+        for close in sequence[period:]:
+            value+=Fraction(2,period+1)*(close-value)
+            result.append(value)
+        return result
+    fast,slow=ema(values,2),ema(values,3)
+    macd=[a-b for a,b in zip(fast[2:],slow[2:])]
+    signal=ema(macd,2)
+    actual=decisions('macd_long_flat_v1',values,{'fast':2,'slow':3,'signal':2})
+    assert actual[:3]==[None]*3
+    for i in range(3,len(values)):
+        assert actual[i].target==('LONG' if macd[i-2]>signal[i-2] else 'FLAT')
+    assert lookback('macd_long_flat_v1',{})==34
+    assert all(s is None or s.target=='FLAT' for s in decisions('macd_long_flat_v1',[10]*40,{}))
+
+
+def test_roc_exact_lag_and_zero_returns_stay_flat():
+    actual=decisions('roc_long_flat_v1',[10,8,12,8,12,9],{'period':2})
+    assert actual[:2]==[None,None]
+    assert [s.target for s in actual[2:]]==['LONG','FLAT','FLAT','LONG']
+    assert lookback('roc_long_flat_v1',{})==21
+
+
+@pytest.mark.parametrize('name,parameters',[
+    ('macd_long_flat_v1',{'fast':2,'slow':3,'signal':2}),
+    ('roc_long_flat_v1',{'period':3}),
+])
+def test_new_strategies_holdout_and_walk_forward_reproduce(name,parameters):
+    from core.backtest.holdout import simulate as holdout
+    from core.backtest.walk_forward import simulate as walk, validate, verify as verify_walk
+    from scripts.reproduce_backtest import reproduce
+    series=liquid([10,12,11,15,7,9,18,13,6,8,16,10]*3)
+    report=holdout(series,rules(),cfg(),strategy_id=name,parameters=parameters,train_bars=18)
+    assert reproduce(report)==report['run_id']
+    report=walk(series,rules(),cfg(),strategy_id=name,grid=[parameters],train_bars=18,test_bars=9)
+    assert verify_walk(report)==report
+    with pytest.raises(ValueError,match='lookback'):
+        validate(series,rules(),name,[parameters],18,lookback(name,parameters))

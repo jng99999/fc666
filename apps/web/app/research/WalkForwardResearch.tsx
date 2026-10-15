@@ -1,5 +1,5 @@
 "use client";
-import {StrategyCatalog,type StrategyId} from '../../lib/research-strategies';
+import {StrategyCatalog,StrategyVariant,strategyLookback,type StrategyId} from '../../lib/research-strategies';
 import VerifyResult from './VerifyResult';
 import {useEffect,useState} from 'react';
 import {z} from 'zod';
@@ -12,6 +12,12 @@ type Task=z.infer<typeof Job>;
 export default function WalkForwardResearch({base}:{base:Record<string,unknown>}){
  const [train,setTrain]=useState('60'),[test,setTest]=useState('30'),[grid,setGrid]=useState('[{"period":10},{"period":20}]');
  const selected=base.strategy as StrategyId;
+ let requiredBars:number|null=null;
+ try{
+  const candidates=z.array(z.record(z.string(),z.unknown())).min(1).max(8).parse(JSON.parse(grid));
+  requiredBars=Math.max(...candidates.map(parameters=>strategyLookback(StrategyVariant.parse({strategy:selected,parameters}))))+1;
+ }catch{/* Invalid candidates remain editable; submission stays disabled. */}
+ const validWindows=requiredBars!==null&&[Number(train),Number(test)].every(value=>Number.isInteger(value)&&value>=requiredBars!&&value<=1000)&&Number(train)+Number(test)<=Number(base.limit);
  const [gridStrategy,setGridStrategy]=useState(selected);
  useEffect(()=>{if(selected!==gridStrategy){setGrid(JSON.stringify([StrategyCatalog[selected].defaults],null,2));setGridStrategy(selected);}},[selected,gridStrategy]);
  const [id,setId]=useState<string|null>(null),[job,setJob]=useState<Task|null>(null),[run,setRun]=useState<z.infer<typeof Result>|null>(null),[error,setError]=useState(''),[history,setHistory]=useState<Task[]>([]),[busy,setBusy]=useState(false);
@@ -23,7 +29,12 @@ export default function WalkForwardResearch({base}:{base:Record<string,unknown>}
  async function submit(){setBusy(true);setError('');setRun(null);setId(null);setJob(null);localStorage.removeItem(KEY);try{const candidates=JSON.parse(grid);const r=await fetch('/api/research/walk-forwards',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...base,grid:candidates,train_bars:Number(train),test_bars:Number(test)}),signal:AbortSignal.timeout(15000)});const data=await r.json();if(!r.ok)throw new Error(typeof data.detail==='string'?data.detail:'滚动参数或历史不可用');const current=Job.parse(data);localStorage.setItem(KEY,current.job_id);setJob(current);setId(current.job_id);void loadHistory();}catch(e){setError(e instanceof Error?e.message:'提交失败');setBusy(false);}}
  async function cancel(){if(!job)return;try{const r=await fetch(`/api/research/jobs/${job.job_id}/cancel`,{method:'POST'});if(!r.ok)throw new Error('任务已结束或无法取消');setJob(Job.parse(await r.json()));}catch(e){setError(e instanceof Error?e.message:'取消失败');}}
  function restore(item:Task){setRun(null);setError('');setJob(item);setBusy(!['SUCCEEDED','FAILED','CANCELLED'].includes(item.status));localStorage.setItem(KEY,item.job_id);setId(null);setTimeout(()=>setId(item.job_id),0);}
- return <section className="batch-research" data-testid="walk-forward-research"><h2>滚动样本外研究</h2><p>按上方策略及历史窗口，逐段仅用前面的训练数据选择参数，再测试下一段。每段独立资金与空仓，测试收益不能拼成连续账户收益。</p><label>训练柱数<input aria-label="滚动训练柱数" type="number" min="3" max="1000" value={train} onChange={e=>setTrain(e.target.value)}/></label><label>测试柱数<input aria-label="滚动测试柱数" type="number" min="3" max="1000" value={test} onChange={e=>setTest(e.target.value)}/></label><label>候选参数（JSON 数组，最多8组）<textarea aria-label="滚动候选参数" value={grid} onChange={e=>setGrid(e.target.value)}/></label><p>候选参数应与上方策略一致；切换策略会载入该策略的默认候选，可自行增加对比组。EMA 例：[{`{"period":10},{"period":20}`}]; SMA 例：[{`{"fast":5,"slow":10},{"fast":10,"slow":20}`}]。</p><button disabled={busy} onClick={()=>void submit()}>{busy?'滚动研究计算中…':'运行滚动研究'}</button>
+ return <section className="batch-research" data-testid="walk-forward-research"><h2>滚动样本外研究</h2><p>按上方策略及历史窗口，逐段仅用前面的训练数据选择参数，再测试下一段。每段独立资金与空仓，测试收益不能拼成连续账户收益。</p>
+ <label>训练柱数<input aria-label="滚动训练柱数" type="number" min={requiredBars??3} max="1000" value={train} onChange={e=>setTrain(e.target.value)}/></label><label>测试柱数<input aria-label="滚动测试柱数" type="number" min={requiredBars??3} max="1000" value={test} onChange={e=>setTest(e.target.value)}/></label><label>候选参数（JSON 数组，最多8组）<textarea aria-label="滚动候选参数" value={grid} onChange={e=>setGrid(e.target.value)}/></label>
+ <p>候选参数应与上方策略一致；切换策略会载入该策略的默认候选，可自行增加对比组。EMA 例：[{`{"period":10},{"period":20}`}]; SMA 例：[{`{"fast":5,"slow":10},{"fast":10,"slow":20}`}]。</p>
+ {requiredBars===null?<p role="alert">候选参数需为当前策略的 1–8 组合法参数。</p>:<p>每个独立训练 / 测试窗口至少需要 {requiredBars} 根柱（预热加下一柱成交）；两窗口合计不能超过上方历史柱数。</p>}
+ {!validWindows&&requiredBars!==null?<p role="alert">窗口不足或柱数不是合法整数，请调整训练、测试或历史柱数。</p>:null}
+ <button disabled={busy||!validWindows} onClick={()=>void submit()}>{busy?'滚动研究计算中…':'运行滚动研究'}</button>
  {job?<div data-testid="walk-forward-task" data-status={job.status}><p>{job.status} · {job.progress}% · {job.request.symbol} · 固定截止 {job.request.as_of}</p><progress aria-label="滚动任务进度" max={100} value={job.progress}/>{['QUEUED','RUNNING'].includes(job.status)?<button disabled={job.cancel_requested} onClick={()=>void cancel()}>取消滚动任务</button>:null}</div>:null}
  <details><summary>最近滚动任务</summary><button onClick={()=>void loadHistory()}>刷新滚动记录</button>{history.map(item=><p key={item.job_id}><button onClick={()=>restore(item)}>{item.request.symbol} · {item.status} · {item.job_id.slice(0,8)}</button></p>)}</details>{error?<p role="alert">{error}</p>:null}
  {run?<div data-testid="walk-forward-result"><div className="research-table"><table><thead><tr><th>轮次</th><th>训练 UTC</th><th>测试 UTC</th><th>选中参数</th><th>训练收益率</th><th>测试收益率</th><th>测试最大回撤</th><th>成交次数</th></tr></thead><tbody>{run.folds.map((fold,i)=>{const chosen=fold.candidates[fold.selected_index];return <tr key={i}><td>{i+1}</td><td>{fold.train_start}<br/>{fold.train_end}</td><td>{fold.test_start}<br/>{fold.test_end}</td><td>{JSON.stringify(chosen.parameters)}</td><td>{(Number(chosen.train.metrics.total_return)*100).toFixed(4)}%</td><td>{(Number(fold.test.metrics.total_return)*100).toFixed(4)}%</td><td>{(Number(fold.test.metrics.max_drawdown)*100).toFixed(4)}%</td><td>{fold.test.metrics.fill_count}</td></tr>;})}</tbody></table></div><p>尾部未构成完整测试窗口的 {run.manifest.trailing_unused_bars} 根柱未用于选参或测试。多次查看测试结果后改参会污染测试样本。</p>{id?<VerifyResult key={id+run.run_id} jobId={id} runId={run.run_id}/>:null}<button onClick={()=>{const url=URL.createObjectURL(new Blob([JSON.stringify(run,null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download=`fc666-walk-forward-${run.run_id}.json`;a.click();URL.revokeObjectURL(url);}}>下载完整滚动结果</button></div>:null}</section>;
