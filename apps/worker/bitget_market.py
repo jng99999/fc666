@@ -42,7 +42,13 @@ def consume_symbol(symbol, adapter, engine, cache, stop):
                                           if bar.close_time <= utc_ms(end)]
                                 if not closed or closed[-1].close_time != utc_ms(end):
                                     raise DataConflict('Latest closed historical bar unavailable')
+                                recent = {bar.open_time: bar for bar in bars if bar.is_closed}
                                 for bar in closed:
+                                    # The history endpoint may still expose an earlier
+                                    # partial aggregate after its clock says closed. Never
+                                    # freeze it while the independent current endpoint differs.
+                                    if recent.get(bar.open_time) != bar:
+                                        raise DataConflict('Closed history and current endpoints disagree')
                                     try:
                                         save_candles(engine, [bar])
                                     except DataConflict:

@@ -53,7 +53,9 @@ class Publisher:
 def backfill_symbol(symbol,adapter,engine):
     now=adapter.server_time()
     for interval,step in INTERVALS.items():
-        end=(now//step)*step;start=end-BACKFILL_BARS*step
+        # Bitget startup seeds exclude the just-closed, still-publishing bucket.
+        cutoff=now-60_000 if PROVIDER=='bitget' else now
+        end=(cutoff//step)*step;start=end-BACKFILL_BARS*step
         with engine.connect() as conn:
             stored=list(conn.scalars(select(CandleRecord.open_time).where(
                 CandleRecord.instrument_id==SYMBOLS[symbol],CandleRecord.timeframe==interval,

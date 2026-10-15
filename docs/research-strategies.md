@@ -13,6 +13,12 @@ product selects the first remaining watchlist item. Search does not invent unsup
 The adapter budgets ten public requests/second and two historical requests/second per
 process. Newly closed database bars come from the historical endpoint after a three-second
 publication grace, once per interval boundary; live intrabar snapshots are not persisted.
+Startup backfill excludes buckets closed less than 60 seconds ago. At runtime a closed
+historical bar must also match the current-candle endpoint before it is stored. A live
+2026-10-15 SOL sample disagreed at 17–22 seconds after close and agreed from about 25 seconds.
+New Bitget realtime Paper accounts therefore default to the already-supported 60-second
+lag budget (Binance remains 15); their frozen request records the chosen limit. Late bars
+outside that limit still cannot generate simulated fills. Existing account limits are unchanged.
 Conflicting closed bars keep the existing two-observation, at-least-60-second correction
 gate and audit trail. A pending correction withholds that candle channel while independent
 validated ticker/book snapshots continue. It does not authorize Paper or live execution.

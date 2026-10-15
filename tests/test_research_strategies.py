@@ -89,7 +89,9 @@ def test_request_contracts_support_research_without_expanding_paper_strategies()
     from apps.api.research import RunRequest, Variant
     from apps.api.paper import StreamRequest
     from apps.api.replay import ReplayRequest
-    from core.exchange.public import SYMBOLS
+    from core.exchange.public import SYMBOLS, PROVIDER
+    assert StreamRequest().max_lag_seconds==(60 if PROVIDER=='bitget' else 15)
+    with pytest.raises(ValueError):StreamRequest(max_lag_seconds=61)
     for symbol in SYMBOLS:
         assert RunRequest(symbol=symbol,strategy='rsi_long_flat_v1').parameters['period']==14
         assert StreamRequest(symbol=symbol).symbol==symbol
