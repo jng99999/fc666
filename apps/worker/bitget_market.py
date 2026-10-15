@@ -15,6 +15,7 @@ def consume_symbol(symbol, adapter, engine, cache, stop):
             publisher.invalidate('connecting_bitget')
             backfill_symbol(symbol, adapter, engine)
             last_candles = 0
+            persisted = {}
             while not stop.is_set():
                 snapshots = adapter.snapshots(symbol)
                 # Reuse the full existing freshness, decimal, ordering, and crossed-book validation.
@@ -31,17 +32,32 @@ def consume_symbol(symbol, adapter, engine, cache, stop):
                     now = adapter.server_time()
                     for interval in INTERVALS:
                         bars = adapter.recent_candles(symbol, interval, now)
-                        # New closed bars are needed immediately by realtime Paper and valuation.
-                        # The 60-second settlement gate belongs only to correcting stored bars.
-                        closed = [bar for bar in bars if bar.is_closed]
-                        try:
-                            save_candles(engine, closed)
-                        except DataConflict:
-                            # Reuse two-observation correction workflow after the settlement delay.
-                            confirmation = [bar for bar in adapter.recent_candles(symbol, interval, now)
-                                if bar.is_closed]
-                            reconcile_confirmed_rest(engine, closed, confirmation, observed_at=utc_ms(now))
-                            save_candles(engine, closed)
+                        # Intrabar snapshots are for display. Read newly closed bars from
+                        # the historical endpoint, with a short boundary publication grace.
+                        step = INTERVALS[interval]
+                        end = ((now - 3000) // step) * step
+                        if persisted.get(interval) != end:
+                            try:
+                                closed = [bar for bar in adapter.candles(symbol, interval, end - 2 * step, now, now)
+                                          if bar.close_time <= utc_ms(end)]
+                                if not closed or closed[-1].close_time != utc_ms(end):
+                                    raise DataConflict('Latest closed historical bar unavailable')
+                                for bar in closed:
+                                    try:
+                                        save_candles(engine, [bar])
+                                    except DataConflict:
+                                        # Confirm each bar independently: a recent revision must
+                                        # not roll back a settled older bar's audited correction.
+                                        confirmation = [item for item in adapter.candles(symbol, interval,
+                                            int(bar.open_time.timestamp() * 1000), now, now)
+                                            if item.open_time == bar.open_time]
+                                        reconcile_confirmed_rest(engine, [bar], confirmation, observed_at=utc_ms(now))
+                                        save_candles(engine, [bar])
+                                persisted[interval] = end
+                            except DataConflict:
+                                publisher.unavailable('candle.' + interval)
+                                log.warning('bitget_closed_history_pending symbol=%s interval=%s', symbol, interval)
+                                continue
                         if bars:
                             publisher.emit('candle.' + interval, bars[-1].model_dump(mode='json'), utc_ms(now).isoformat())
                     last_candles = time.monotonic()

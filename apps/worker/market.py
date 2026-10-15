@@ -46,6 +46,9 @@ class Publisher:
         self.cache.delete(*[f"market:{self.symbol}:{channel}" for channel in channels])
         self.cache.set(f"market:{self.symbol}:status",json.dumps({"state":"unavailable","reason":reason}),ex=TTL)
 
+    def unavailable(self,channel):
+        self.cache.delete(f"market:{self.symbol}:{channel}")
+
 
 def backfill_symbol(symbol,adapter,engine):
     now=adapter.server_time()

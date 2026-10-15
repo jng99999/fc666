@@ -1,5 +1,6 @@
 """Bitget v2 public Spot REST snapshots. No keys, signing, or order methods."""
 from decimal import Decimal
+from contextlib import nullcontext
 import ssl
 import threading
 import time
@@ -35,19 +36,19 @@ class BitgetPublic:
     def get(self, path, params=None):
         # Historical backfill has a separate conservative budget. Eight startup
         # threads and a concurrent importer must not burst into this endpoint.
-        # Do not hold the live-request lock while waiting for a historical slot.
-        if path == '/api/v2/spot/market/history-candles':
-            with self.history_lock:
-                delay = self.next_history_request - time.monotonic()
+        # Keep each historical reservation until the global slot is obtained,
+        # preventing queued history requests from bunching at the live limiter.
+        historical = path == '/api/v2/spot/market/history-candles'
+        with self.history_lock if historical else nullcontext():
+            with self.lock:
+                slot = max(self.next_request, self.next_history_request if historical else 0)
+                delay = slot - time.monotonic()
                 if delay > 0:
                     time.sleep(delay)
-                self.next_history_request = time.monotonic() + .5
-        # Shared across all symbol threads; below Bitget's 20 requests/s/IP limit.
-        with self.lock:
-            delay = self.next_request - time.monotonic()
-            if delay > 0:
-                time.sleep(delay)
-            self.next_request = time.monotonic() + .1
+                started = time.monotonic()
+                self.next_request = started + .1
+                if historical:
+                    self.next_history_request = started + .5
         try:
             response = self.client.get(path, params=params)
         except httpx.HTTPError as exc:

@@ -10,6 +10,13 @@ Binance's existing two-product universe and private execution permissions are un
 Watchlists are browser-local; at least one product remains selected. Removing the active
 product selects the first remaining watchlist item. Search does not invent unsupported markets.
 
+The adapter budgets ten public requests/second and two historical requests/second per
+process. Newly closed database bars come from the historical endpoint after a three-second
+publication grace, once per interval boundary; live intrabar snapshots are not persisted.
+Conflicting closed bars keep the existing two-observation, at-least-60-second correction
+gate and audit trail. A pending correction withholds that candle channel while independent
+validated ticker/book snapshots continue. It does not authorize Paper or live execution.
+
 ## Source review
 
 Reviewed QuantConnect/LEAN at commit `80e7843f645673bcbeaab963049f76f20f6785e1`, Apache-2.0:
