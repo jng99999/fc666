@@ -54,6 +54,12 @@ class RocParameters(BaseModel):
     period: int = Field(default=20, ge=2, le=500, strict=True)
 
 
+class StochasticParameters(RsiParameters):
+    smooth: int = Field(default=3, ge=2, le=500, strict=True)
+    lower: int = Field(default=20, ge=1, le=99, strict=True)
+    upper: int = Field(default=80, ge=1, le=99, strict=True)
+
+
 class ClosedRule:
     def __init__(self, parameters):
         self.parameters = parameters
@@ -213,3 +219,37 @@ class RocLongFlat(ClosedRule):
             self.target = 'LONG' if context.close > self.closes[0] else 'FLAT'
         self.closes.append(context.close)
         return self.signal(context) if ready else None
+
+
+class StochasticLongFlat(ClosedRule):
+    def __init__(self, parameters):
+        super().__init__(parameters)
+        self.highs = deque(maxlen=parameters.period)
+        self.lows = deque(maxlen=parameters.period)
+        self.k_values = deque(maxlen=parameters.smooth)
+
+    def decide(self, context: StrategyContext):
+        if (context.high is None or context.low is None or
+            not all(value.is_finite() for value in (context.close, context.high, context.low)) or
+            not 0 < context.low <= context.close <= context.high):
+            raise ValueError('Matching finite positive high/low required')
+        self.check(context)
+        self.highs.append(context.high); self.lows.append(context.low)
+        if len(self.highs) < self.parameters.period:
+            return None
+        with localcontext() as precision:
+            precision.prec = 60
+            low, high = min(self.lows), max(self.highs)
+            # Undefined zero range interrupts warmup; never invent an oversold signal.
+            if high == low:
+                self.k_values.clear()
+                return None
+            self.k_values.append(100 * (context.close-low) / (high-low))
+            if len(self.k_values) < self.parameters.smooth:
+                return None
+            signal = sum(self.k_values, Decimal(0)) / self.parameters.smooth
+            if signal <= self.parameters.lower:
+                self.target = 'LONG'
+            elif signal >= self.parameters.upper:
+                self.target = 'FLAT'
+        return self.signal(context)

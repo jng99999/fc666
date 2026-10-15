@@ -36,7 +36,7 @@ def rounded(value, step, mode):
 
 def simulate(bars: list[Candle], instrument: Instrument, config: BacktestConfig, *, checkpoint=None, strategy_id='ema_long_flat_v1', parameters=None):
     if instrument.market_type!='SPOT': raise ValueError('Only Spot long/flat is implemented')
-    if not 2<=len(bars)<=1000: raise ValueError('Require 2..1000 finalized bars')
+    if not 2<=len(bars)<=5000: raise ValueError('Require 2..5000 finalized bars')
     for i,bar in enumerate(bars):
         if not bar.is_closed or bar.instrument_id!=instrument.instrument_id: raise ValueError('Finalized matching instrument required')
         if i and (bar.timeframe!=bars[i-1].timeframe or bar.open_time!=bars[i-1].close_time): raise ValueError('Contiguous ordered series required')

@@ -19,6 +19,7 @@ def decisions(name, values, parameters):
     ('channel_long_flat_v1',{'entry':3,'exit':2}),
     ('macd_long_flat_v1',{'fast':2,'slow':3,'signal':2}),
     ('roc_long_flat_v1',{'period':3}),
+    ('stochastic_long_flat_v1',{'period':3,'smooth':2,'lower':30,'upper':70}),
 ])
 def test_causal_prefix_and_next_open_fills(name,parameters):
     values=[10,10,10,6,5,11,15,14,8,5,4,12,16]
@@ -68,12 +69,14 @@ def test_bands_population_variance_and_channel_excludes_decision_bar():
     ('macd_long_flat_v1',{'signal':1}),
     ('roc_long_flat_v1',{'period':501}),
     ('roc_long_flat_v1',{'period':'20'}),
+    ('stochastic_long_flat_v1',{'smooth':1}),
+    ('stochastic_long_flat_v1',{'lower':80,'upper':20}),
 ])
 def test_invalid_parameters(name,parameters):
     with pytest.raises(ValueError):resolve(name).create(parameters)
 
 
-@pytest.mark.parametrize('name',['rsi_long_flat_v1','bollinger_long_flat_v1','channel_long_flat_v1','macd_long_flat_v1','roc_long_flat_v1'])
+@pytest.mark.parametrize('name',['rsi_long_flat_v1','bollinger_long_flat_v1','channel_long_flat_v1','macd_long_flat_v1','roc_long_flat_v1','stochastic_long_flat_v1'])
 def test_bad_context_does_not_advance(name):
     strategy,_=resolve(name).create({})
     b=bars([10])[0]
@@ -103,7 +106,7 @@ def test_request_contracts_support_research_without_expanding_paper_strategies()
         assert RunRequest(symbol=symbol,strategy='rsi_long_flat_v1').parameters['period']==14
         assert StreamRequest(symbol=symbol).symbol==symbol
         assert ReplayRequest(symbol=symbol).symbol==symbol
-    for name in ('rsi_long_flat_v1','bollinger_long_flat_v1','channel_long_flat_v1','macd_long_flat_v1','roc_long_flat_v1'):
+    for name in ('rsi_long_flat_v1','bollinger_long_flat_v1','channel_long_flat_v1','macd_long_flat_v1','roc_long_flat_v1','stochastic_long_flat_v1'):
         assert Variant(strategy=name,parameters={}).strategy==name
         with pytest.raises(ValueError):StreamRequest(strategy=name)
     with pytest.raises(ValueError):RunRequest(symbol='UNKNOWNUSDT')
@@ -137,6 +140,25 @@ def test_roc_exact_lag_and_zero_returns_stay_flat():
     assert actual[:2]==[None,None]
     assert [s.target for s in actual[2:]]==['LONG','FLAT','FLAT','LONG']
     assert lookback('roc_long_flat_v1',{})==21
+
+
+def test_stochastic_hand_calculated_smoothing_and_zero_range():
+    actual=decisions('stochastic_long_flat_v1',[10,6,5,15],{'period':2,'smooth':2,'lower':30,'upper':60})
+    assert actual[:2]==[None,None]
+    assert [row.target for row in actual[2:]]==['LONG','FLAT']
+    assert lookback('stochastic_long_flat_v1',{})==16
+    strategy,_=resolve('stochastic_long_flat_v1').create({'period':2,'smooth':2})
+    for bar in bars([10]*8):
+        assert strategy.decide(StrategyContext(bar.close_time,bar.close,None,bar.close,bar.close)) is None
+
+
+def test_long_history_5000_bar_reproduction_and_oversize_rejection():
+    from scripts.reproduce_backtest import reproduce
+    series=liquid([10]*5000)
+    run=simulate(series,rules(),cfg(),strategy_id='stochastic_long_flat_v1',parameters={})
+    assert len(run['equity'])==5000 and reproduce(run)==run['run_id']
+    with pytest.raises(ValueError,match='5000'):
+        simulate(series+[series[-1]],rules(),cfg())
 
 
 @pytest.mark.parametrize('name,parameters',[

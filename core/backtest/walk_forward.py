@@ -11,7 +11,7 @@ MAX_BYTES=32*1024*1024
 
 def validate(bars,instrument,strategy_id,grid,train_bars,test_bars):
     if (type(train_bars) is not int or type(test_bars) is not int or train_bars<3 or test_bars<3
-        or not isinstance(grid,list) or not 1<=len(grid)<=8 or not train_bars+test_bars<=len(bars)<=1000):
+        or not isinstance(grid,list) or not 1<=len(grid)<=8 or not train_bars+test_bars<=len(bars)<=5000):
         raise ValueError('Bounded complete training/test windows and1..8 candidates required')
     parameters=[resolve(strategy_id).create(value)[1].model_dump(mode='json') for value in grid]
     if len({digest(value) for value in parameters})!=len(parameters):raise ValueError('Duplicate parameter candidate')
@@ -65,7 +65,7 @@ def verify(report):
     m=report['manifest']
     fields={'version','strategy','grid','config','instrument','train_bars','test_bars','selection','data_sha256','cold_test_windows','aggregate_compounded_return','trailing_unused_bars'}
     if not isinstance(m,dict) or set(m)!=fields:raise ValueError('Invalid walk-forward manifest')
-    if not isinstance(report['dataset'],list) or not 6<=len(report['dataset'])<=1000:raise ValueError('Invalid walk-forward dataset bounds')
+    if not isinstance(report['dataset'],list) or not 6<=len(report['dataset'])<=5000:raise ValueError('Invalid walk-forward dataset bounds')
     if not isinstance(report['folds'],list) or not 1<=len(report['folds'])<=8:raise ValueError('Invalid walk-forward fold bounds')
     if m['version']!=VERSION:raise ValueError('Unsupported walk-forward version')
     expected=simulate([Candle.model_validate(value) for value in report['dataset']],Instrument.model_validate(m['instrument']),

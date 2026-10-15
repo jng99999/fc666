@@ -51,6 +51,7 @@ short sales, private exchange access or live orders. Initial state is flat.
 | channel_long_flat_v1 | entry=20, exit=10 | Close above highest high of previous entry bars enters; below lowest low of previous exit bars exits; equality holds; current bar excluded; entry+1 closes |
 | macd_long_flat_v1 | fast=12, slow=26, signal=9 | SMA-seeded fast/slow EMA difference above its SMA-seeded EMA signal targets LONG; equality/below targets FLAT; signal is seeded from valid MACD values only; slow+signal-1 closes |
 | roc_long_flat_v1 | period=20 | Close > close N bars ago targets LONG; equality/below targets FLAT; period+1 closes |
+| stochastic_long_flat_v1 | period=14, smooth=3, lower=20, upper=80 | SMA-smoothed rolling %K at/below lower enters, at/above upper exits; zero range resets smoothing; period+smooth-1 closes |
 
 RSI/Bollinger/channel/MACD/ROC are historical research only. Existing Paper/replay strategy
 support remains EMA/SMA, explicitly validated by their request models. Additional products
@@ -114,8 +115,8 @@ required. MACD computes in Decimal precision 60. No future bars, backfilled warm
 sales, leverage or private exchange access. The existing next-open engine retains its
 version and semantics; old strategies and frozen-result reproduction are unchanged.
 
-The strategy selector, editable parameter table and advanced JSON all support the seven
-strategies. “载入全部 7 种策略对比” fills seven distinct default variants for review; submission
+The strategy selector, editable parameter table and advanced JSON all support the eight
+strategies. “载入全部 8 种策略对比” fills eight distinct default variants for review; submission
 still freezes one shared history/rule snapshot for all variants. Batch comparison, single
 run, independent holdout and cold walk-forward use the same registry and exact lookback.
 In particular default MACD needs 34 warmup closes plus one execution bar in **each**

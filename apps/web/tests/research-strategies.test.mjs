@@ -2,8 +2,8 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {StrategyCatalog,StrategyIds,StrategyVariant,strategyLookback} from '../lib/research-strategies.ts';
 import {Symbols,MarketProvider} from '../lib/market.ts';
-test('all seven catalog defaults satisfy their request contracts',()=>{
- assert.equal(StrategyIds.length,7);
+test('all eight catalog defaults satisfy their request contracts',()=>{
+ assert.equal(StrategyIds.length,8);
  for(const strategy of StrategyIds)assert.equal(StrategyVariant.safeParse({strategy,parameters:StrategyCatalog[strategy].defaults}).success,true);
 });
 test('invalid strategy parameters never become submit-ready',()=>{
@@ -27,7 +27,7 @@ test('Bitget universe is bounded and unique',()=>{
  if(MarketProvider==='bitget')assert.ok(Symbols.some(symbol=>symbol==='SOLUSDT'));
 });
 test('strategy warmup matches independent segment execution requirements',()=>{
- const expected=[20,20,15,20,21,34,21];
+ const expected=[20,20,15,20,21,34,21,16];
  StrategyIds.forEach((strategy,index)=>assert.equal(strategyLookback(StrategyVariant.parse({strategy,parameters:StrategyCatalog[strategy].defaults})),expected[index]));
  assert.equal(strategyLookback(StrategyVariant.parse({strategy:'macd_long_flat_v1',parameters:{fast:2,slow:3,signal:2}})),4);
 });

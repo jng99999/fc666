@@ -9,6 +9,7 @@ COPY core ./core
 COPY migrations ./migrations
 COPY alembic.ini ./
 COPY scripts/import_market.py ./scripts/import_market.py
+COPY scripts/import_research_history.py ./scripts/import_research_history.py
 RUN mkdir .runtime && chown -R 10001:10001 /app
 ENV PATH="/app/.venv/bin:$PATH" PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1
 USER 10001:10001

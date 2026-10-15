@@ -13,7 +13,7 @@ def validate_split(bars,train_bars,strategy_id,parameters,config):
     if min(train_bars,len(bars)-train_bars)<lookback+1:
         raise ValueError('Each segment needs strategy lookback plus one bar for next-open execution')
     if strategy_id=='ema_long_flat_v1' and validated.period!=config.period:raise ValueError('EMA period must match config.period')
-    if not 4<=len(bars)<=1000:raise ValueError('Require 4..1000 bars')
+    if not 4<=len(bars)<=5000:raise ValueError('Require 4..5000 bars')
     for index,bar in enumerate(bars):
         if not bar.is_closed:raise ValueError('Finalized bars required')
         if index and (bar.timeframe!=bars[index-1].timeframe or bar.open_time!=bars[index-1].close_time):

@@ -17,7 +17,7 @@ export default function WalkForwardResearch({base}:{base:Record<string,unknown>}
   const candidates=z.array(z.record(z.string(),z.unknown())).min(1).max(8).parse(JSON.parse(grid));
   requiredBars=Math.max(...candidates.map(parameters=>strategyLookback(StrategyVariant.parse({strategy:selected,parameters}))))+1;
  }catch{/* Invalid candidates remain editable; submission stays disabled. */}
- const validWindows=requiredBars!==null&&[Number(train),Number(test)].every(value=>Number.isInteger(value)&&value>=requiredBars!&&value<=1000)&&Number(train)+Number(test)<=Number(base.limit);
+ const validWindows=requiredBars!==null&&[Number(train),Number(test)].every(value=>Number.isInteger(value)&&value>=requiredBars!&&value<=5000)&&Number(train)+Number(test)<=Number(base.limit);
  const [gridStrategy,setGridStrategy]=useState(selected);
  useEffect(()=>{if(selected!==gridStrategy){setGrid(JSON.stringify([StrategyCatalog[selected].defaults],null,2));setGridStrategy(selected);}},[selected,gridStrategy]);
  const [id,setId]=useState<string|null>(null),[job,setJob]=useState<Task|null>(null),[run,setRun]=useState<z.infer<typeof Result>|null>(null),[error,setError]=useState(''),[history,setHistory]=useState<Task[]>([]),[busy,setBusy]=useState(false);
@@ -30,7 +30,7 @@ export default function WalkForwardResearch({base}:{base:Record<string,unknown>}
  async function cancel(){if(!job)return;try{const r=await fetch(`/api/research/jobs/${job.job_id}/cancel`,{method:'POST'});if(!r.ok)throw new Error('任务已结束或无法取消');setJob(Job.parse(await r.json()));}catch(e){setError(e instanceof Error?e.message:'取消失败');}}
  function restore(item:Task){setRun(null);setError('');setJob(item);setBusy(!['SUCCEEDED','FAILED','CANCELLED'].includes(item.status));localStorage.setItem(KEY,item.job_id);setId(null);setTimeout(()=>setId(item.job_id),0);}
  return <section className="batch-research" data-testid="walk-forward-research"><h2>滚动样本外研究</h2><p>按上方策略及历史窗口，逐段仅用前面的训练数据选择参数，再测试下一段。每段独立资金与空仓，测试收益不能拼成连续账户收益。</p>
- <label>训练柱数<input aria-label="滚动训练柱数" type="number" min={requiredBars??3} max="1000" value={train} onChange={e=>setTrain(e.target.value)}/></label><label>测试柱数<input aria-label="滚动测试柱数" type="number" min={requiredBars??3} max="1000" value={test} onChange={e=>setTest(e.target.value)}/></label><label>候选参数（JSON 数组，最多8组）<textarea aria-label="滚动候选参数" value={grid} onChange={e=>setGrid(e.target.value)}/></label>
+ <label>训练柱数<input aria-label="滚动训练柱数" type="number" min={requiredBars??3} max="5000" value={train} onChange={e=>setTrain(e.target.value)}/></label><label>测试柱数<input aria-label="滚动测试柱数" type="number" min={requiredBars??3} max="5000" value={test} onChange={e=>setTest(e.target.value)}/></label><label>候选参数（JSON 数组，最多8组）<textarea aria-label="滚动候选参数" value={grid} onChange={e=>setGrid(e.target.value)}/></label>
  <p>候选参数应与上方策略一致；切换策略会载入该策略的默认候选，可自行增加对比组。EMA 例：[{`{"period":10},{"period":20}`}]; SMA 例：[{`{"fast":5,"slow":10},{"fast":10,"slow":20}`}]。</p>
  {requiredBars===null?<p role="alert">候选参数需为当前策略的 1–8 组合法参数。</p>:<p>每个独立训练 / 测试窗口至少需要 {requiredBars} 根柱（预热加下一柱成交）；两窗口合计不能超过上方历史柱数。</p>}
  {!validWindows&&requiredBars!==null?<p role="alert">窗口不足或柱数不是合法整数，请调整训练、测试或历史柱数。</p>:null}

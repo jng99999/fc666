@@ -46,7 +46,7 @@ services:
       retries: 30
   api:
     <<: *app
-    image: fc666-test-backend:macd-roc-20261015
+    image: fc666-test-backend:matrix-20261016
     ports: ["127.0.0.1:18666:8000"]
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/ready',timeout=6)"]
@@ -58,7 +58,7 @@ services:
     command: ["python", "-m", "apps.worker.market"]
   research:
     <<: *app
-    image: fc666-test-backend:macd-roc-20261015
+    image: fc666-test-backend:matrix-20261016
     command: ["python", "-m", "apps.worker.research"]
   paper:
     <<: *app
