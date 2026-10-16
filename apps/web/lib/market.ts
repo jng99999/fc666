@@ -1,17 +1,18 @@
 import {z} from "zod";
-export const Symbols = ["BTCUSDT","ETHUSDT"] as const;
+export const MarketProvider = z.enum(['binance','bitget']).parse(process.env.NEXT_PUBLIC_MARKET_PROVIDER ?? 'binance');
+export const Symbols = MarketProvider==='bitget' ? ["BTCUSDT","ETHUSDT","SOLUSDT","XRPUSDT","BNBUSDT","DOGEUSDT","ADAUSDT","AVAXUSDT"] as const : ["BTCUSDT","ETHUSDT"] as const;
 export const Intervals = ["1m","5m","15m","1h","4h","1d"] as const;
 export type SymbolName = typeof Symbols[number];
 export type Interval = typeof Intervals[number];
 const decimal = z.string().regex(/^-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?$/).refine(v => Number.isFinite(Number(v)));
 const positive = decimal.refine(v => Number(v)>0);
 const nonnegative = decimal.refine(v => Number(v)>=0);
-export const CandleSchema = z.object({instrument_id:z.string(),timeframe:z.enum(Intervals),open_time:z.iso.datetime({offset:true}),close_time:z.iso.datetime({offset:true}),open:positive,high:positive,low:positive,close:positive,volume:nonnegative,is_closed:z.boolean(),source:z.literal("binance.public")});
+export const CandleSchema = z.object({instrument_id:z.string().startsWith(`${MarketProvider}:spot:`),timeframe:z.enum(Intervals),open_time:z.iso.datetime({offset:true}),close_time:z.iso.datetime({offset:true}),open:positive,high:positive,low:positive,close:positive,volume:nonnegative,is_closed:z.boolean(),source:z.literal(`${MarketProvider}.public`)});
 export type Candle = z.infer<typeof CandleSchema>;
 const Base = z.object({schema_version:z.literal(1),type:z.literal("snapshot"),symbol:z.enum(Symbols),instrument_id:z.string(),generation:z.string(),sequence:z.number().int().positive(),received_at:z.iso.datetime({offset:true}),event_time:z.iso.datetime({offset:true}).nullable(),quality:z.literal("healthy")});
 const Ticker = Base.extend({channel:z.literal("ticker"),payload:z.object({price:positive,change_percent:decimal,volume:nonnegative,event_time:z.iso.datetime({offset:true})})});
 const Book = Base.extend({channel:z.literal("book"),payload:z.object({valid:z.literal(true),exchange_sequence:z.number().int().nonnegative(),snapshot_depth_limit:z.number(),bids:z.array(z.tuple([positive,nonnegative])).max(20),asks:z.array(z.tuple([positive,nonnegative])).max(20)})});
-const Trade = Base.extend({channel:z.literal("trade"),payload:z.object({trades:z.array(z.object({trade_id:z.number().int().nonnegative(),price:positive,quantity:positive,aggressor_side:z.enum(["BUY","SELL"]),event_time:z.iso.datetime({offset:true})})).max(100)})});
+const Trade = Base.extend({channel:z.literal("trade"),payload:z.object({trades:z.array(z.object({trade_id:z.union([z.number().int().nonnegative(),z.string().regex(/^\d{1,30}$/)]),price:positive,quantity:positive,aggressor_side:z.enum(["BUY","SELL"]),event_time:z.iso.datetime({offset:true})})).max(100)})});
 const LiveCandle = Base.extend({channel:z.enum(Intervals.map(i => `candle.${i}` as const)),payload:CandleSchema});
 export const SnapshotSchema = z.discriminatedUnion("channel",[Ticker,Book,Trade,LiveCandle]);
 export type Snapshot = z.infer<typeof SnapshotSchema>;
@@ -22,7 +23,9 @@ export type CandleSnapshot = z.infer<typeof LiveCandle>;
 export async function getCandles(symbol:SymbolName,timeframe:Interval,signal:AbortSignal,limit=1000): Promise<Candle[]> {
   const response=await fetch(`/api/market/candles?symbol=${symbol}&timeframe=${timeframe}&limit=${limit}`,{signal,cache:"no-store"});
   if (!response.ok) throw new Error("历史数据服务不可用");
-  return z.array(CandleSchema).parse(await response.json());
+  const bars=z.array(CandleSchema).parse(await response.json());
+  if(bars.some(bar=>bar.instrument_id!==`${MarketProvider}:spot:${symbol.slice(0,-4)}-USDT`||bar.timeframe!==timeframe))throw new Error('K 线响应与请求的市场或周期不一致');
+  return bars;
 }
 export const keyFor = (symbol:SymbolName,channel:string) => `${symbol}:${channel}`;
 
@@ -32,5 +35,7 @@ export type IndicatorRow=z.infer<typeof IndicatorSchema>["rows"][number];
 export async function getIndicators(symbol:SymbolName,timeframe:Interval,signal:AbortSignal,limit=1000,period=20){
   const response=await fetch(`/api/market/indicators?symbol=${symbol}&timeframe=${timeframe}&limit=${limit}&period=${period}`,{signal,cache:"no-store"});
   if(!response.ok)throw new Error(response.status===409?"历史数据有缺口，指标不可用":"指标服务不可用");
-  return IndicatorSchema.parse(await response.json());
+  const data=await response.json();
+  if(!z.object({symbol:z.literal(symbol),timeframe:z.literal(timeframe),period:z.literal(period)}).safeParse(data).success)throw new Error('指标响应与请求的市场或周期不一致');
+  return IndicatorSchema.parse(data);
 }

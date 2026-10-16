@@ -4,13 +4,14 @@ from typing import Literal
 from fastapi import APIRouter,HTTPException
 from pydantic import BaseModel,ConfigDict,Field,field_validator,model_validator
 from apps.api.research import prepare,RunRequest
+from core.exchange.public import SYMBOLS
 from core.replay import sessions
 from core.replay.decisions import normalized
 
 
 class ReplayRequest(BaseModel):
     model_config=ConfigDict(extra='forbid')
-    symbol: Literal['BTCUSDT','ETHUSDT']='BTCUSDT'
+    symbol: Literal[tuple(SYMBOLS)]='BTCUSDT'
     timeframe: Literal['1m','5m','15m','1h','4h','1d']='1h'
     limit: int=Field(default=120,ge=2,le=1000,strict=True)
     period: int=Field(default=20,ge=2,le=500,strict=True)

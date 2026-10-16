@@ -22,7 +22,7 @@ def validate_snapshot(request,snapshot):
     if not isinstance(request,dict) or not isinstance(snapshot,dict) or set(snapshot)!=SNAPSHOT_FIELDS:
         raise ValueError('Invalid research snapshot envelope')
     dataset=snapshot['dataset']
-    if not isinstance(dataset,list) or not 2<=len(dataset)<=1000:raise ValueError('Invalid research source bounds')
+    if not isinstance(dataset,list) or not 2<=len(dataset)<=5000:raise ValueError('Invalid research source bounds')
     if len(json.dumps([request,snapshot],allow_nan=False).encode())>MAX_INPUT_BYTES:
         raise ValueError('Research input exceeds 4 MiB')
     if digest({k:v for k,v in snapshot.items() if k!='sha256'})!=snapshot['sha256'] or digest(request)!=snapshot['request_sha256']:
@@ -59,23 +59,39 @@ def enqueue(engine,request,bars,instrument):
 def enqueue_many(engine,requests,bars,instrument):
     """One admission lock and transaction: all variants accepted or none."""
     if not 1<=len(requests)<=8:raise ValueError('Require 1..8 tasks')
-    if not 2<=len(bars)<=1000:raise ValueError('Require 2..1000 finalized bars')
-    if instrument.market_type!='SPOT':raise ValueError('Only Spot research is implemented')
-    if any(not bar.is_closed or bar.instrument_id!=instrument.instrument_id for bar in bars):raise ValueError('Finalized matching instrument required')
-    if any(b.open_time!=a.close_time or b.timeframe!=a.timeframe for a,b in zip(bars,bars[1:])):raise ValueError('Contiguous ordered series required')
-    # Validate every member before opening the admission transaction; no partial batch.
-    versions=[validate_request(request,bars,instrument) for request in requests]
-    dataset=[b.model_dump(mode='json') for b in bars]
+    return enqueue_prepared(engine,[(request,bars,instrument) for request in requests])
+
+
+def enqueue_prepared(engine,inputs):
+    """Atomic admission for up to 20 independently frozen market/strategy inputs."""
+    if not 1<=len(inputs)<=ACTIVE_LIMIT:raise ValueError('Require 1..20 tasks')
+    if sum(len(bars) for _,bars,_ in inputs)>20000:raise ValueError('Batch exceeds 20000 total bars; reduce scope')
+    prepared=[]
+    for request,bars,instrument in inputs:
+        if not 2<=len(bars)<=5000:raise ValueError('Require 2..5000 finalized bars')
+        if instrument.market_type!='SPOT':raise ValueError('Only Spot research is implemented')
+        if any(not bar.is_closed or bar.instrument_id!=instrument.instrument_id for bar in bars):raise ValueError('Finalized matching instrument required')
+        if any(b.open_time!=a.close_time or b.timeframe!=a.timeframe for a,b in zip(bars,bars[1:])):raise ValueError('Contiguous ordered series required')
+        version=validate_request(request,bars,instrument)
+        snapshot={'request_sha256':digest(request),'engine_version':version,'strategy':request.get('strategy','ema_long_flat_v1'),
+                  'dataset':[b.model_dump(mode='json') for b in bars],'instrument':instrument.model_dump(mode='json')}
+        snapshot['sha256']=digest(snapshot)
+        validate_snapshot(request,snapshot)
+        prepared.append((request,snapshot))
     stamp=now()
     with Session(engine) as session,session.begin():
         session.execute(text('SELECT pg_advisory_xact_lock(6660601)'))
+        matrix_id=inputs[0][0].get('matrix_id')
+        if matrix_id:
+            existing=list(session.scalars(select(Job).where(Job.request['matrix_id'].as_string()==matrix_id)))
+            if existing:
+                if any(row.request.get('matrix_request_sha256')!=inputs[0][0]['matrix_request_sha256'] for row in existing):
+                    raise ValueError('Matrix request ID already used with different inputs')
+                return [view(row) for row in existing]
         count=session.scalar(select(func.count()).select_from(Job).where(Job.status.in_(['QUEUED','RUNNING'])))
-        if count+len(requests)>ACTIVE_LIMIT:raise QueueFull()
+        if count+len(prepared)>ACTIVE_LIMIT:raise QueueFull()
         created=[]
-        for request,version in zip(requests,versions):
-            snapshot={'request_sha256':digest(request),'engine_version':version,'strategy':request.get('strategy','ema_long_flat_v1'),'dataset':dataset,'instrument':instrument.model_dump(mode='json')}
-            snapshot['sha256']=digest(snapshot)
-            validate_snapshot(request,snapshot)
+        for request,snapshot in prepared:
             job=Job(job_id=str(uuid4()),created_at=stamp,updated_at=stamp,status='QUEUED',progress=0,cancel_requested=False,attempts=0,request=request,snapshot=snapshot)
             session.add(job);created.append(job)
         session.flush();return [view(job) for job in created]

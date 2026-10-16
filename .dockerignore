@@ -1,0 +1,10 @@
+.env*
+.git
+.venv
+.runtime
+**/node_modules
+**/.next
+**/__pycache__
+**/._*
+**/.DS_Store
+tests

@@ -7,6 +7,10 @@ from types import MappingProxyType
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from core.strategy.contracts import EmaLongFlat, StrategyContext, TargetSignal
+from core.strategy.research import (RsiParameters, BollingerParameters, ChannelParameters,
+                                    RsiLongFlat, BollingerLongFlat, ChannelLongFlat,
+                                    MacdParameters, RocParameters, MacdLongFlat, RocLongFlat,
+                                    StochasticParameters, StochasticLongFlat)
 
 
 class EmaParameters(BaseModel):
@@ -85,7 +89,36 @@ DEFINITIONS = MappingProxyType({
     'sma_long_flat_v1': Definition('sma_long_flat_v1', 1,
         'Finalized fast SMA above slow SMA -> LONG; otherwise FLAT; slow-window warmup -> no signal',
         SmaParameters, SmaLongFlat, True),
+    'rsi_long_flat_v1': Definition('rsi_long_flat_v1', 1,
+        'Wilder RSI <= lower enters LONG; >= upper exits; otherwise hold; period+1 closes warmup',
+        RsiParameters, RsiLongFlat, True),
+    'bollinger_long_flat_v1': Definition('bollinger_long_flat_v1', 1,
+        'Close below SMA minus deviations*population standard deviation enters; close >= SMA exits',
+        BollingerParameters, BollingerLongFlat, True),
+    'channel_long_flat_v1': Definition('channel_long_flat_v1', 1,
+        'Close above prior entry-window highs enters; below prior exit-window lows exits; equality holds',
+        ChannelParameters, ChannelLongFlat, True),
+    'macd_long_flat_v1': Definition('macd_long_flat_v1', 1,
+        'SMA-seeded MACD above its EMA signal targets LONG; equality/below FLAT; slow+signal-1 closes warmup',
+        MacdParameters, MacdLongFlat, True),
+    'roc_long_flat_v1': Definition('roc_long_flat_v1', 1,
+        'Positive N-period close ROC targets LONG; zero/negative FLAT; period+1 closes warmup',
+        RocParameters, RocLongFlat, True),
+    'stochastic_long_flat_v1': Definition('stochastic_long_flat_v1', 1,
+        'SMA of rolling stochastic %K <= lower enters LONG; >= upper exits; zero range resets smoothing',
+        StochasticParameters, StochasticLongFlat, True),
 })
+
+
+def lookback(strategy: str, parameters: dict) -> int:
+    validated = resolve(strategy).create(parameters)[1]
+    if strategy == 'macd_long_flat_v1':
+        return validated.slow + validated.signal - 1
+    if strategy == 'stochastic_long_flat_v1':
+        return validated.period + validated.smooth - 1
+    if strategy in {'rsi_long_flat_v1', 'channel_long_flat_v1', 'roc_long_flat_v1'}:
+        return (validated.entry if strategy == 'channel_long_flat_v1' else validated.period) + 1
+    return validated.slow if strategy == 'sma_long_flat_v1' else validated.period
 
 
 def resolve(strategy: str) -> Definition:

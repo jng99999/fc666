@@ -1,0 +1,283 @@
+/* Shared material and control system. Data surfaces stay solid; floating chrome uses glass. */
+.apple-ui {
+  --bg: #f2f2f7;
+  --panel: #fff;
+  --text: #1c1c1e;
+  --muted: #5c5c65;
+  --border: #e3e3e9;
+  --accent: #0063cf;
+  --buy: #147447;
+  --warning: #855500;
+  --control: #ededf2;
+  --glass: rgba(250, 250, 253, .88);
+  --glass-shadow: 0 8px 32px #25253b0e, inset 0 1px 0 #ffffffc9;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+.apple-ui main { min-width: 0; }
+.apple-ui :is(h1, h2, h3) { color: var(--text); letter-spacing: -.025em; }
+.apple-ui :is(p, li, dd, time, code) { overflow-wrap: anywhere; }
+.apple-ui :is(button, input, select, textarea, summary, a) { -webkit-tap-highlight-color: transparent; }
+.apple-ui :is(button, a.primary, a.secondary) { touch-action: manipulation; }
+.apple-ui button,
+.apple-ui :is(.terminal, .research-page, .exchange-analysis) button,
+.apple-ui :is(a.primary, a.secondary) {
+  min-height: 40px;
+  padding: 9px 15px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  background: var(--control);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 120ms ease, box-shadow 120ms ease, transform 100ms ease;
+}
+.apple-ui :is(button[type=submit], button.primary, a.primary),
+.apple-ui .valuation-action > button {
+  background: var(--accent);
+  color: #fff;
+}
+.apple-ui :is(button.secondary, a.secondary) { background: #eaf1fb; color: #0058b8; }
+.apple-ui button.danger { background: #b42338; color: #fff; }
+.apple-ui button.danger-outline { background: #fcecef; color: #a61c31; border-color: transparent; }
+.apple-ui :is(button, a.primary, a.secondary):hover:not(:disabled) { box-shadow: inset 0 0 0 100px #00000009; }
+.apple-ui :is(button, a.primary, a.secondary):active:not(:disabled) { transform: scale(.97); transition-duration: 80ms; }
+.apple-ui :is(button, .terminal button, .research-page button, .exchange-analysis button):disabled {
+  opacity: 1;
+  background: #ececf1;
+  color: #707079;
+  border-color: transparent;
+  box-shadow: none;
+  cursor: not-allowed;
+}
+.apple-ui button:is([aria-pressed=true], [aria-selected=true], .active) {
+  color: #0058b8;
+  background: #fff;
+  border-color: transparent;
+  box-shadow: 0 1px 5px #17172816;
+}
+.apple-ui :is(input:not([type=checkbox]):not([type=radio]), select, textarea),
+.apple-ui :is(.terminal, .research-page, .exchange-analysis) :is(input:not([type=checkbox]):not([type=radio]), select, textarea) {
+  border: 1px solid #dcdce4;
+  border-radius: 12px;
+  min-height: 42px;
+  padding: 10px 12px;
+  background-color: #fff;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.4;
+  box-shadow: 0 1px 2px #17172803;
+  min-width: 0;
+  max-width: 100%;
+}
+.apple-ui :is(.terminal, .research-page, .exchange-analysis) select,
+.apple-ui select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3E%3Cpath d='m5 6 3 3 3-3' fill='none' stroke='%235c5c65' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 32px;
+}
+.apple-ui textarea { resize: vertical; }
+.apple-ui input:is([type=checkbox], [type=radio]) { accent-color: var(--accent); width: 18px; height: 18px; }
+.apple-ui input[aria-invalid=true] { border-color: #b42338; }
+.apple-ui :is(button, input, select, textarea, summary, a):focus-visible { outline: 3px solid #0063cf; outline-offset: 3px; }
+.apple-ui :is(input, select, textarea):disabled { color: #707079; background-color: #f3f3f7; cursor: not-allowed; }
+.apple-ui progress { accent-color: var(--accent); height: 6px; border-radius: 99px; overflow: hidden; }
+.apple-ui .workspace-header {
+  position: sticky; top: 0; z-index: 20;
+  background: var(--glass);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  backdrop-filter: blur(24px) saturate(160%);
+  border-bottom: 1px solid #ffffffa6;
+  box-shadow: 0 1px 0 #25253b0b;
+}
+.apple-ui .workspace-brand { color: #1c1c1e; font-size: 22px; letter-spacing: -.04em; }
+.apple-ui .workspace-brand span { font-size: 11px; letter-spacing: .02em; }
+.apple-ui .workspace-mode strong { border-radius: 99px; font-weight: 600; padding: 6px 11px; }
+.apple-ui .workspace-navigation { gap: 4px; }
+.apple-ui .workspace-navigation a { border-radius: 12px; color: var(--muted); min-height: 40px; display: flex; align-items: center; }
+.apple-ui .workspace-navigation a[aria-current=page] { color: #0058b8; background: #e6edf8; }
+.apple-ui .account-navigation {
+  position: sticky; top: 68px; z-index: 15;
+  width: max-content; max-width: calc(100% - 48px); min-height: 44px;
+  margin: 16px auto 0; padding: 4px; gap: 3px;
+  background: #e5e5ec; border: 0; border-radius: 15px;
+}
+.apple-ui .account-navigation a { display: flex; align-items: center; justify-content: center; min-height: 36px; padding: 8px 20px; border: 0; border-radius: 11px; color: var(--muted); }
+.apple-ui .account-navigation a[aria-current=page] { background: #fff; color: var(--text); box-shadow: 0 2px 5px #17172812; }
+.apple-ui .research-page > section,
+.apple-ui :is(.research-configuration, .portfolio-panel, .health, .modules article, .watch-panel, .depth-panel, .chart-panel, .terminal-bottom) {
+  border: 1px solid #e7e7ee;
+  border-radius: 22px;
+  background: var(--panel);
+  box-shadow: 0 3px 12px #25253b03;
+}
+.apple-ui .research-page :is(.research-metrics > div, .analysis-grid > div) { border-radius: 16px; }
+.apple-ui .research-page details { border-color: var(--border); border-radius: 16px; }
+.apple-ui summary { min-height: 44px; padding-block: 10px; line-height: 1.6; font-weight: 550; cursor: pointer; }
+.apple-ui :is(.paper-account-details, .paper-account-management, .paper-advanced-form) summary { line-height: 1.6; }
+.apple-ui :is(.timeframes, .mobile-tabs, .paper-view-switch, .paper-record-tabs, .analysis-periods, .analysis-indicator-controls > div, .analysis-content-tabs, .terminal-bottom [role=tablist]) {
+  display: flex; gap: 4px; padding: 4px; border: 0; border-radius: 14px; background: #ededf2;
+  overflow-x: auto; scrollbar-width: thin;
+}
+.apple-ui :is(.timeframes, .mobile-tabs, .paper-view-switch, .paper-record-tabs, .analysis-periods, .analysis-indicator-controls, .analysis-content-tabs, .terminal-bottom [role=tablist]) button {
+  border-radius: 10px; border: 0; min-height: 36px; padding: 8px 11px;
+  flex-shrink: 0; background: transparent; color: #5c5c65; white-space: nowrap;
+}
+.apple-ui :is(.timeframes, .mobile-tabs, .paper-view-switch, .paper-record-tabs, .analysis-periods, .analysis-indicator-controls, .analysis-content-tabs, .terminal-bottom [role=tablist]) button:is([aria-pressed=true], [aria-selected=true], .active) {
+  color: #0058b8; background: #fff; box-shadow: 0 1px 5px #17172816; border: 0;
+}
+.apple-ui .analysis-content-tabs { background: #e9e9ef; }
+.apple-ui .analysis-indicator-controls { border: 0; padding-block: 4px; }
+.apple-ui .analysis-indicator-controls > div + div { margin-top: 4px; border: 0; }
+.apple-ui .exchange-analysis { margin-block: 20px; background: #fff; border: 1px solid #e7e7ee; border-radius: 24px; }
+.apple-ui .analysis-research-actions a { border-radius: 12px; background: #eaf1fb; color: #0058b8; }
+.apple-ui .analysis-detail a { color: var(--accent); }
+.apple-ui .paper-status { border-radius: 99px; padding: 5px 10px; }
+.apple-ui .paper-account-list > li { border: 1px solid #e7e7ee; border-radius: 18px; background: #fafafd; padding: 18px; margin-top: 12px; }
+.apple-ui .paper-account-list > li[aria-current=true] { border-color: #93b9ea; background: #f0f5fc; }
+.apple-ui .paper-account-list code { font-size: 12px; }
+.apple-ui .paper-account-picker { min-width: 0; }
+.apple-ui .paper-stop-dialog {
+  background: rgba(250, 250, 253, .97); border: 1px solid #ffffffc9; border-radius: 26px;
+  -webkit-backdrop-filter: blur(28px) saturate(140%); backdrop-filter: blur(28px) saturate(140%);
+  box-shadow: 0 24px 80px #17172833;
+}
+.apple-ui .paper-stop-dialog::backdrop { background: #10101d66; }
+.apple-ui .paper-stop-dialog input { letter-spacing: 8px; font-size: 20px; }
+.apple-ui .historical-paper-form { display: block; padding: 24px; background: #fff; border: 1px solid var(--border); border-radius: 22px; }
+.apple-ui .historical-paper-form fieldset { border: 0; min-width: 0; margin: 0; padding: 0; }
+.apple-ui .historical-paper-form legend { font-size: 15px; font-weight: 650; margin-bottom: 18px; }
+.apple-ui .historical-paper-form .research-form { margin-bottom: 18px; }
+.apple-ui .historical-paper-form > button { margin-top: 16px; }
+.apple-ui .research-table { border-radius: 12px; overscroll-behavior-x: contain; }
+.apple-ui .research-page thead { background: #f5f5f9; color: var(--muted); }
+.apple-ui .research-page td { font-variant-numeric: tabular-nums; }
+.apple-ui .terminal .mobile-tabs { display: none; }
+.apple-ui .chart-plot { position: relative; display: flex; flex: 1; min-height: 260px; min-width: 0; width: 100%; }
+.apple-ui .chart-plot .chart-canvas { min-width: 0; width: 100%; }
+.apple-ui .chart-plot .chart-overlay { inset: 0; }
+.apple-ui .chart-caption { display: block; padding: 14px; line-height: 1.6; }
+.apple-ui .chart-settings { display: grid; grid-template-columns: minmax(100px,1fr) minmax(90px,1fr) auto; align-items: end; gap: 10px; max-width: 540px; }
+.apple-ui .chart-settings label { display: grid; gap: 5px; color: var(--muted); font-size: 11px; min-width: 0; }
+.apple-ui .chart-caption .chart-settings select { width: 100%; max-width: none; padding: 8px 30px 8px 10px!important; }
+.apple-ui .chart-settings button { min-height: 42px; }
+.apple-ui .chart-data-note { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 12px; margin-top: 10px; font-size: 11px; color: var(--muted); }
+.apple-ui .chart-indicator-note { font-size: 11px; margin: 10px 0 0; line-height: 1.7; }
+.apple-ui .terminal-bottom [role=tabpanel] { padding: 14px 18px; }
+.apple-ui .terminal-bottom [role=tabpanel] p { margin: 0 0 10px; line-height: 1.8; }
+.apple-ui .terminal-bottom [role=tabpanel] a { display: inline-flex; align-items: center; min-height: 44px; margin: 0; font-weight: 600; }
+.apple-ui .chart-attribution { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 12px; font-size: 10px; }
+@media (max-width: 850px) {
+  .apple-ui .terminal .terminal-controls { display: none; }
+  .apple-ui .terminal .ticker-head { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 8px 16px; min-height: 0; margin: 12px 12px 0; padding: 16px; }
+  .apple-ui .ticker-head > strong { grid-column: 1 / -1; font-size: 15px; }
+  .apple-ui .ticker-price { min-width: 0; font-size: clamp(22px,6.3vw,30px); line-height: 1.3; letter-spacing: -.04em; }
+  .apple-ui .ticker-head > div { align-items: end; font-size: 12px; }
+  .apple-ui .terminal .mobile-tabs { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 4px; margin: 12px; padding: 4px; background: #e9e9f0; }
+  .apple-ui .mobile-market-picker { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: 16px; background: var(--bg); margin: -4px -4px 8px; padding: 0 0 8px; font-size: 12px; color: var(--muted); }
+  .apple-ui .terminal .mobile-market-picker select { width: min(72%,220px); flex: none; font-weight: 600; }
+  .apple-ui .terminal .mobile-tabs button { min-width: 0; padding-inline: 6px; font-size: 12px; }
+  .apple-ui .terminal-workspace { height: auto; min-height: 0; margin: 0 12px 16px; }
+  .apple-ui .chart-panel:not(:fullscreen) { height: auto; }
+  .apple-ui .chart-panel:not(:fullscreen) .chart-body { flex: none; min-height: 0; }
+  .apple-ui .chart-panel:not(:fullscreen) .chart-plot { flex: none; height: clamp(260px,43svh,380px); min-height: 0; }
+  .apple-ui .chart-panel:not(:fullscreen) .chart-body.has-indicators .chart-plot { height: clamp(400px,65svh,520px); }
+  .apple-ui .chart-panel:not(:fullscreen) .chart-canvas { height: 100%; min-height: 0; }
+  .apple-ui .terminal .chart-toolbar { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 8px; padding: 8px; }
+  .apple-ui .terminal .timeframes { width: 100%; gap: 2px; padding: 3px; }
+  .apple-ui .terminal .timeframes button { min-width: 0; flex: 1; font-size: 11px; padding-inline: 3px; }
+  .apple-ui .terminal .chart-toolbar > button { font-size: 12px; padding-inline: 10px; }
+  .apple-ui .terminal .chart-settings { grid-template-columns: minmax(0,1.2fr) minmax(0,1fr); gap: 10px; max-width: none; }
+  .apple-ui .terminal .chart-settings button { grid-column: 1 / -1; width: 100%; min-height: 44px; }
+  .apple-ui .terminal .chart-caption .chart-settings select { min-height: 44px; font-size: 16px; }
+  .apple-ui .terminal-bottom [role=tablist] { gap: 3px; }
+  .apple-ui .terminal-bottom [role=tablist] button { flex: 1; min-width: 0; padding-inline: 6px; font-size: 12px; }
+  .apple-ui .terminal .terminal-footer { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px 16px; margin: 0 12px 12px; padding: 16px; background: #fff; border: 1px solid var(--border); border-radius: 18px; font-size: 11px; }
+  .apple-ui .terminal-footer .mode-label { grid-column: 1 / -1; margin: 0; padding-top: 8px; border-top: 1px solid var(--border); }
+  .apple-ui .terminal .chart-attribution { padding: 8px 16px 20px; justify-content: center; text-align: center; }
+}
+@media (min-width: 761px) {
+  .apple-ui .paper-account-list { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 14px; }
+  .apple-ui .paper-account-list > li { margin: 0; }
+}
+@media (max-width: 760px) {
+  .apple-ui { padding-bottom: calc(104px + env(safe-area-inset-bottom)); }
+  /* A backdrop-filter on this parent would contain its fixed bottom navigation. */
+  .apple-ui .workspace-header { height: 56px; min-height: 56px; padding-inline: 20px; background: transparent; -webkit-backdrop-filter: none; backdrop-filter: none; }
+  .apple-ui .workspace-header::before { content: ''; position: absolute; inset: 0; z-index: -1; background: var(--glass); -webkit-backdrop-filter: blur(24px) saturate(160%); backdrop-filter: blur(24px) saturate(160%); }
+  .apple-ui .workspace-brand { font-size: 21px; }
+  .apple-ui .workspace-navigation {
+    inset: auto 12px calc(10px + env(safe-area-inset-bottom));
+    padding: 5px; gap: 2px; min-height: 66px; border-radius: 27px;
+    border: 1px solid #ffffffbd; background: var(--glass); box-shadow: var(--glass-shadow), 0 5px 24px #25253b14;
+    -webkit-backdrop-filter: blur(26px) saturate(160%); backdrop-filter: blur(26px) saturate(160%);
+  }
+  .apple-ui .workspace-navigation a { min-height: 54px; padding: 5px 0!important; border-radius: 21px; gap: 4px; font-size: 10px; }
+  .apple-ui .workspace-navigation a[aria-current=page] { color: #0058b8; background: #e3ecf9; }
+  .apple-ui .nav-mobile-icon { width: 21px; height: 21px; }
+  .apple-ui .account-navigation { top: 64px; max-width: calc(100% - 32px); width: calc(100% - 32px); margin-top: 12px; }
+  .apple-ui .account-navigation a { flex: 1; padding: 8px 10px; font-size: 12px; min-width: max-content; }
+  .apple-ui :is(.research-page, main:not(.terminal)) { padding: 24px 16px 32px; }
+  .apple-ui .research-page h1 { font-size: 25px; font-weight: 750; letter-spacing: -.035em; }
+  .apple-ui .research-page > p { font-size: 13px; line-height: 1.8; }
+  .apple-ui :is(.research-page, .exchange-analysis, .terminal) button,
+  .apple-ui :is(a.primary, a.secondary) { min-height: 44px; font-size: 13px; padding: 10px 14px; }
+  .apple-ui :is(.research-page, .exchange-analysis, .terminal) :is(input:not([type=checkbox]):not([type=radio]), select, textarea) { font-size: 16px; min-height: 46px; }
+  .apple-ui .research-page > section { padding: 20px 16px; border-radius: 22px; }
+  .apple-ui .paper-picker-filter { align-items: end; flex-wrap: wrap; gap: 12px; }
+  .apple-ui .paper-picker-filter label { flex: 1; min-width: 100px; }
+  .apple-ui .paper-picker-filter select { width: 100%; }
+  .apple-ui .paper-picker-filter button { flex-shrink: 0; padding-inline: 12px; }
+  .apple-ui .paper-picker-pagination { flex-wrap: wrap; }
+  .apple-ui .paper-picker-pagination button { min-width: 120px; }
+  .apple-ui .paper-form-fields { gap: 16px 12px; }
+  .apple-ui .historical-paper-form { padding: 20px 16px; }
+  .apple-ui .historical-paper-form > button { width: 100%; }
+  .apple-ui .paper-stop-dialog { width: calc(100% - 20px); margin: auto 10px calc(10px + env(safe-area-inset-bottom)); max-height: calc(100dvh - 32px - env(safe-area-inset-bottom)); padding: 24px 20px; border-radius: 28px; }
+  .apple-ui .paper-stop-dialog::before { content: ''; display: block; width: 36px; height: 5px; margin: -10px auto 20px; border-radius: 99px; background: #c7c7cf; }
+  .apple-ui .exchange-analysis { margin: 16px 12px; max-width: calc(100% - 24px); padding: 12px 14px 20px!important; border-radius: 22px; }
+  .apple-ui .analysis-market-heading { gap: 8px; }
+  .apple-ui .analysis-symbol { min-width: 0; }
+  .apple-ui .analysis-market-heading .analysis-symbol select { font-size: 18px; padding-left: 8px; }
+  .apple-ui .analysis-market-heading button { padding-inline: 10px; }
+  .apple-ui :is(.analysis-periods, .analysis-chart, .analysis-indicator-controls) { margin-inline: 0; width: 100%; }
+  .apple-ui .analysis-chart-state { margin-inline: 0; }
+  .apple-ui .analysis-content-tabs { top: 64px; }
+  .apple-ui :is(.analysis-periods, .analysis-indicator-controls, .analysis-content-tabs) button { min-width: 44px; padding-inline: 8px; font-size: 11px; }
+  .apple-ui .analysis-quote { gap: 10px; }
+  .apple-ui .analysis-quote strong { font-size: 26px; }
+  .apple-ui .terminal .ticker-head { border-radius: 22px; }
+  .apple-ui .terminal .mobile-tabs { margin: 10px 12px 0; }
+  .apple-ui .terminal .mobile-tabs button { flex: 1; padding-inline: 8px; }
+  .apple-ui .terminal .mobile-tabs select { min-width: 0; }
+  .apple-ui .terminal .timeframes button { padding-inline: 3px; min-width: 0; }
+  .apple-ui .terminal .terminal-controls button { padding-inline: 8px; }
+  .apple-ui .chart-caption :is(button, select) { min-height: 32px; }
+}
+@media (max-width: 359px) {
+  .apple-ui .workspace-navigation { left: 8px; right: 8px; gap: 0; }
+  .apple-ui .workspace-navigation a { font-size: 9px; }
+  .apple-ui .analysis-quote { grid-template-columns: 1fr; }
+  .apple-ui .paper-picker-filter button { width: 100%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .apple-ui *, .apple-ui *::before, .apple-ui *::after { animation: none!important; transition: none!important; scroll-behavior: auto!important; }
+  .apple-ui :is(button, a):active { transform: none; }
+}
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+  .apple-ui { --glass: #fafafd; }
+  .apple-ui :is(.workspace-header, .workspace-navigation, .paper-stop-dialog) { background: #fafafd; -webkit-backdrop-filter: none; backdrop-filter: none; border-color: #b8b8c2; }
+  .apple-ui .workspace-header::before { -webkit-backdrop-filter: none; backdrop-filter: none; }
+}
+@supports not (backdrop-filter: blur(1px)) {
+  .apple-ui :is(.workspace-header, .workspace-navigation, .paper-stop-dialog) { background: #fafafd; }
+}
