@@ -27,6 +27,10 @@ test('zero historical volume is unavailable, not infinity',()=>{
  const result=summarizeMarket(bars.map(bar=>({...bar,volume:'0'})),row,'1m',now,identity);
  assert.equal(result.volumeRatio,null);
 });
+test('malformed OHLC and non-finite numeric conversion fail closed',()=>{
+ const {bars,row,now}=input();
+ for(const change of [{high:'99'},{low:'103'},{close:'0'},{volume:'-1'},{high:'1e999'}])assert.throws(()=>summarizeMarket(bars.map((b,i)=>i===20?{...b,...change}:b),row,'1m',now,identity),/无效/);
+});
 test('mixed source, instrument and regime clocks are rejected',()=>{
  const {bars,row,now}=input();
  assert.throws(()=>summarizeMarket(bars,row,'1m',now,'bitget:spot:ETH-USDT'),/交易对或来源/);

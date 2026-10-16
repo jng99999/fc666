@@ -5,6 +5,7 @@ export function summarizeMarket(bars:Candle[],row:IndicatorRow,timeframe:Interva
  const step=intervalMs[timeframe];
  const closed=bars.filter(bar=>bar.is_closed&&Date.parse(bar.close_time)<=now);
  if(closed.length<21)throw new Error('已闭合历史不足 21 根，暂不生成分析。');
+ if(closed.some(bar=>{const [o,h,l,c,v]=[bar.open,bar.high,bar.low,bar.close,bar.volume].map(Number);return ![o,h,l,c,v].every(Number.isFinite)||Math.min(o,h,l,c)<=0||v<0||h<Math.max(o,c,l)||l>Math.min(o,c,h);}))throw new Error('K 线价格或成交量无效，暂不生成分析。');
  if(closed.some(bar=>bar.instrument_id!==expectedInstrumentId||bar.source!==`${expectedInstrumentId.split(':')[0]}.public`))throw new Error('行情响应的交易对或来源不一致，暂不生成分析。');
  if(closed.some((bar,index)=>bar.timeframe!==timeframe||Date.parse(bar.close_time)-Date.parse(bar.open_time)!==step||(index>0&&Date.parse(bar.open_time)-Date.parse(closed[index-1].open_time)!==step)))throw new Error('历史 K 线不连续，暂不生成分析。');
  const last=closed[closed.length-1],mark=Date.parse(last.close_time);
@@ -15,5 +16,5 @@ export function summarizeMarket(bars:Candle[],row:IndicatorRow,timeframe:Interva
  const meanVolume=previous.reduce((sum,bar)=>sum+Number(bar.volume),0)/previous.length;
  return {last,windowStart:window[0].open_time,high:Math.max(...window.map(bar=>Number(bar.high))),low:Math.min(...window.map(bar=>Number(bar.low))),
   change:(Number(last.close)/Number(window[0].open)-1)*100,volumeRatio:meanVolume>0?Number(last.volume)/meanVolume:null,
-  row,closedCount:closed.length};
+  row,closed,closedCount:closed.length};
 }
