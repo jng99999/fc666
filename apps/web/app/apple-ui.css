@@ -167,7 +167,9 @@
 }
 @media (max-width: 760px) {
   .apple-ui { padding-bottom: calc(104px + env(safe-area-inset-bottom)); }
-  .apple-ui .workspace-header { height: 56px; min-height: 56px; padding-inline: 20px; }
+  /* A backdrop-filter on this parent would contain its fixed bottom navigation. */
+  .apple-ui .workspace-header { height: 56px; min-height: 56px; padding-inline: 20px; background: transparent; -webkit-backdrop-filter: none; backdrop-filter: none; }
+  .apple-ui .workspace-header::before { content: ''; position: absolute; inset: 0; z-index: -1; background: var(--glass); -webkit-backdrop-filter: blur(24px) saturate(160%); backdrop-filter: blur(24px) saturate(160%); }
   .apple-ui .workspace-brand { font-size: 21px; }
   .apple-ui .workspace-navigation {
     inset: auto 12px calc(10px + env(safe-area-inset-bottom));
@@ -230,6 +232,7 @@
 @media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
   .apple-ui { --glass: #fafafd; }
   .apple-ui :is(.workspace-header, .workspace-navigation, .paper-stop-dialog) { background: #fafafd; -webkit-backdrop-filter: none; backdrop-filter: none; border-color: #b8b8c2; }
+  .apple-ui .workspace-header::before { -webkit-backdrop-filter: none; backdrop-filter: none; }
 }
 @supports not (backdrop-filter: blur(1px)) {
   .apple-ui :is(.workspace-header, .workspace-navigation, .paper-stop-dialog) { background: #fafafd; }
