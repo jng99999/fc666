@@ -26,7 +26,7 @@ export function Watchlist({symbol,symbols,onSelect,onChange}:{symbol:SymbolName;
 }
 export function TickerHeader({symbol}:{symbol:SymbolName}) {
   const value=useFresh(symbol,"ticker") as TickerSnapshot|undefined;
-  return <div className="ticker-head"><strong>{symbol.replace("USDT","/USDT")}</strong><span className="ticker-price mono" data-testid="live-price">{decimalDisplay(value?.payload.price)}</span><div><small>24h 涨跌</small><span className={Number(value?.payload.change_percent ?? 0)<0?"sell":"buy"}>{value?`${value.payload.change_percent}%`:"—"}</span></div><div className="volume-head"><small>24h 成交量</small><span className="mono">{decimalDisplay(value?.payload.volume)}</span></div><span className="market-state">{value?"公共行情在线":"等待真实行情"}</span></div>;
+  return <div className="ticker-head"><strong>{symbol.replace("USDT","/USDT")}</strong><span className="ticker-price mono" data-testid="live-price">{decimalDisplay(value?.payload.price)}</span><div><small>24h 涨跌</small><span className={Number(value?.payload.change_percent ?? 0)<0?"sell":"buy"}>{value?`${Number(value.payload.change_percent).toFixed(2)}%`:"—"}</span></div><div className="volume-head"><small>24h 成交量</small><span className="mono">{decimalDisplay(value?.payload.volume)}</span></div><span className="market-state">{value?"公共行情在线":"等待真实行情"}</span></div>;
 }
 export function BookPanel({symbol}:{symbol:SymbolName}) {
   const value=useFresh(symbol,"book") as BookSnapshot|undefined;
