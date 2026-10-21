@@ -4,7 +4,7 @@ import logging
 import time
 from uuid import uuid4
 
-from core.gold.backtest import compare
+from core.gold.backtest import compare, VERSION, CODE_SHA256
 from core.gold.history import canonical, sha
 from core.gold.ledger import Conflict
 
@@ -22,6 +22,7 @@ class Research:
 
     def enqueue(self, owner, request_id, request):
         identity, now = str(uuid4()), self.clock()
+        frozen = {**request, 'engine': {'version': VERSION, 'code_sha256': CODE_SHA256}}
         with self.store.connect() as db:
             db.execute('BEGIN IMMEDIATE')
             old = db.execute('SELECT id,request_hash FROM gold_research_jobs WHERE owner=? AND request_id=?', (owner, request_id)).fetchone()
@@ -37,7 +38,7 @@ class Research:
                 if db.execute('SELECT count(*) FROM gold_research_jobs').fetchone()[0] >= 2000:
                     raise Conflict('测试环境研究存储容量已满')
                 db.execute('INSERT INTO gold_research_jobs VALUES(?,?,?,?,?,?,?,?,?,?,?,?)',
-                           (identity, owner, request_id, sha(request), canonical(request).decode(), 'QUEUED', '{"done":0,"total":null}',
+                           (identity, owner, request_id, sha(request), canonical(frozen).decode(), 'QUEUED', '{"done":0,"total":null}',
                             None, None, None, now, now))
         return self.read(identity, owner)
 
@@ -84,6 +85,8 @@ class Research:
             identity, request = row['id'], json.loads(row['request'])
             db.execute("UPDATE gold_research_jobs SET status='RUNNING',error=NULL,updated_at=? WHERE id=?", (self.clock(), identity))
         try:
+            if request.get('engine') != {'version': VERSION, 'code_sha256': CODE_SHA256}:
+                raise ValueError('研究引擎已更新，旧任务不会改用新规则计算；请提交一个新研究。旧账户和已完成结果保留。')
             data, bars = self.catalogue.load(request['dataset_id'])
 
             def progress(done, total):

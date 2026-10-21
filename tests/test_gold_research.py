@@ -127,6 +127,17 @@ def test_gap_never_backfills_old_intent():
     assert result['metrics']['expired_gap_intents']>0
 
 
+def test_first_post_warmup_fill_does_not_require_future_complete_candle():
+    series=bars(250)
+    variant={'strategy':'buy_hold_reference','parameters':{}}
+    opens={b.start:(b.first,b.bid_open,b.ask_open) for b in series}
+    expected=simulate(series,1,START,START+250*HOUR,Costs(**COSTS),variant,opens=opens)
+    missing=series[:100]+series[101:]
+    actual=simulate(missing,1,START,START+250*HOUR,Costs(**COSTS),variant,opens=opens)
+    assert actual['fills'][0]==expected['fills'][0]
+    assert actual['effective_start']==expected['effective_start']
+
+
 def test_all_eight_strategies_cost_stress_and_determinism(tmp_path):
     cat,key=catalogue(tmp_path,900)
     data,series=cat.load(key)
@@ -200,3 +211,20 @@ def test_concurrent_research_retries_and_failed_job_visibility(tmp_path):
     assert research.execute_one()
     assert research.read(results[0]['id'],'owner')['status']=='FAILED'
     with pytest.raises(Conflict):research.result(results[0]['id'],'owner')
+
+
+def test_queued_research_freezes_engine_and_retry_keeps_original_job(tmp_path,monkeypatch):
+    import core.gold.research as module
+    cat,key=catalogue(tmp_path)
+    research=Research(Store(tmp_path/'paper.db'),cat)
+    request={'dataset_id':key,'start':START,'end':START+400*HOUR,'timeframes':['1h'],'variants':[VARIANT],'costs':COSTS}
+    request_id=str(uuid4())
+    job=research.enqueue('owner',request_id,request)
+    assert job['request']['engine']['version']==module.VERSION
+    monkeypatch.setattr(module,'VERSION','different-deployed-engine')
+    # Retry recognizes the original user input, not the currently deployed engine.
+    assert research.enqueue('owner',request_id,request)['id']==job['id']
+    assert research.execute_one()
+    result=research.read(job['id'],'owner')
+    assert result['status']=='FAILED' and '研究引擎已更新' in result['error']
+    assert result['summary'] is None

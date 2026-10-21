@@ -11,7 +11,7 @@ from core.strategy.contracts import StrategyContext, TargetSignal
 from core.strategy.registry import lookback, resolve
 from core.strategy.research import SeededEma
 
-VERSION = 'gold-paired-next-open-v2'
+VERSION = 'gold-paired-next-open-v3'
 _ROOT = Path(__file__).resolve().parents[1]
 _FILES = ['gold/backtest.py', 'gold/history.py', 'strategy/contracts.py', 'strategy/registry.py', 'strategy/research.py']
 CODE_SHA256 = {name: hashlib.sha256((_ROOT/name).read_bytes()).hexdigest() for name in _FILES}
@@ -54,6 +54,7 @@ def simulate(bars, hours, start, end, costs, variant, warmup=100, opens=None):
     first, final = max(selected[0], warmup), selected[-1]
     if first >= final:
         raise ValueError('Insufficient complete gold history after common warmup')
+    effective_start = max(start, bars[first-1].start+hours*HOUR)
     prefix = max(0, first-warmup)
     ema = SeededEma(getattr(parameters, 'period', 20))
     cash, quantity, basis = costs.initial_cash, Decimal(0), Decimal(0)
@@ -72,7 +73,7 @@ def simulate(bars, hours, start, end, costs, variant, warmup=100, opens=None):
                 if pending is not None:
                     available = int(pending.available_at.timestamp()*1000)
                     opening = opens.get(available)
-                    if (available < bars[first].start or opening is None or
+                    if (available < effective_start or opening is None or
                             not available <= opening[0] <= available+120000 or opening[0] >= end):
                         expired += 1
                     else:
@@ -130,7 +131,7 @@ def simulate(bars, hours, start, end, costs, variant, warmup=100, opens=None):
         losses = -sum((p for p in closed if p < 0), Decimal(0))
         return {'strategy': variant['strategy'], 'parameters': {} if benchmark else parameters.model_dump(mode='json'),
                 'timeframe': f'{hours}h', 'requested_start': start, 'requested_end': end,
-                'effective_start': bars[first].start, 'effective_end': bars[final].start+hours*HOUR,
+                'effective_start': effective_start, 'effective_end': bars[final].start+hours*HOUR,
                 'warmup_bars': first-prefix, 'bars': final-first+1, 'config': costs.model_dump(mode='json'),
                 'metrics': {'total_return': str(value/costs.initial_cash-1), 'net_pnl': str(value-costs.initial_cash),
                             'final_equity': str(value), 'realized_pnl': str(realized), 'unrealized_pnl': str(quantity*mark-basis),
