@@ -17,7 +17,7 @@ from core.gold.history import Bar, Catalogue, HOUR, VERSION, aggregate, canonica
 from core.gold.ledger import Conflict, Store
 from core.gold.research import Research
 from core.strategy.registry import DEFINITIONS
-from scripts.import_gold_history import parse_archive
+from scripts.import_gold_history import parse_archive, opening_quotes
 
 START=int(datetime(2024,1,1,tzinfo=timezone.utc).timestamp()*1000)
 COSTS={'initial_cash':'10000','allocation':'.5','commission':'.10','slippage':'.05','spread_multiplier':'1'}
@@ -36,7 +36,8 @@ def bars(count=400):
 def catalogue(tmp_path,count=400):
     directory=tmp_path/'history';directory.mkdir()
     data={'version':VERSION,'symbol':'XAU/USD','source':'test fixture, not a market result','start':START,
-          'end':START+count*HOUR,'quality':{'ticks':count*100},'sources':[],'bars':[b.row() for b in bars(count)]}
+          'end':START+count*HOUR,'quality':{'ticks':count*100},'sources':[],'bars':[b.row() for b in bars(count)],
+          'opens':[[b.start,b.first,str(b.bid_open),str(b.ask_open)] for b in bars(count)]}
     identity=sha(data)
     with gzip.open(directory/(identity+'.json.gz'),'wb') as f:f.write(canonical(data))
     return Catalogue(directory),identity
@@ -98,6 +99,23 @@ def test_future_prefix_does_not_change_past_fills():
     short=simulate(bars(200),1,START,START+200*HOUR,Costs(**COSTS),VARIANT)
     long=simulate(bars(400),1,START,START+400*HOUR,Costs(**COSTS),VARIANT)
     assert short['fills']==[f for f in long['fills'] if f['execution_at']<START+200*HOUR]
+
+
+def test_execution_does_not_use_future_candle_completeness(tmp_path):
+    series=bars(250)
+    complete=simulate(series,1,START,START+250*HOUR,Costs(**COSTS),VARIANT)
+    first_fill=complete['fills'][0]
+    index=(first_fill['decision_at']-START)//HOUR
+    opens={b.start:(b.first,b.bid_open,b.ask_open) for b in series}
+    missing=series[:index]+series[index+1:]
+    result=simulate(missing,1,START,START+250*HOUR,Costs(**COSTS),VARIANT,opens=opens)
+    assert result['fills'][0]==first_fill
+    # A public tick at the hour boundary stays available even if no full candle follows.
+    p=tmp_path/'ticks.zip'
+    with zipfile.ZipFile(p,'w') as z:
+        z.writestr('DAT_ASCII_XAUUSD_T_202401.csv','20240102 000001000,2000,2001,0\n')
+    assert parse_archive(p,2024,1)[0]==[]
+    assert opening_quotes(p,2024,1)[0][1]%HOUR==1000
 
 
 def test_gap_never_backfills_old_intent():

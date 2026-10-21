@@ -11,7 +11,7 @@ from core.strategy.contracts import StrategyContext, TargetSignal
 from core.strategy.registry import lookback, resolve
 from core.strategy.research import SeededEma
 
-VERSION = 'gold-paired-next-open-v1'
+VERSION = 'gold-paired-next-open-v2'
 _ROOT = Path(__file__).resolve().parents[1]
 _FILES = ['gold/backtest.py', 'gold/history.py', 'strategy/contracts.py', 'strategy/registry.py', 'strategy/research.py']
 CODE_SHA256 = {name: hashlib.sha256((_ROOT/name).read_bytes()).hexdigest() for name in _FILES}
@@ -43,7 +43,8 @@ def iso(moment):
     return datetime.fromtimestamp(moment/1000, timezone.utc).isoformat()
 
 
-def simulate(bars, hours, start, end, costs, variant, warmup=100):
+def simulate(bars, hours, start, end, costs, variant, warmup=100, opens=None):
+    opens = opens if opens is not None else {bar.start: (bar.first, bar.bid_open, bar.ask_open) for bar in bars}
     benchmark = variant['strategy'] == 'buy_hold_reference'
     definition = resolve('ema_long_flat_v1' if benchmark else variant['strategy'])
     strategy, parameters = definition.create(variant['parameters'])
@@ -70,14 +71,16 @@ def simulate(bars, hours, start, end, costs, variant, warmup=100):
             if index >= first:
                 if pending is not None:
                     available = int(pending.available_at.timestamp()*1000)
-                    if (index == 0 or bar.start != bars[index-1].start+hours*HOUR or
-                            not available <= bar.first <= available+120000):
+                    opening = opens.get(available)
+                    if (available < bars[first].start or opening is None or
+                            not available <= opening[0] <= available+120000 or opening[0] >= end):
                         expired += 1
                     else:
                         side = 'BUY' if pending.target == 'LONG' and quantity == 0 else 'SELL' if pending.target == 'FLAT' and quantity > 0 else None
                         if side:
-                            mid = (bar.bid_open+bar.ask_open)/2
-                            half = (bar.ask_open-bar.bid_open)*costs.spread_multiplier/2
+                            quote_at, bid, ask = opening
+                            mid = (bid+ask)/2
+                            half = (ask-bid)*costs.spread_multiplier/2
                             price = mid+half+costs.slippage if side == 'BUY' else mid-half-costs.slippage
                             if price <= 0:
                                 raise ValueError('Costs produce nonpositive gold fill price')
@@ -103,8 +106,8 @@ def simulate(bars, hours, start, end, costs, variant, warmup=100):
                                 fees += fee
                                 spread_cost += units*half
                                 slippage_cost += units*costs.slippage
-                                fills.append({'side': side, 'decision_at': available, 'execution_at': bar.first,
-                                              'bid': str(bar.bid_open), 'ask': str(bar.ask_open), 'price': str(price),
+                                fills.append({'side': side, 'decision_at': available, 'execution_at': quote_at,
+                                              'bid': str(bid), 'ask': str(ask), 'price': str(price),
                                               'ounces': str(units), 'fee': str(fee), 'spread_cost': str(units*half),
                                               'slippage_cost': str(units*costs.slippage), 'realized_pnl': str(pnl),
                                               'cash_after': str(cash), 'quantity_after': str(quantity), 'simulated': True})
@@ -143,6 +146,7 @@ def simulate(bars, hours, start, end, costs, variant, warmup=100):
 def compare(data, hourly, request, checkpoint=lambda done, total: None):
     start, end = request['start'], request['end']
     base = Costs.model_validate(request['costs'])
+    opens = {row[0]: (row[1], Decimal(row[2]), Decimal(row[3])) for row in data['opens']}
     submitted = request['variants']
     variants = submitted+[{'strategy': 'buy_hold_reference', 'parameters': {}}]
     warmup = max(100, *(lookback(v['strategy'], v['parameters']) for v in submitted))
@@ -164,7 +168,7 @@ def compare(data, hourly, request, checkpoint=lambda done, total: None):
         bars = aggregate(hourly, hours)
         for variant in variants:
             for window, a, b, scenario, costs in plan:
-                result = simulate(bars, hours, a, b, costs, variant, warmup)
+                result = simulate(bars, hours, a, b, costs, variant, warmup, opens)
                 role = 'full' if window == 'full' else ('descriptive' if len(years) < 3 else
                         'holdout' if window == years[-1][0] else 'validation' if window == years[-2][0] else 'development')
                 result.update(window=window, scenario=scenario, role=role)
@@ -184,7 +188,8 @@ def compare(data, hourly, request, checkpoint=lambda done, total: None):
                                'holdout' if year==years[-1][0] else 'validation' if year==years[-2][0] else 'development'} for year,a,b in years],
                 'selection_policy': 'fixed submitted parameters; no optimization against yearly holdouts',
                 'assumptions': ['1x long/flat independent USD; 0.01oz step; 10oz per fill; no broker submission',
-                                'observed closed mid bars; next contiguous bar first paired quote; gaps cancel old intents',
+                                'observed closed mid bars; next UTC boundary first paired quote independent of later candle coverage',
+                                'missing or late opening quotes cancel intents; no post-gap backfill',
                                 'bid/ask spread recorded in source; fee and adverse slippage are explicit research assumptions',
                                 'double-cost stress is a counterfactual; zero-cost reference uses mid marking',
                                 'indicators use observed bars across closures/gaps; no fabricated missing candles',

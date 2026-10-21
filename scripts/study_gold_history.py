@@ -54,7 +54,7 @@ def main():
         m = row['metrics']
         percent = lambda key: f"{Decimal(m[key])*100:.2f}"
         lines.append(f"|{row['timeframe']}|{row['window']} ({row['role']})|{row['strategy']}|{row['scenario']}|{percent('total_return')}%|{percent('max_drawdown')}%|{percent('return_difference_vs_buy_hold')}|{m['closed_trades']}|")
-    lines += ['', '限制：历史含休市与未知缺口，仅代表完整观测子集；指标沿观测柱延续，跨缺口不追补成交。',
+    lines += ['', '限制：历史含休市与未知缺口，仅代表完整观测子集；指标沿观测柱延续，下一周期缺首报价不追补成交。',
               '时间保留期可见且可重复研究，不是密封盲测。回撤为收盘权益口径。未计隔夜掉期、融资、真实深度。',
               '费用及额外滑点是假设，未获历史经纪商成交单证；HistData不是实时Swissquote源。',
               '不据此证明未来盈利，不连接AI或真实经纪商；实盘关闭。']

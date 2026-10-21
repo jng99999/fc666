@@ -115,6 +115,33 @@ def parse_archive(path, year, month):
                   'backwards_tick_events': backwards, 'ambiguous_hours_excluded': len(quarantined)}
 
 
+def opening_quotes(path, year, month):
+    """Keep first quotes even when that hour later has incomplete candle coverage.
+
+    Called only after the entire archive passed the full decoder validation.
+    Clock-ambiguous source hours remain quarantined; no timestamp repair.
+    """
+    quotes, quarantined = {}, set()
+    previous_stamp, previous_start = None, None
+    hour_key, start = None, None
+    with zipfile.ZipFile(path) as archive:
+        with archive.open(f'DAT_ASCII_XAUUSD_T_{year}{month:02}.csv') as stream:
+            for raw in stream:
+                stamp = raw[:18]
+                if stamp[:11] != hour_key:
+                    hour_key = stamp[:11]
+                    date = datetime.strptime(hour_key.decode('ascii'), '%Y%m%d %H').replace(tzinfo=timezone(timedelta(hours=-5)))
+                    start = int(date.timestamp()*1000)
+                if previous_stamp is not None and stamp < previous_stamp:
+                    quarantined.update(range(start, previous_start+HOUR, HOUR))
+                if start not in quotes:
+                    fields = raw.decode('ascii').strip().split(',')
+                    moment = start+int(stamp[11:13])*60000+int(stamp[13:15])*1000+int(stamp[15:18])
+                    quotes[start] = [start, moment, str(Decimal(fields[1])), str(Decimal(fields[2]))]
+                previous_stamp, previous_start = stamp, start
+    return [quote for hour, quote in sorted(quotes.items()) if hour not in quarantined]
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--start', required=True, help='YYYY-MM first complete month')
@@ -128,7 +155,7 @@ def main():
     directory = Path(args.output)
     cache = directory / 'archives'
     cache.mkdir(parents=True, exist_ok=True)
-    bars, sources, quality = [], [], {'ticks': 0, 'identical_duplicates': 0, 'incomplete_hours_excluded': 0,
+    bars, opens, sources, quality = [], [], [], {'ticks': 0, 'identical_duplicates': 0, 'incomplete_hours_excluded': 0,
                                     'backwards_tick_events': 0, 'ambiguous_hours_excluded': 0}
     current = start
     with httpx.Client(timeout=120, follow_redirects=True) as client:
@@ -144,6 +171,14 @@ def main():
                 decoded.write_bytes(canonical({'archive_sha256': archive_hash, 'decoder': 'quarantine-clock-v1',
                                                'bars': [bar.row() for bar in rows], 'quality': stats}))
             bars.extend(rows)
+            opening_cache = path.with_suffix('.openings.json')
+            cached_opens = json.loads(opening_cache.read_text()) if opening_cache.exists() else None
+            if cached_opens and cached_opens.get('archive_sha256') == archive_hash:
+                opens.extend(cached_opens['opens'])
+            else:
+                monthly_opens = opening_quotes(path, current.year, current.month)
+                opening_cache.write_bytes(canonical({'archive_sha256': archive_hash, 'opens': monthly_opens}))
+                opens.extend(monthly_opens)
             for key, value in stats.items():
                 quality[key] += value
             sources.append({'month': current.strftime('%Y-%m'), 'url': page, 'sha256': archive_hash, 'bytes': path.stat().st_size, **stats})
@@ -152,12 +187,13 @@ def main():
     # The source's fixed EST calendar crosses UTC month bounds by five hours.
     first, last = int(start.timestamp()*1000), int(end.timestamp()*1000)
     bars = [bar for bar in bars if first <= bar.start and bar.start+HOUR <= last]
+    opens = [quote for quote in opens if first <= quote[0] < last]
     if any(b.start <= a.start for a, b in zip(bars, bars[1:])):
         raise ValueError('Monthly history overlap/conflict')
     quality['unobserved_utc_hours_including_closures'] = (last-first)//HOUR-len(bars)
     data = {'version': VERSION, 'source': 'HistData.com ASCII paired XAUUSD ticks; fixed EST UTC-05:00',
             'symbol': 'XAU/USD', 'start': first, 'end': last, 'quality': quality, 'sources': sources,
-            'bars': [bar.row() for bar in bars]}
+            'bars': [bar.row() for bar in bars], 'opens': opens}
     identity = sha(data)
     destination = directory / (identity+'.json.gz')
     with gzip.GzipFile(filename=str(destination), mode='wb', mtime=0) as output:
