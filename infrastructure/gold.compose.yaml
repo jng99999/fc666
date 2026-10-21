@@ -13,8 +13,8 @@ services:
       GOLD_DB_PATH: /app/.runtime/gold/paper.sqlite3
     ports: ["127.0.0.1:18667:8000"]
     volumes: ["gold-paper-data:/app/.runtime"]
-    mem_limit: 256m
-    cpus: 0.25
+    mem_limit: 512m
+    cpus: 1
     pids_limit: 64
     cap_drop: ["ALL"]
     security_opt: ["no-new-privileges:true"]
