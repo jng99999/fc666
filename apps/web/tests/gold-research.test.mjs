@@ -2,8 +2,13 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {GET,POST} from '../app/api/gold/[...segments]/route.ts';
 import {comparisonCsv,ResearchMember} from '../lib/gold-research.ts';
+import {goldRequest} from '../lib/gold.ts';
 const context=segments=>({params:Promise.resolve({segments})});
 const id='95cac022-c9dc-49c8-97ca-130b934b2429';
+test('research validation errors name root configuration without echoing input',async t=>{
+ t.mock.method(globalThis,'fetch',async()=>Response.json({detail:[{loc:['body'],msg:'历史窗口不足90日',input:'private-input'}]},{status:422}));
+ await assert.rejects(goldRequest('research/runs',undefined,{}),{message:'配置：历史窗口不足90日'});
+});
 test('research proxy forwards only bounded history resources',async t=>{
  const requests=[];t.mock.method(globalThis,'fetch',async(url,options)=>{requests.push({url:String(url),options});return Response.json({trading_enabled:false});});
  for(const segments of [['research','catalogue'],['research','runs'],['research','runs',id],['research','runs',id,'manifest'],['research','runs',id,'members','12']]){
