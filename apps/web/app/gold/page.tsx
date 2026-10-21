@@ -1,5 +1,6 @@
 'use client';
 import {useEffect,useState,type FormEvent} from 'react';
+import Link from 'next/link';
 import {z} from 'zod';
 import {GoldAccount,GoldDetail,GoldMarket,GoldEvent,goldRequest,type GoldAccountType,type GoldDetailType,type GoldMarketType,type GoldEventType} from '../../lib/gold';
 import './gold.css';
@@ -36,6 +37,7 @@ export default function Gold(){
  const bars=market?.bars??[],closes=bars.map(b=>Number(b.close)),low=closes.length?Math.min(...closes):0,high=closes.length?Math.max(...closes):0;
  const points=closes.map((v,i)=>`${10+i/Math.max(1,closes.length-1)*580},${125-(v-low)/Math.max(.001,high-low)*110}`).join(' ');
  return <main className="gold-workspace"><header className="gold-heading"><div><p>黄金 · 独立美元模拟</p><h1>XAU / USD</h1><span>瑞讯公开报价 · AT / standard · 美元 / 金衡盎司</span></div><button disabled={loading} onClick={()=>setRefresh(v=>v+1)}>{loading?'同步中…':'刷新'}</button></header>
+  <p><Link href="/gold/research">黄金历史回测与多策略对比 →</Link></p>
   {error?<p className="gold-message gold-error" role="alert">{error}</p>:null}{notice?<p className="gold-message" role="status">{notice}</p>:null}
   <section className="gold-card gold-quote"><div><small>参考买入价 ASK</small><strong>${num(quote?.ask,3)}</strong></div><div><small>参考卖出价 BID</small><strong>${num(quote?.bid,3)}</strong></div><div><small>实际报价点差</small><strong>${num(quote?.spread,3)}</strong></div><p className={valid?'gold-ok':'gold-wait'}>{valid?'报价有效，可进行模拟':'等待新鲜报价，模拟买卖暂停'} · {time(quote?.ts)}</p></section>
   <div className="gold-grid"><div><section className="gold-card"><h2>采样走势 <small>1分钟 · 中间价</small></h2>{bars.length>1?<><svg className="gold-chart" viewBox="0 0 600 145" role="img" aria-label="已闭合黄金采样柱的中间价走势"><polyline points={points} fill="none" stroke="currentColor" strokeWidth="2"/></svg><div className="gold-chart-caption"><span>{time(bars[0].open_time)}</span><span>{time(bars.at(-1)?.close_time)}</span></div></>:<div className="gold-empty">正在采集真实报价，完整采样柱形成后显示走势。</div>}<p>每10秒采样一次；不是交易所逐笔K线，没有虚构成交量。数据中断不补造柱。</p></section>

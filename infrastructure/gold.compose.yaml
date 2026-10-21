@@ -1,7 +1,7 @@
 name: fc666-gold-test
 services:
   gold:
-    image: fc666-gold-test:20261020
+    image: fc666-gold-test:20261021
     build:
       context: ..
       dockerfile: Dockerfile.backend

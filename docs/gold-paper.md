@@ -38,4 +38,4 @@ POST为JSON且前端代理检查同源Host/协议，只转发黄金会话Cookie�
 
 干净提交使用现有 `Dockerfile.backend` 构建黄金镜像，但运行独立gold_service；不使用原后端.env，不启用私有接口、不执行迁移。SQLite卷挂在镜像中原本归10001用户所有的 `/app/.runtime`。前端 `GOLD_API_BASE_URL` 配置为独立黄金服务入口，未设置时沿用API_BASE_URL。只允许LIVE_TRADING=false。
 
-行情源没有服务保证，黄金历史回测、经纪商级撮合、AI模型调用及跨设备登录不在本版已完成范围。已有加密持续AI草稿保留原状，需单独完成接入及验收。
+行情源没有服务保证，经纪商级撮合、AI模型调用及跨设备登录不在本版已完成范围。独立黄金历史研究见[gold-history.md](gold-history.md)，历史源与实时瑞讯分开；回测不修改本页账户账本。已有加密持续AI草稿保留原状，需单独完成接入及验收。

@@ -4,6 +4,7 @@ from decimal import Decimal
 import hashlib
 import logging
 import os
+from pathlib import Path
 import re
 import secrets
 from threading import Event, Thread
@@ -16,6 +17,9 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from core.gold.ledger import Store, Conflict
 from core.gold.market import Quote, fetch_quote
+from core.gold.history import Catalogue
+from core.gold.research import Research
+from apps.api.gold_research import router_for
 
 COOKIE = 'fc666_gold_session'
 
@@ -49,12 +53,13 @@ class Command(BaseModel):
     ounces: Optional[str] = Field(default=None, max_length=32)
 
 
-def create_app(path=None, *, provider=fetch_quote, background=True, secure=True, clock=None):
+def create_app(path=None, *, provider=fetch_quote, background=True, secure=True, clock=None, history_path=None):
     if os.environ.get('LIVE_TRADING', 'false').lower() not in ('false', '0'):
         raise ValueError('Gold service only supports LIVE_TRADING=false')
     path = path or os.environ.get('GOLD_DB_PATH', '/app/.runtime/gold/paper.sqlite3')
     store = Store(path)
     clock = clock or (lambda: int(time.time()*1000))
+    research = Research(store, Catalogue(history_path or os.environ.get('GOLD_HISTORY_PATH', str(Path(path).parent/'history'))), clock)
     stop = Event()
     feed = {'state': 'WAITING', 'last_checked': None}
 
@@ -75,13 +80,20 @@ def create_app(path=None, *, provider=fetch_quote, background=True, secure=True,
         thread = Thread(target=collect, daemon=True, name='gold-paper-clock') if background else None
         if thread:
             thread.start()
+        researcher = Thread(target=research.work, args=(stop,), daemon=True, name='gold-research') if background else None
+        if researcher:
+            research.recover()
+            researcher.start()
         yield
         stop.set()
         if thread:
             thread.join(timeout=8)
+        if researcher:
+            researcher.join(timeout=1)
 
     app = FastAPI(title='FC666 XAU/USD Paper', lifespan=lifespan)
     app.state.store = store
+    app.state.research = research
 
     def owner(request, response, create=False):
         token = request.cookies.get(COOKIE)
@@ -106,7 +118,8 @@ def create_app(path=None, *, provider=fetch_quote, background=True, secure=True,
     @app.exception_handler(KeyError)
     async def missing_handler(request, error):
         from fastapi.responses import JSONResponse
-        return JSONResponse({'detail': 'Gold account not found in this browser session'}, status_code=404)
+        message = '黄金研究任务或数据不存在，或不属于此浏览器会话' if '/research/' in request.url.path else 'Gold account not found in this browser session'
+        return JSONResponse({'detail': message}, status_code=404)
 
     @app.middleware('http')
     async def boundary(request, call_next):
@@ -156,4 +169,5 @@ def create_app(path=None, *, provider=fetch_quote, background=True, secure=True,
         result = store.read(str(account_id), owner(request, response), before)
         return {'events': result['events'], 'next_before': result['events'][-1]['seq'] if len(result['events']) == 100 else None}
 
+    app.include_router(router_for(research, owner))
     return app
