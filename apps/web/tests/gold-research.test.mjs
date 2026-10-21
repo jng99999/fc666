@@ -9,6 +9,35 @@ test('research validation errors name root configuration without echoing input',
  t.mock.method(globalThis,'fetch',async()=>Response.json({detail:[{loc:['body'],msg:'历史窗口不足90日',input:'private-input'}]},{status:422}));
  await assert.rejects(goldRequest('research/runs',undefined,{}),{message:'配置：历史窗口不足90日'});
 });
+test('gold reads retry one transient network failure within the same deadline',async t=>{
+ let calls=0;const signals=[];const logs=[];
+ t.mock.method(console,'warn',(...v)=>logs.push(v));
+ t.mock.method(globalThis,'fetch',async(url,options)=>{signals.push(options.signal);if(++calls===1)throw new TypeError('connection reset');return Response.json({trading_enabled:false});});
+ const r=await GET(new Request('https://test.example/api/gold/market'),context(['market']));
+ assert.equal(r.status,200);assert.equal(calls,2);assert.equal(signals[0],signals[1]);
+ assert.equal(logs[0][1].retry,true);assert.equal(logs[0][1].resource,'market');
+});
+test('gold reads retry transient upstream status but do not retry invalid successful JSON',async t=>{
+ t.mock.method(console,'warn',()=>{});let calls=0;
+ t.mock.method(globalThis,'fetch',async()=>++calls===1?new Response('upstream unavailable',{status:503}):Response.json({trading_enabled:false}));
+ assert.equal((await GET(new Request('https://test.example/api/gold/market'),context(['market']))).status,200);
+ assert.equal(calls,2);calls=0;
+ t.mock.method(globalThis,'fetch',async()=>{calls++;return new Response('unexpected HTML',{status:200});});
+ assert.equal((await GET(new Request('https://test.example/api/gold/market'),context(['market']))).status,502);
+ assert.equal(calls,1);
+});
+test('gold commands are never automatically replayed on proxy failure',async t=>{
+ t.mock.method(console,'warn',()=>{});let calls=0;
+ t.mock.method(globalThis,'fetch',async()=>{calls++;throw new TypeError('connection reset');});
+ const request=new Request('https://test.example/api/gold/accounts',{method:'POST',headers:{origin:'https://test.example','content-type':'application/json'},body:'{}'});
+ assert.equal((await POST(request,context(['accounts']))).status,502);assert.equal(calls,1);
+});
+test('gold read retries stop when the shared timeout has expired',async t=>{
+ t.mock.method(console,'warn',()=>{});t.mock.method(AbortSignal,'timeout',()=>AbortSignal.abort());let calls=0;
+ t.mock.method(globalThis,'fetch',async()=>{calls++;throw new TypeError('deadline');});
+ assert.equal((await GET(new Request('https://test.example/api/gold/market'),context(['market']))).status,502);
+ assert.equal(calls,1);
+});
 test('research proxy forwards only bounded history resources',async t=>{
  const requests=[];t.mock.method(globalThis,'fetch',async(url,options)=>{requests.push({url:String(url),options});return Response.json({trading_enabled:false});});
  for(const segments of [['research','catalogue'],['research','runs'],['research','runs',id],['research','runs',id,'manifest'],['research','runs',id,'members','12']]){

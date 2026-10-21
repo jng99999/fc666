@@ -12,11 +12,28 @@ async function proxy(request:Request,context:{params:Promise<{segments:string[]}
  const body=request.method==='POST'?await request.text():undefined;
  if(body&&new TextEncoder().encode(body).length>8192)return Response.json({detail:'Gold request too large'},{status:413});
  const token=request.headers.get('cookie')?.split(';').map(v=>v.trim()).find(v=>/^fc666_gold_session=[A-Za-z0-9_-]{43}$/.test(v));
- try{
-  const response=await fetch(new URL(`/api/v1/gold/${segments.join('/')}${new URL(request.url).search}`,process.env.GOLD_API_BASE_URL??process.env.API_BASE_URL??'http://127.0.0.1:8017'),{
-   method:request.method,headers:{'Content-Type':'application/json',...(token?{Cookie:token}:{})},body,cache:'no-store',signal:AbortSignal.timeout(12000)});
-  const headers=new Headers({'Cache-Control':'no-store'});const cookie=response.headers.get('set-cookie');if(cookie)headers.set('Set-Cookie',cookie);
-  return Response.json(await response.json(),{status:response.status,headers});
- }catch{return Response.json({detail:'黄金服务暂不可用，请刷新核对账本；不要重复提交未知结果的订单。'},{status:502});}
+ const read=request.method==='GET',deadline=AbortSignal.timeout(12000),started=Date.now();
+ for(let attempt=0;attempt<(read?2:1);attempt++){
+  let status=0,contentType='';
+  try{
+   const response=await fetch(new URL(`/api/v1/gold/${segments.join('/')}${new URL(request.url).search}`,process.env.GOLD_API_BASE_URL??process.env.API_BASE_URL??'http://127.0.0.1:8017'),{
+    method:request.method,headers:{'Content-Type':'application/json',...(token?{Cookie:token}:{})},body,cache:'no-store',signal:deadline});
+   status=response.status;contentType=response.headers.get('content-type')?.split(';')[0]??'';
+   if(read&&attempt===0&&[502,503,504].includes(status)&&!deadline.aborted){
+    console.warn('gold_proxy_read_retry',{resource:segments[0],status,elapsed_ms:Date.now()-started});
+    await response.body?.cancel();continue;
+   }
+   const headers=new Headers({'Cache-Control':'no-store'});const cookie=response.headers.get('set-cookie');if(cookie)headers.set('Set-Cookie',cookie);
+   return Response.json(await response.json(),{status:response.status,headers});
+  }catch(error){
+   const cause=error instanceof Error?error.cause:undefined;
+   const code=typeof cause==='object'&&cause!==null&&'code' in cause&&typeof cause.code==='string'&&/^[A-Z0-9_]{1,40}$/.test(cause.code)?cause.code:undefined;
+   const retry=read&&attempt===0&&error instanceof TypeError&&!deadline.aborted;
+   console.warn('gold_proxy_failure',{method:request.method,resource:segments[0],status,content_type:contentType,kind:error instanceof Error?error.name:'Unknown',code,retry,elapsed_ms:Date.now()-started});
+   if(retry)continue;
+   break;
+  }
+ }
+ return Response.json({detail:read?'黄金服务读取暂不可用，请稍后刷新；已保存的研究和账本不会重置。':'黄金服务暂不可用，请刷新核对账本；不要重复提交未知结果的订单。'},{status:502,headers:{'Cache-Control':'no-store'}});
 }
 export const GET=proxy,POST=proxy;
