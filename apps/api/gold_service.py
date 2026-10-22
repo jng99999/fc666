@@ -20,6 +20,7 @@ from core.gold.market import Quote, fetch_quote
 from core.gold.history import Catalogue
 from core.gold.research import Research
 from apps.api.gold_research import router_for
+from core.gold.policy_runtime import PolicyRuntime, Registry
 
 COOKIE = 'fc666_gold_session'
 
@@ -53,12 +54,30 @@ class Command(BaseModel):
     ounces: Optional[str] = Field(default=None, max_length=32)
 
 
-def create_app(path=None, *, provider=fetch_quote, background=True, secure=True, clock=None, history_path=None):
+class PolicyCreate(Config):
+    mode: Literal['POLICY']
+    model_id: str = Field(pattern=r'^[a-zA-Z0-9_-]{1,64}$')
+    experimental: bool = Field(strict=True)
+    request_id: UUID
+
+
+class PolicyCommand(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    request_id: UUID
+    expected_revision: int = Field(ge=1, strict=True)
+    action: Literal['DECIDE', 'PAUSE', 'RESUME', 'STOP']
+
+
+def create_app(path=None, *, provider=fetch_quote, background=True, secure=True, clock=None, history_path=None,
+               policy_registry_path=None, policy_enabled=None):
     if os.environ.get('LIVE_TRADING', 'false').lower() not in ('false', '0'):
         raise ValueError('Gold service only supports LIVE_TRADING=false')
     path = path or os.environ.get('GOLD_DB_PATH', '/app/.runtime/gold/paper.sqlite3')
     store = Store(path)
     clock = clock or (lambda: int(time.time()*1000))
+    policy = PolicyRuntime(store, Registry(policy_registry_path or os.environ.get('GOLD_POLICY_REGISTRY')),
+                           clock, enabled=(os.environ.get('GOLD_POLICY_ENABLED', 'false') == 'true'
+                                           if policy_enabled is None else policy_enabled))
     research = Research(store, Catalogue(history_path or os.environ.get('GOLD_HISTORY_PATH', str(Path(path).parent/'history'))), clock)
     stop = Event()
     feed = {'state': 'WAITING', 'last_checked': None}
@@ -69,6 +88,7 @@ def create_app(path=None, *, provider=fetch_quote, background=True, secure=True,
                 quote = provider()
                 store.put_quote(quote, clock())
                 store.advance(quote, clock())
+                policy.advance()
                 feed.update(state='CONNECTED', last_checked=clock())
             except Exception:
                 feed.update(state='UNAVAILABLE', last_checked=clock())
@@ -94,6 +114,7 @@ def create_app(path=None, *, provider=fetch_quote, background=True, secure=True,
     app = FastAPI(title='FC666 XAU/USD Paper', lifespan=lifespan)
     app.state.store = store
     app.state.research = research
+    app.state.policy = policy
 
     def owner(request, response, create=False):
         token = request.cookies.get(COOKIE)
@@ -145,7 +166,7 @@ def create_app(path=None, *, provider=fetch_quote, background=True, secure=True,
     @app.get('/api/v1/gold/accounts')
     def accounts(request: Request, response: Response):
         identity = owner(request, response, create=True)
-        return {'accounts': store.accounts(identity), 'trading_enabled': False}
+        return {'accounts': [row for row in store.accounts(identity) if row['mode'] != 'POLICY'], 'trading_enabled': False}
 
     @app.post('/api/v1/gold/accounts')
     def create(body: Create, request: Request, response: Response):
@@ -155,7 +176,10 @@ def create_app(path=None, *, provider=fetch_quote, background=True, secure=True,
 
     @app.get('/api/v1/gold/accounts/{account_id}')
     def account(account_id: UUID, request: Request, response: Response):
-        return store.read(str(account_id), owner(request, response))
+        result = store.read(str(account_id), owner(request, response))
+        if result['mode'] == 'POLICY':
+            raise KeyError(str(account_id))
+        return result
 
     @app.post('/api/v1/gold/accounts/{account_id}/command')
     def command(account_id: UUID, body: Command, request: Request, response: Response):
@@ -167,7 +191,37 @@ def create_app(path=None, *, provider=fetch_quote, background=True, secure=True,
     @app.get('/api/v1/gold/accounts/{account_id}/events')
     def events(account_id: UUID, request: Request, response: Response, before: Optional[int] = Query(default=None, ge=1)):
         result = store.read(str(account_id), owner(request, response), before)
+        if result['mode'] == 'POLICY':
+            raise KeyError(str(account_id))
         return {'events': result['events'], 'next_before': result['events'][-1]['seq'] if len(result['events']) == 100 else None}
+
+    @app.get('/api/v1/gold/policy/status')
+    def policy_status():
+        return policy.status()
+
+    @app.get('/api/v1/gold/policy/accounts')
+    def policy_accounts(request: Request, response: Response):
+        identity = owner(request, response, create=True)
+        return {'accounts': [row for row in store.accounts(identity) if row['mode'] == 'POLICY'],
+                'enabled': policy.enabled, 'trading_enabled': False}
+
+    @app.get('/api/v1/gold/policy/accounts/{account_id}')
+    def policy_account(account_id: UUID, request: Request, response: Response,
+                       before: Optional[int] = Query(default=None, ge=1)):
+        result = store.read(str(account_id), owner(request, response), before)
+        if result['mode'] != 'POLICY':
+            raise KeyError(str(account_id))
+        return {**result, 'next_before': result['events'][-1]['seq'] if len(result['events']) == 100 else None}
+
+    @app.post('/api/v1/gold/policy/accounts')
+    def policy_create(body: PolicyCreate, request: Request, response: Response):
+        config = body.model_dump(mode='json', exclude={'request_id', 'model_id', 'experimental'})
+        return policy.create(owner(request, response, create=True), config, body.model_id,
+                             str(body.request_id), body.experimental)
+
+    @app.post('/api/v1/gold/policy/accounts/{account_id}/command')
+    def policy_command(account_id: UUID, body: PolicyCommand, request: Request, response: Response):
+        return policy.command(str(account_id), owner(request, response), body.model_dump(mode='json'))
 
     app.include_router(router_for(research, owner))
     return app

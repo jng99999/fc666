@@ -199,6 +199,8 @@ class Store:
                 return state
             if body['expected_revision'] != state['revision']:
                 raise Conflict('Account changed; refresh before submitting again')
+            if state['mode'] == 'POLICY':
+                raise Conflict('Experimental policy accounts require the policy command endpoint')
             action = body['action']
             if action in ('PAUSE', 'RESUME'):
                 state['status'] = 'PAUSED' if action == 'PAUSE' else 'ACTIVE'
