@@ -85,8 +85,8 @@
       "fit": "training_decision_observations_only",
       "last_observed_at": 1703883600000,
       "mean": [
-        1.8666425171531202e-05,
-        7.562564457194341e-05,
+        0.000018666425171531202,
+        0.00007562564457194341,
         0.00041688402787077135,
         0.011937451630397455,
         0.001608538649477225,
@@ -100,7 +100,7 @@
         0.008133365567005545,
         0.006435834693687845,
         0.0007669875053607968,
-        8.775162573260491e-05,
+        0.00008775162573260491,
         0.3637851472386138
       ],
       "train_end": 1704067200000
@@ -134,9 +134,9 @@
   "conclusion": {
     "H1": {
       "B_second_action_share": {
+        "7": "0.4857191144160892344093290519",
         "19": "0.2465776575967551123880344769",
-        "42": "0.4507351698495859388203481494",
-        "7": "0.4857191144160892344093290519"
+        "42": "0.4507351698495859388203481494"
       },
       "checks": {
         "B_two_seeds_second_action_at_least_5pct": true,
@@ -1394,7 +1394,7 @@
     "candidate_eligible": false,
     "cross_platform_bitwise_identity_claimed": false,
     "arithmetic": "Python f64, row-order math.fsum + bias, math.tanh, first argmax",
-    "margin_threshold": 1e-06,
+    "margin_threshold": 0.000001,
     "runtime_source_sha256": "51ce97127b6c283f9b95fb170c0542572ffcbdb6b77ae51b075a841e4506b866",
     "infer_ast_sha256": "6ab31cb1b78a8057a621ecb3d67b5f153b87ac982e1674168a687dd205abe5dd",
     "cases": 18,
@@ -1404,7 +1404,7 @@
     "low_margin_steps": 0,
     "inference_timeouts": 0,
     "abstention_count": 0,
-    "minimum_logit_margin": 9.49426286306343e-06,
+    "minimum_logit_margin": 0.00000949426286306343,
     "all_native_metrics_equal": true,
     "first_run": {
       "path": "ppo-v2-deployment-f64/",
@@ -1571,7 +1571,7 @@
         "numeric_argmax_differences": 0,
         "low_margin_steps": 0,
         "abstention_count": 0,
-        "minimum_logit_margin": 9.49426286306343e-06,
+        "minimum_logit_margin": 0.00000949426286306343,
         "native_metrics_equal": true
       },
       {
@@ -1625,7 +1625,7 @@
         "numeric_argmax_differences": 0,
         "low_margin_steps": 0,
         "abstention_count": 0,
-        "minimum_logit_margin": 5.9076499080934486e-05,
+        "minimum_logit_margin": 0.000059076499080934486,
         "native_metrics_equal": true
       },
       {
@@ -1770,6 +1770,22 @@
     {
       "path": "ppo-v2-independent-reproduction/reproduction-report.json",
       "sha256": "bbd0d8bf41db8f7fe0edaeeb63a064bfd4aa17650795a3c60d4772086eada760"
+    },
+    {
+      "path": "container-oracle/remote-oracle-result.json",
+      "sha256": "8c191c783e5c2417b2ab9098386b26c91cfa1236421b395dc05fef036f22428f"
+    },
+    {
+      "path": "container-oracle/remote-oracle-exit.json",
+      "sha256": "1e550345231740e9f68a2f49e7a1befb3a239316b5b83f242cb131e84a97e77f"
+    },
+    {
+      "path": "container-oracle/run-02/export-result.json",
+      "sha256": "9c041830010ca5ff24a3953a3a458a92b1e2b8f5dfa2ddd283986142faf9517e"
+    },
+    {
+      "path": "container-oracle/run-03/remote-result.json",
+      "sha256": "6ae9531a04f2e437e066e7992dddafed64f72377a5f51ab8a118f0b03f087849"
     }
   ],
   "reproduction": {
@@ -1887,5 +1903,124 @@
     ],
     "promotion_authorized": false,
     "trading_enabled": false
+  },
+  "container_audit": {
+    "scope": "fixed_historical_observation_and_inference_only_no_account_or_trade_execution",
+    "fixed_inputs_verified": false,
+    "steps": 106506,
+    "action_differences": 10,
+    "refusal_differences": 10,
+    "raw_difference_steps": 3996,
+    "preprocess_difference_steps": 2646,
+    "peak_difference_steps": 0,
+    "timeouts": 10,
+    "low_margin_refusals": 0,
+    "raw_max_abs_difference": 2.220446049250313e-16,
+    "preprocessed_max_abs_difference": 6.661338147750939e-16,
+    "cases": [
+      {
+        "id": "A-7-configured_costs",
+        "steps": 5917
+      },
+      {
+        "id": "A-7-double_cost_stress",
+        "steps": 5917
+      },
+      {
+        "id": "A-19-configured_costs",
+        "steps": 5917
+      },
+      {
+        "id": "A-19-double_cost_stress",
+        "steps": 5917
+      },
+      {
+        "id": "A-42-configured_costs",
+        "steps": 5917
+      },
+      {
+        "id": "A-42-double_cost_stress",
+        "steps": 5917
+      },
+      {
+        "id": "B-7-configured_costs",
+        "steps": 5917
+      },
+      {
+        "id": "B-7-double_cost_stress",
+        "steps": 5917
+      },
+      {
+        "id": "B-19-configured_costs",
+        "steps": 5917
+      },
+      {
+        "id": "B-19-double_cost_stress",
+        "steps": 5917
+      },
+      {
+        "id": "B-42-configured_costs",
+        "steps": 5917
+      },
+      {
+        "id": "B-42-double_cost_stress",
+        "steps": 5917
+      },
+      {
+        "id": "C-7-configured_costs",
+        "steps": 5917
+      },
+      {
+        "id": "C-7-double_cost_stress",
+        "steps": 5917
+      },
+      {
+        "id": "C-19-configured_costs",
+        "steps": 5917
+      },
+      {
+        "id": "C-19-double_cost_stress",
+        "steps": 5917
+      },
+      {
+        "id": "C-42-configured_costs",
+        "steps": 5917
+      },
+      {
+        "id": "C-42-double_cost_stress",
+        "steps": 5917
+      }
+    ],
+    "python": "3.12.15",
+    "platform": "Linux-3.10.0-1160.el7.x86_64-x86_64-with-glibc2.36",
+    "runtime_source_sha256": "30dd4ed492ef4b7f3eca8a17c9df369358bf915c5f25eae309c838ae6738084c",
+    "runtime_helpers_ast_sha256": "6ab31cb1b78a8057a621ecb3d67b5f153b87ac982e1674168a687dd205abe5dd",
+    "validator_sha256": "afa0ba75d8b44c6fdec91d13ab26005ae5e3fed23865d5c42e4b1de0327f364f",
+    "uncompressed_input_sha256": "0926004545f50f092e2748738ef56c37e887a5092520479559b025c042c4b26c",
+    "uncompressed_bytes": 57262059,
+    "no_database_or_network_operations": true,
+    "no_account_or_trade_execution": true,
+    "promotion_authorized": false,
+    "trading_enabled": false,
+    "inference_timing": {
+      "minimum_ms": 0.4267888143658638,
+      "median_ms": 0.48306118696928024,
+      "p95_ms": 0.5810791626572609,
+      "p99_ms": 0.7518958300352097,
+      "maximum_ms": 100.61190649867058
+    },
+    "version": "gold-ppo-v2-first-container-audit-v1",
+    "status": "FAILED",
+    "exit_code": 2,
+    "image": "sha256:500b9e1e69a0173ee06fa813ebc2f8003df2cc8fa9641ccf0e6f45798d927d93",
+    "deadline_ms": 100,
+    "strict_float_equality": true,
+    "report_path": "/research/ppo-v2-container-audit.json",
+    "report_sha256": "8c191c783e5c2417b2ab9098386b26c91cfa1236421b395dc05fef036f22428f",
+    "candidate_eligible": false,
+    "all_numeric_argmax_equal_claimed": false,
+    "container_trade_metrics_equal_claimed": false,
+    "first_differences_recorded": 30,
+    "recorded_timeout_examples": 0
   }
 }
