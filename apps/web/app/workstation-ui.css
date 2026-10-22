@@ -129,6 +129,7 @@
 .apple-ui .realtime-page .paper-id-button {min-height:30px;background:transparent;box-shadow:none;padding:4px 0;font-weight:400}
 .apple-ui .paper-stop-dialog {background:#fcfdff;border:1px solid #fff;border-radius:16px;box-shadow:0 24px 80px #17283b33}
 .apple-ui .paper-stop-dialog::backdrop {background:#101b3066;backdrop-filter:blur(3px)}
+.apple-ui .paper-stop-dialog input {display:block;margin-bottom:12px}
 .apple-ui .historical-paper-form {padding:20px;border-radius:12px}
 .apple-ui .intro {padding:0 0 18px}
 .apple-ui .intro p {margin:4px 0 0;font-size:12px}
