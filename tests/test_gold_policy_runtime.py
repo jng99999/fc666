@@ -653,3 +653,165 @@ def test_status_never_silently_truncates_available_models(rig):
         (root/f'other-{i}.txt').touch()
     with pytest.raises(Rejected, match='MODEL_REGISTRY_CAPACITY_EXCEEDED'):
         engine.status()
+
+
+def test_request_receipt_preserves_original_states_after_revocation_stop_and_disable(rig, monkeypatch):
+    engine, account, clock, root = rig
+    with engine.store.connect() as db:
+        create_key = db.execute('SELECT key FROM events WHERE account_id=? AND seq=1', (account['id'],)).fetchone()[0]
+    body = {'request_id': str(uuid4()), 'expected_revision': 1, 'action': 'DECIDE'}
+    bought = engine.command(account['id'], 'alice', body)
+    stopped = command(engine, bought, action='STOP')
+    register(root, eligible=False)
+    clock[0] += 101*HOUR
+    engine.enabled = False
+    def forbidden(*_):
+        raise AssertionError('Historical receipt lookup must not access models or observations')
+    monkeypatch.setattr(engine.registry, 'get', forbidden)
+    engine.bars_provider = forbidden
+    before = read(engine, account)
+    created_receipt = engine.request_receipt('alice', create_key)
+    assert created_receipt['found'] is True and created_receipt['kind'] == 'CREATED'
+    assert created_receipt['state'] == account and created_receipt['state']['quantity'] == '0'
+    assert created_receipt['hash_scope'] == 'ACCOUNT_CONFIG'
+    assert created_receipt['request_hash'] == digest(account['config'])
+    assert created_receipt['state']['config']['policy']['model_id'] == 'fixture'
+    decision_receipt = engine.request_receipt('alice', body['request_id'])
+    assert decision_receipt['kind'] == 'POLICY_DECIDE' and decision_receipt['state'] == bought
+    assert decision_receipt['request_hash'] == digest(body) and decision_receipt['hash_scope'] == 'COMMAND_BODY'
+    assert decision_receipt['details']['fill']['simulated'] is True
+    assert decision_receipt['account'] == stopped and decision_receipt['state']['revision'] < stopped['revision']
+    assert read(engine, account) == before
+
+
+@pytest.mark.parametrize('operation', ['CREATE', 'DECIDE'])
+def test_request_not_found_does_not_resolve_concurrent_inflight_write(rig, monkeypatch, operation):
+    engine, account, _, _ = rig
+    key = str(uuid4())
+    started, release = Event(), Event()
+    def block():
+        started.set()
+        assert release.wait(3)
+    if operation == 'CREATE':
+        original = engine.store._write
+        def pending(*args):
+            original(*args)
+            block()
+        monkeypatch.setattr(engine.store, '_write', pending)
+        submit = lambda: engine.create('alice', CONFIG, 'fixture', key, True)
+    else:
+        def pending(*_):
+            block()
+            return 1
+        monkeypatch.setattr(runtime, 'infer', pending)
+        engine.inference_ms = 5000
+        submit = lambda: command(engine, account, key=key)
+    with ThreadPoolExecutor(max_workers=1) as pool:
+        future = pool.submit(submit)
+        assert started.wait(3)
+        try:
+            assert engine.request_receipt('alice', key) == {
+                'found': False, 'request_id': key, 'absence_proves_not_applied': False}
+        finally:
+            release.set()
+        committed = future.result(timeout=3)
+    receipt = engine.request_receipt('alice', key)
+    assert receipt['found'] is True and receipt['account_id'] == committed['id']
+    assert receipt['state'] == committed
+
+
+def test_request_lookup_uses_one_read_snapshot_during_concurrent_control(rig, monkeypatch):
+    engine, account, _, _ = rig
+    with engine.store.connect() as db:
+        key = db.execute('SELECT key FROM events WHERE account_id=? AND seq=1', (account['id'],)).fetchone()[0]
+    original = engine.store._read
+    started, release = Event(), Event()
+    def pause_reader(*args):
+        if not started.is_set():
+            started.set()
+            assert release.wait(3)
+        return original(*args)
+    monkeypatch.setattr(engine.store, '_read', pause_reader)
+    with ThreadPoolExecutor(max_workers=1) as pool:
+        future = pool.submit(engine.request_receipt, 'alice', key)
+        assert started.wait(3)
+        try:
+            paused = command(engine, account, action='PAUSE')
+        finally:
+            release.set()
+        receipt = future.result(timeout=3)
+    assert receipt['state'] == account and receipt['account'] == account
+    assert paused['revision'] == 2 and read(engine, account)['revision'] == 2
+
+
+def test_request_lookup_rejects_ambiguous_account_scoped_uuid(rig):
+    engine, first, _, _ = rig
+    second = engine.create('alice', CONFIG, 'fixture', str(uuid4()), True)
+    key = str(uuid4())
+    command(engine, first, action='PAUSE', key=key)
+    command(engine, second, action='PAUSE', key=key)
+    with pytest.raises(Conflict, match='multiple policy accounts'):
+        engine.request_receipt('alice', key)
+
+
+def test_request_lookup_verifies_historical_event_not_only_latest_state(rig):
+    engine, account, _, _ = rig
+    command(engine, account, action='PAUSE')
+    # Isolated corruption fixture: normal ledger triggers prohibit this update.
+    with engine.store.connect() as db:
+        row = db.execute('SELECT key,payload FROM events WHERE account_id=? AND seq=1', (account['id'],)).fetchone()
+        payload = json.loads(row['payload'])
+        payload['state']['cash'] = '999999'
+        db.execute('DROP TRIGGER gold_events_no_update')
+        db.execute('UPDATE events SET payload=? WHERE account_id=? AND seq=1', (canonical(payload), account['id']))
+    with pytest.raises(ValueError, match='receipt integrity'):
+        engine.request_receipt('alice', row['key'])
+
+
+def test_receipt_api_owner_boundary_legacy_exclusion_and_revocation(tmp_path, monkeypatch):
+    root = tmp_path/'registry'
+    root.mkdir()
+    register(root)
+    app = create_app(tmp_path/'receipt.db', background=False, secure=True, clock=lambda: NOW,
+                     policy_registry_path=root, policy_enabled=True)
+    app.state.policy.registry.allow_fixtures = True
+    key = str(uuid4())
+    payload = {**CONFIG, 'mode': 'POLICY', 'model_id': 'fixture', 'experimental': True, 'request_id': key}
+    url = f'/api/v1/gold/policy/requests/{key}'
+    with TestClient(app, base_url='https://testserver') as alice, TestClient(app, base_url='https://testserver') as bob:
+        created = alice.post('/api/v1/gold/policy/accounts', json=payload)
+        assert created.status_code == 200
+        assert bob.get(url).status_code == 401
+        bob.get('/api/v1/gold/accounts')
+        assert bob.get(url).json() == {'found': False, 'request_id': key, 'absence_proves_not_applied': False}
+        # The same UUID in a different owner scope must resolve only that owner's receipt.
+        bob_created = bob.post('/api/v1/gold/policy/accounts', json=payload)
+        assert bob_created.status_code == 200 and bob_created.json()['id'] != created.json()['id']
+        assert bob.get(url).json()['account_id'] == bob_created.json()['id']
+        legacy_key = str(uuid4())
+        legacy = alice.post('/api/v1/gold/accounts', json={**CONFIG, 'mode': 'MANUAL', 'request_id': legacy_key})
+        assert legacy.status_code == 200
+        assert alice.get(f'/api/v1/gold/policy/requests/{legacy_key}').json()['found'] is False
+        app.state.policy.enabled = False
+        def forbidden(*_):
+            raise AssertionError('Recovery must not check revoked registry')
+        monkeypatch.setattr(app.state.policy.registry, 'get', forbidden)
+        receipt = alice.get(url)
+        assert receipt.status_code == 200 and receipt.json()['found'] is True
+        assert receipt.json()['account_id'] == created.json()['id']
+        assert receipt.json()['state']['config']['policy']['model_id'] == 'fixture'
+        assert receipt.headers['cache-control'] == 'no-store'
+        assert alice.get('/api/v1/gold/policy/requests/not-a-uuid').status_code == 422
+
+
+def test_request_lookup_verifies_command_hash_column_independently(rig):
+    engine, account, _, _ = rig
+    key = str(uuid4())
+    paused = command(engine, account, action='PAUSE', key=key)
+    command(engine, paused, action='STOP')
+    # Isolated corruption fixture: request_hash is not itself inside payload.
+    with engine.store.connect() as db:
+        db.execute('DROP TRIGGER gold_events_no_update')
+        db.execute('UPDATE events SET request_hash=? WHERE account_id=? AND key=?', ('0'*64, account['id'], key))
+    with pytest.raises(ValueError, match='command receipt integrity'):
+        engine.request_receipt('alice', key)

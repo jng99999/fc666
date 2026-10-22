@@ -370,6 +370,47 @@ class PolicyRuntime:
                 'required_bars': 100, 'complete_bars': count, 'latest_close_at': latest,
                 'warmup_status': warmup, 'status': status, 'models': models, 'checked_at': now}
 
+    def request_receipt(self, owner, request_id):
+        """Historical recovery does not require a live model or an enabled runtime.
+
+        A missing receipt is only a snapshot observation: another transaction may
+        still be in flight. UUIDs are account-scoped in the existing ledger, so
+        ambiguous cross-account matches must never be resolved arbitrarily.
+        """
+        with self.store.connect() as db:
+            db.execute('BEGIN')
+            rows = db.execute('''SELECT e.account_id,e.seq,e.request_hash,e.payload,e.hash
+                                 FROM events e JOIN accounts a ON a.id=e.account_id
+                                 WHERE a.owner=? AND e.key=?''', (owner, request_id)).fetchall()
+            matches = []
+            for row in rows:
+                account = self.store._read(db, row['account_id'], owner)
+                if account['mode'] != 'POLICY':
+                    continue
+                payload = json.loads(row['payload'])
+                state = payload['state']
+                if (digest(payload) != row['hash'] or state['id'] != row['account_id']
+                        or state['revision'] != row['seq'] or state['mode'] != 'POLICY'):
+                    raise ValueError('Gold policy receipt integrity failed')
+                kind = payload['kind']
+                if kind not in ('CREATED', 'POLICY_DECIDE', 'POLICY_PAUSE', 'POLICY_RESUME', 'POLICY_STOP'):
+                    raise ValueError('Gold policy receipt kind integrity failed')
+                if kind == 'CREATED' and row['request_hash'] != digest(state['config']):
+                    raise ValueError('Gold policy creation receipt integrity failed')
+                if kind != 'CREATED' and row['request_hash'] != digest({
+                        'request_id': request_id, 'expected_revision': row['seq']-1, 'action': kind[7:]}):
+                    raise ValueError('Gold policy command receipt integrity failed')
+                matches.append({'found': True, 'request_id': request_id, 'account_id': row['account_id'],
+                                'seq': row['seq'], 'kind': kind, 'event_hash': row['hash'],
+                                'request_hash': row['request_hash'],
+                                'hash_scope': 'ACCOUNT_CONFIG' if kind == 'CREATED' else 'COMMAND_BODY',
+                                'state': state, 'details': payload['details'], 'account': account})
+            if len(matches) > 1:
+                raise Conflict('Request ID matches multiple policy accounts; inspect account histories')
+            if matches:
+                return matches[0]
+            return {'found': False, 'request_id': request_id, 'absence_proves_not_applied': False}
+
     def create(self, owner, config, model_id, request_id, experimental):
         self.require_enabled()
         if experimental is not True:

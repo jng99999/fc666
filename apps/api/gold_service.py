@@ -199,6 +199,10 @@ def create_app(path=None, *, provider=fetch_quote, background=True, secure=True,
     def policy_status():
         return policy.status()
 
+    @app.get('/api/v1/gold/policy/requests/{request_id}')
+    def policy_receipt(request_id: UUID, request: Request, response: Response):
+        return policy.request_receipt(owner(request, response), str(request_id))
+
     @app.get('/api/v1/gold/policy/accounts')
     def policy_accounts(request: Request, response: Response):
         identity = owner(request, response, create=True)
