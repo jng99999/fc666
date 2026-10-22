@@ -107,15 +107,33 @@ class Store:
         identity = str(uuid4())
         with self.connect() as db:
             db.execute('BEGIN IMMEDIATE')
-            existing = db.execute('SELECT account_id,request_hash FROM events WHERE key=?', (request_id,)).fetchall()
+            existing = db.execute('SELECT account_id,seq,request_hash,payload,hash FROM events WHERE key=?', (request_id,)).fetchall()
+            policy_matches = []
             for receipt in existing:
                 try:
                     state = self._read(db, receipt['account_id'], owner)
                 except KeyError:
                     continue
+                if config['mode'] == 'POLICY':
+                    payload = json.loads(receipt['payload'])
+                    original = payload['state']
+                    if (payload['kind'] != 'CREATED' or state['mode'] != 'POLICY' or original['mode'] != 'POLICY'
+                            or original['config'] != config or receipt['request_hash'] != digest(config)
+                            or receipt['request_hash'] != digest(original['config'])):
+                        raise Conflict('Create request ID reused with different policy parameters')
+                    if (digest(payload) != receipt['hash'] or original['id'] != receipt['account_id']
+                            or original['revision'] != receipt['seq'] or receipt['seq'] != 1
+                            or payload['previous_hash'] is not None):
+                        raise ValueError('Gold policy creation receipt integrity failed')
+                    policy_matches.append(state)
+                    continue
                 if receipt['request_hash'] != digest(config):
                     raise Conflict('Create request ID was reused with different parameters')
                 return state
+            if len(policy_matches) > 1:
+                raise Conflict('Create request ID matches multiple policy accounts')
+            if policy_matches:
+                return policy_matches[0]
             if db.execute('SELECT count(*) FROM accounts WHERE owner=?', (owner,)).fetchone()[0] >= 8:
                 raise Conflict('At most eight gold accounts per browser session')
             if db.execute('SELECT count(*) FROM accounts').fetchone()[0] >= 256:

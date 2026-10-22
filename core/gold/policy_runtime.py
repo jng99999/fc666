@@ -419,23 +419,12 @@ class PolicyRuntime:
         model = self.registry.get(model_id, now)
         if money_config(config) != model.config:
             raise Rejected('MODEL_ACCOUNT_CONTEXT_MISMATCH')
-        # The create request must hash identically on retry, even across an hour.
-        with self.store.connect() as db:
-            rows = db.execute('SELECT account_id FROM events WHERE key=?', (request_id,)).fetchall()
-            for row in rows:
-                try:
-                    previous = self.store._read(db, row['account_id'], owner)
-                except KeyError:
-                    continue
-                policy = previous['config'].get('policy', {})
-                if (previous['mode'] != 'POLICY' or money_config(previous['config']) != model.config
-                        or policy.get('model_id') != model_id or policy.get('actor_sha256') != model.actor_hash
-                        or policy.get('context_hash') != model.context_hash):
-                    raise Conflict('Create request ID reused with different policy parameters')
-                return previous
         policy = {'model_id': model_id, 'actor_sha256': model.actor_hash, 'context_hash': model.context_hash,
                   'protocol': model.protocol, 'feature_version': FEATURE_VERSION}
-        return self.store.create(owner, {**model.config, 'mode': 'POLICY', 'policy': policy}, request_id, now)
+        policy_config = {**model.config, 'mode': 'POLICY', 'policy': policy}
+        # All receipt matching and creation share Store's write transaction. The
+        # stable config has no hourly boundary, so genuine retries hash identically.
+        return self.store.create(owner, policy_config, request_id, now)
 
     def _model(self, state, now):
         self.require_enabled()

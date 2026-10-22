@@ -788,6 +788,13 @@ def test_receipt_api_owner_boundary_legacy_exclusion_and_revocation(tmp_path, mo
         bob_created = bob.post('/api/v1/gold/policy/accounts', json=payload)
         assert bob_created.status_code == 200 and bob_created.json()['id'] != created.json()['id']
         assert bob.get(url).json()['account_id'] == bob_created.json()['id']
+        pause_key = str(uuid4())
+        paused = alice.post(f"/api/v1/gold/policy/accounts/{created.json()['id']}/command",
+                            json={'request_id': pause_key, 'expected_revision': 1, 'action': 'PAUSE'})
+        assert paused.status_code == 200
+        reused = alice.post('/api/v1/gold/policy/accounts', json={**payload, 'request_id': pause_key})
+        assert reused.status_code == 409 and 'Create request ID' in reused.json()['detail']
+        assert len(alice.get('/api/v1/gold/policy/accounts').json()['accounts']) == 1
         legacy_key = str(uuid4())
         legacy = alice.post('/api/v1/gold/accounts', json={**CONFIG, 'mode': 'MANUAL', 'request_id': legacy_key})
         assert legacy.status_code == 200
@@ -815,3 +822,69 @@ def test_request_lookup_verifies_command_hash_column_independently(rig):
         db.execute('UPDATE events SET request_hash=? WHERE account_id=? AND key=?', ('0'*64, account['id'], key))
     with pytest.raises(ValueError, match='command receipt integrity'):
         engine.request_receipt('alice', key)
+
+
+def test_create_rejects_uuid_already_used_for_pause(rig):
+    engine, account, _, _ = rig
+    key = str(uuid4())
+    paused = command(engine, account, action='PAUSE', key=key)
+    before = read(engine, account)
+    with pytest.raises(Conflict, match='Create request ID'):
+        engine.create('alice', CONFIG, 'fixture', key, True)
+    assert read(engine, account) == before and before['revision'] == paused['revision']
+
+
+def test_create_retries_original_receipt_across_hours_after_later_commands(rig):
+    engine, _, clock, _ = rig
+    key = str(uuid4())
+    created = engine.create('alice', CONFIG, 'fixture', key, True)
+    paused = command(engine, created, action='PAUSE')
+    clock[0] += 2*HOUR
+    assert engine.create('alice', CONFIG, 'fixture', key, True) == paused
+    assert engine.request_receipt('alice', key)['state'] == created
+    assert read(engine, created)['revision'] == 2
+
+
+def test_create_rejects_changed_creation_request_hash(rig):
+    engine, _, _, _ = rig
+    key = str(uuid4())
+    created = engine.create('alice', CONFIG, 'fixture', key, True)
+    with engine.store.connect() as db:
+        db.execute('DROP TRIGGER gold_events_no_update')
+        db.execute('UPDATE events SET request_hash=? WHERE account_id=? AND key=?', ('0'*64, created['id'], key))
+    with pytest.raises(Conflict, match='Create request ID'):
+        engine.create('alice', CONFIG, 'fixture', key, True)
+
+
+def test_create_foreign_command_uuid_does_not_conflict_or_return_foreign_account(rig):
+    engine, alice, _, _ = rig
+    key = str(uuid4())
+    paused = command(engine, alice, action='PAUSE', key=key)
+    bob = engine.create('bob', CONFIG, 'fixture', key, True)
+    assert bob['id'] != alice['id'] and bob['revision'] == 1 and bob['status'] == 'ACTIVE'
+    assert engine.create('bob', CONFIG, 'fixture', key, True) == bob
+    assert engine.request_receipt('bob', key)['account_id'] == bob['id']
+    assert engine.request_receipt('alice', key)['kind'] == 'POLICY_PAUSE'
+    assert read(engine, alice)['revision'] == paused['revision']
+
+
+def test_create_rejects_command_collision_even_after_matching_created_receipt(rig):
+    engine, _, _, _ = rig
+    key = str(uuid4())
+    first = engine.create('alice', CONFIG, 'fixture', key, True)
+    second = engine.create('alice', CONFIG, 'fixture', str(uuid4()), True)
+    command(engine, second, action='PAUSE', key=key)
+    with pytest.raises(Conflict, match='Create request ID'):
+        engine.create('alice', CONFIG, 'fixture', key, True)
+    assert read(engine, first)['revision'] == 1
+
+
+def test_same_creation_uuid_concurrent_retries_create_exactly_one_account(rig):
+    engine, _, _, _ = rig
+    key = str(uuid4())
+    with ThreadPoolExecutor(max_workers=4) as pool:
+        results = list(pool.map(lambda _: engine.create('alice', CONFIG, 'fixture', key, True), range(4)))
+    assert len({row['id'] for row in results}) == 1
+    assert all(row['revision'] == 1 for row in results)
+    assert len(engine.store.accounts('alice')) == 2  # original fixture plus one new account
+    assert engine.request_receipt('alice', key)['seq'] == 1
