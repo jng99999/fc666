@@ -99,6 +99,7 @@
 .apple-ui .chart-attribution {font-size:9px;border-color:var(--border);padding:6px 24px}
 .apple-ui .exchange-analysis {margin-block:20px;border:1px solid var(--border);border-radius:12px}
 .apple-ui .analysis-market-heading .analysis-symbol select {border:0;font-size:21px;font-weight:700;padding-left:0}
+.apple-ui .analysis-indicator-controls button {flex:1 0 auto;min-width:max-content}
 .apple-ui .analysis-content-tabs {top:60px;gap:0;padding:0;border-bottom:1px solid var(--border);background:#fff;border-radius:0}
 .apple-ui .analysis-content-tabs button {flex:1;border:0;border-radius:0;border-bottom:2px solid transparent;min-height:44px;background:transparent}
 .apple-ui .analysis-content-tabs button[aria-pressed=true] {color:var(--accent);border-bottom-color:var(--accent);background:transparent;box-shadow:none}
