@@ -7,6 +7,7 @@
 .gold-automation-ack input{width:18px!important;min-width:18px;min-height:18px!important;margin-top:4px}
 .gold-automation-dialog{border:1px solid #d8dce3;border-radius:20px;background:rgba(255,255,255,.96);color:#1d1d1f;padding:24px;width:min(460px,calc(100vw - 32px));max-height:calc(100dvh - 48px);overflow:auto;box-sizing:border-box;box-shadow:0 20px 80px #172c4a33}
 .gold-automation-dialog::backdrop{background:#17213455;backdrop-filter:blur(6px)}
+.gold-automation-dialog{margin:auto}
 .gold-automation-dialog button{min-height:44px;padding:8px 18px;border-radius:10px;border:1px solid #d4d9e1;background:#f4f6f9;color:inherit;font:inherit}
 .gold-automation-dialog button:disabled{opacity:.5}
 .gold-automation-dialog .gold-actions{flex-wrap:wrap}
