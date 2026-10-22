@@ -7,21 +7,21 @@ from core.backtest.spot import BacktestConfig,simulate,digest
 from core.models import Candle,Instrument
 from core.market_data.quality import unique_object
 
-MAX_BYTES=4*1024*1024
+MAX_BYTES=32*1024*1024
 
 def load(path):
     descriptor=os.open(path,os.O_RDONLY|os.O_NOFOLLOW|os.O_NONBLOCK)
     with os.fdopen(descriptor,'rb') as file:
         if not stat.S_ISREG(os.fstat(file.fileno()).st_mode):raise ValueError('Regular export file required')
         raw=file.read(MAX_BYTES+1)
-    if len(raw)>MAX_BYTES:raise ValueError('Export exceeds 4 MiB')
+    if len(raw)>MAX_BYTES:raise ValueError('Export exceeds 32 MiB')
     def invalid_constant(value):raise ValueError('Non-finite JSON rejected')
     return json.loads(raw,object_pairs_hook=unique_object,parse_constant=invalid_constant)
 
 def reproduce(data):
     if not isinstance(data,dict) or not isinstance(data.get('manifest'),dict):raise ValueError('Invalid export envelope')
-    if len(json.dumps(data,allow_nan=False).encode())>MAX_BYTES:raise ValueError('Export exceeds 4 MiB')
-    if not isinstance(data.get('dataset'),list) or not 2<=len(data['dataset'])<=1000:raise ValueError('Invalid export dataset bounds')
+    if len(json.dumps(data,allow_nan=False).encode())>MAX_BYTES:raise ValueError('Export exceeds 32 MiB')
+    if not isinstance(data.get('dataset'),list) or not 2<=len(data['dataset'])<=5000:raise ValueError('Invalid export dataset bounds')
     version=data['manifest']['engine_version']
     if version=='spot-holdout-v1':
         from core.backtest.holdout import simulate as runner

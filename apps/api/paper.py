@@ -4,11 +4,13 @@ from fastapi import APIRouter, HTTPException, Query
 from pydantic import Field, model_validator
 from apps.api.research import RunRequest, prepare
 from apps.api.replay import Command
+from core.exchange.public import PROVIDER
 from core.paper.ledger import RiskLimits
 from core.paper import sessions, streams, accounts, recovery, intents, preparation, authorization, lifecycle, funding
 
 
 class PaperRequest(RunRequest):
+    strategy: Literal['ema_long_flat_v1','sma_long_flat_v1']='ema_long_flat_v1'
     risk: RiskLimits = Field(default_factory=RiskLimits)
 
 
@@ -24,7 +26,7 @@ class PaperCommand(Command):
 
 class StreamRequest(PaperRequest):
     limit: int = Field(default=120, ge=2, le=500, strict=True)
-    max_lag_seconds: int = Field(default=15, ge=1, le=60, strict=True)
+    max_lag_seconds: int = Field(default=60 if PROVIDER=='bitget' else 15, ge=1, le=60, strict=True)
 
     @model_validator(mode='after')
     def realtime_cutoff(self):

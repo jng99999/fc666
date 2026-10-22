@@ -1,6 +1,6 @@
 "use client";
 import {useEffect,useState} from "react";
-import {CandleSchema,SnapshotSchema} from "../lib/market";
+import {CandleSchema,SnapshotSchema,MarketProvider} from "../lib/market";
 import {marketSocketUrl} from "../lib/market-socket-url";
 import {z} from "zod";
 type Result="checking"|"passed"|"failed";
@@ -24,7 +24,7 @@ export default function DeploymentCheck({hosted,backendConfigured}:{hosted:boole
           if(data.status!=="ready"||data.checks?.database!==true||data.checks?.schema!==true||data.checks?.redis!==true||data.trading_enabled!==false)throw new Error("not ready");
         } else {
           const candles=z.array(CandleSchema).max(10).parse(data);
-          if(!candles.length||candles.some(c=>c.instrument_id!=="binance:spot:BTC-USDT"||c.timeframe!=="1m"||!c.is_closed))throw new Error("no historical data");
+          if(!candles.length||candles.some(c=>c.instrument_id!==`${MarketProvider}:spot:BTC-USDT`||c.timeframe!=="1m"||!c.is_closed))throw new Error("no historical data");
         }
         update(key,"passed");
       }catch{update(key,"failed");}

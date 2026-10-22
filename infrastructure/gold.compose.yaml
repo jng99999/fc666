@@ -1,0 +1,30 @@
+name: fc666-gold-test
+services:
+  gold:
+    image: fc666-gold-test:20261021-v3
+    build:
+      context: ..
+      dockerfile: Dockerfile.backend
+    command: ["uvicorn", "apps.api.gold_service:create_app", "--factory", "--host", "0.0.0.0", "--port", "8000"]
+    restart: unless-stopped
+    init: true
+    environment:
+      LIVE_TRADING: "false"
+      GOLD_DB_PATH: /app/.runtime/gold/paper.sqlite3
+    ports: ["127.0.0.1:18667:8000"]
+    volumes: ["gold-paper-data:/app/.runtime"]
+    mem_limit: 512m
+    cpus: 1
+    pids_limit: 64
+    cap_drop: ["ALL"]
+    security_opt: ["no-new-privileges:true"]
+    logging:
+      driver: json-file
+      options: {max-size: "5m", max-file: "3"}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/live',timeout=3)"]
+      interval: 20s
+      timeout: 5s
+      retries: 3
+volumes:
+  gold-paper-data:

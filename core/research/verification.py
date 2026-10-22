@@ -16,7 +16,7 @@ def verify(request,snapshot,result):
     if digest({k:v for k,v in snapshot.items() if k!='sha256'})!=snapshot['sha256'] or digest(request)!=snapshot['request_sha256']:
         raise ValueError('Altered retained input')
     dataset=snapshot['dataset']
-    if not isinstance(dataset,list) or not 2<=len(dataset)<=1000:raise ValueError('Invalid source bounds')
+    if not isinstance(dataset,list) or not 2<=len(dataset)<=5000:raise ValueError('Invalid source bounds')
     strategy=request.get('strategy','ema_long_flat_v1')
     if snapshot['strategy']!=strategy:raise ValueError('Strategy mismatch')
     kind=request.get('research_type');version=snapshot['engine_version']

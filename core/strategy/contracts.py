@@ -8,6 +8,8 @@ class StrategyContext:
     as_of: datetime
     close: Decimal
     ema: float | None
+    high: Decimal | None = None
+    low: Decimal | None = None
 
 @dataclass(frozen=True)
 class TargetSignal:

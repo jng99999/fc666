@@ -1,0 +1,59 @@
+{
+  "study_version": "gold-ppo-training-cost-intervention-v1",
+  "declared_on": "2026-10-22",
+  "dataset": "ee9afe981db266959ebcc1557e6120ae6e60012f761265ed46d57ab57878276c",
+  "train_start": "2023-01-01",
+  "train_end": "2024-01-01",
+  "exploratory_end": "2025-01-01",
+  "not_blind": true,
+  "seeds": [7, 19, 42],
+  "timesteps_per_run": 131072,
+  "new_training_runs": 6,
+  "arms": {
+    "D": {"input_arm": "B", "control_arm": "B"},
+    "E": {"input_arm": "C", "control_arm": "C"}
+  },
+  "configured_costs": {"initial_cash": "10000", "allocation": ".5", "commission": ".10", "slippage": ".05", "spread_multiplier": "1"},
+  "training_costs": {"initial_cash": "10000", "allocation": ".5", "commission": ".20", "slippage": ".10", "spread_multiplier": "2"},
+  "evaluation_scenarios": ["configured_costs", "double_cost_stress"],
+  "hyperparameters": {
+    "n_steps": 512,
+    "batch_size": 64,
+    "n_epochs": 5,
+    "learning_rate": 0.0003,
+    "gamma": 0.99,
+    "gae_lambda": 0.95,
+    "clip_range": 0.2,
+    "ent_coef": 0.01,
+    "policy_kwargs": {"net_arch": [32, 32]}
+  },
+  "frozen_code_sha256": {
+    "core/gold/rl.py": "2c6356681096d645693e2a992f813e74839049996a22ee1b75e0b6bdf6e734ab",
+    "core/gold/backtest.py": "d79b91fdb670b3c37c32ad93cdc73ced3a66627bd565be6f435a51838a03e6be",
+    "core/gold/history.py": "0e6d536b9c202bfc4e49916d6455116247605aea0b1e9941157c5d52359073bc",
+    "scripts/study_gold_ppo.py": "9cec025b95232d3510bfee9cee5522ad7bf65fc79136912b73df48185ed7d4ee",
+    "scripts/study_gold_ppo_v2.py": "df3501b77fd7bd57037fea811d571aade8bc1539a4972c88a83d83a18d133f29",
+    "core/gold/rl_experiments/__init__.py": "6628c818c4fbee08ac7e2a279e5e7b8461dd1f4d6dd00e777f38d07ef31bd311"
+  },
+  "baseline_sha256": {
+    "protocol.json": "92b5ff93dc15f040b47cf41f602bd208b709f27483f832e7db0273e86bb02137",
+    "study.json": "37858771b0b7922a9bc9233179bd969789ffd47794a38baf748a9b4a9988dcf2",
+    "scaler.json": "377e49eee8bef3f8e2d2852e7562374bc10fd7cc0785d8001fe101c7deea6109"
+  },
+  "dependencies_sha256": "7849050d054806d56cef63365786028e9b1f140bb6d175dc31fe04ff819ff203",
+  "H3": {
+    "claim": "Every pressure-trained B seed has lower explicit transaction costs and higher net return than its paired original B under double-cost evaluation, without collapsing to a fixed action or no fills.",
+    "scenario": "double_cost_stress",
+    "all_seeds_required": true,
+    "comparisons": ["explicit_cost_lt_control", "return_gt_control", "at_least_two_actions", "has_fills"]
+  },
+  "market_increment": "Every D seed under both evaluation costs beats paired E and the best fixed 0/25/50 percent reference in return, with drawdown no greater than both references; retain the original v2 criterion.",
+  "legacy_gate_diagnostics": "Every D seed under both costs: positive return, drawdown <= same-cost hold, >=2 actions, and fills. These are exploratory diagnostics, not future admission.",
+  "input_semantics": "Unchanged native GoldEnv and frozen 2023 scaler. Training cost intervention includes the existing scenario-adjusted mark and endogenous cash, quantity and peak trajectories. Do not introduce a raw-bid observation adapter or attribute effects to one cost component.",
+  "artifact_identity": "D/E are new study labels; native actor input arm remains B/C. Bind study version, protocol SHA, training costs and actor SHA in a separate manifest. Existing deployment/f64 evidence does not apply to these models.",
+  "evaluation_cases": {"new": 12, "frozen_controls_and_references": 20, "total": 32},
+  "selection": "Run once, report every seed and failure; no seed selection, retry search, additional timesteps, reward or feature changes, 2025 evaluation, model registration, or account writes.",
+  "forward_confirmation": "Not authorized by exploratory results. Requires separately frozen genuinely future dates, immutable same-source quotes, all control models/references, exact deployed-policy validation, and unchanged original qualification gates. No current model is approved.",
+  "promotion_authorized": false,
+  "live_trading": false
+}
