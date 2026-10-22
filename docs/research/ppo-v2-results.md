@@ -112,6 +112,27 @@ python work/audit_results.py
 
 实际容器检查确认同镜像、无网络、只读、无挂载、用户10001、1 CPU / 512 MiB；本次 cgroup 内存峰值53825536字节、failcnt0。主推理 wall最大2.7624ms；本次 `nr_throttled=20`、`throttled_time=23834`（cpu.stat原值）。这些是新运行的资源背景，**不能据此解释或抹掉首轮10次超时**。诊断额外记录改变了本次进程负载，也不能把两次运行当作受控时延实验。新报告位于本任务 `container-oracle/run-03/remote-result.json`，SHA256 `6ae9531a04f2e437e066e7992dddafed64f72377a5f51ab8a118f0b03f087849`，与公开下载 `/research/ppo-v2-container-diagnostic.json` 逐字节一致；只证明本次固定历史输入的有限动作核对，不证明容器资金、成交、收益、在线observe或未来来源迁移。
 
+## Linux 自身资金轨迹：完整离线评估
+
+2026-10-22 在上述同一不可变部署镜像中，独立执行完整 **26 项**历史评估：18 项模型、6 项固定目标、2 项原 `backtest.simulate` 持有参照。每个模型从自己的10000 USD、零持仓开始；每步使用自己的现金、库存和 raw-bid peak 计算实际运行时观测与100ms推理，并执行原 `GoldEnv` / 冻结 `AuditEnv` 的成交、估值和拒绝转移。没有携带此前 Mac 的逐步账户状态，也没有注册或打开线上账户。
+
+实际结果：进程 **exit0**，105.865秒；106506 次模型推理、35502 个固定目标步骤、11834 个持有参照市场步骤。learned/fixed 每项5917次决策及完整权益标记；两个持有参照保留原248个采样点、费用及 expired-intent 语义。全26项的 **metrics、fills、equity 完整摘要均与原 native / f64 对照一致**。每步校验现金、库存、成本基础与损益守恒，终止后再次操作被拒绝。本次真实拒绝0，最大主推理 wall 时间3.4371ms；不构成未来零超时或线上并发时限保证。
+
+这次核验的完成标准是完整性、守恒和如实保留拒绝，不要求零超时、向量逐位相同或收益胜出。前两次固定 Mac 输入的严格数值诊断仍失败，原报告及10次超时记录原样保留。**向量逐位相同不是原收益准入条件**；此次完整财务轨迹相同也没有改变 H1/H2 失败、B/19 双倍成本亏损以及未超过固定50%参照的事实。所有候选继续关闭。
+
+隔离实测确认：network none、只读根文件系统、无业务/宿主挂载、user10001、cap-drop ALL、no-new-privileges、1CPU/512MiB/pids64。仅独立192MiB tmpfs承载受控研究输入及五个原版本 wheel；其大小和SHA已与官方PyPI精确版本元数据逐一校验，没有网络安装。Python3.12.15、Pydantic2.13.5 / core2.46.5 保留实际镜像版本；临时numpy2.2.6、gymnasium1.2.0等原研究版本，不覆盖原Mac研究环境或在线镜像。实际runner峰RSS为110436KiB，不能混称整个容器内存峰值。它仍是有研究依赖overlay的隔离历史执行，并非完整在线 `PolicyRuntime.command`、Swissquote来源迁移或真实前向资格验收。
+
+原生压力场景的财务估值使用扩大点差后的 mark，实际推理输入 peak 使用该轨迹自己的 raw bid。这一口径区别沿用原冻结f64审计；没有把它伪称为纯浮点差异，也没有修改旧结果。
+
+实际执行命令（任务根目录）：
+
+```text
+outputs/ppo-research-20261022/venv/bin/python outputs/ppo-research-20261022/deployment-trajectories/launch_offline.py run --run-dir outputs/ppo-research-20261022/deployment-trajectories/linux-run-02 --expected-launch-sha256 35992066073c1dfe68d15106b772fc743aa284e7c435a1937c15e7e2d431e6b4
+{"exit_code": 0, "automatic_retry": false, "launch_manifest_sha256": "35992066073c1dfe68d15106b772fc743aa284e7c435a1937c15e7e2d431e6b4", "actual_command_sha256": "4c62b99ea8f8331454a25762580b802569fcf99e7783ae3fe2dfd1f4411a8a29", "actual_archive_sha256": "98f79ee752dc123133b149750f672ecc8f86d0727315e460f72e7305aa1955f1", "actual_launcher_sha256": "034c9ad17058aeebc9cc9364d8c44988003eca319088f43c1e0627997bb63a56", "results_bytes": 36447642, "results_sha256": "4f7bd44e2c5d0560112394867d670fe57775b6a03a9855decc5ce98dbd643f13"}
+```
+
+完整原输出是28条JSONL：header、26个完整case、带全前序字节SHA的end。输入包SHA `6becff0e4f3d4dd59a08008261a27f624254d0335f8318b582639f5a66a573be`，实际runner SHA `fd42dc51b0d9629a528cfe9688dab7dca681afd0d27a21780fced0ef23599b4e`；启动前及退出回执绑定封包、bootstrap、命令、launcher摘要。真实负向预检拒绝被修改的清单和SSH命令；50项独立边界测试覆盖晚返回拒绝、保留仓位推进、缺口及终止状态。两份准备封包、最初本地源清单失败和全部旧证据保留；只有这一次完整Linux资金轨迹运行，没有重跑选择零超时。
+
 ## 限制与下一步
 
 HistData 存在休市/未知缺口，保留因果prefix和下一真实边界paired quote、120s过期取消、0.01oz步长、10oz上限及Decimal守恒。历史报价并非当前可成交报价；没有深度、延迟、部分成交、融资/隔夜费或真实经纪商规格。HistData与Swissquote来源迁移未经验证。2024和2025均不能再称为密封盲测。仅三种子、一年训练与一年验证，无统计显著/未来盈利结论。
