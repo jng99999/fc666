@@ -11,9 +11,10 @@ const accountTabs = [
 export default function WorkspaceNav() {
   const path=usePathname();
   const gold=path.startsWith('/gold');
+  const goldResearch=path==='/gold/ppo'||path.startsWith('/gold/ppo/')||path==='/gold/research'||path.startsWith('/gold/research/');
   const accounts=path.startsWith('/paper')||path.startsWith('/portfolio');
-  const items=[['/','行情终端',path==='/'],['/analysis','行情分析',path.startsWith('/analysis')],['/research','策略研究',path.startsWith('/research')],
-    ['/replay','历史回放',path.startsWith('/replay')],['/paper/realtime','模拟账户',accounts||gold],
+  const items=[['/','行情终端',path==='/'||path==='/gold'],['/analysis','行情分析',path.startsWith('/analysis')],['/research','策略研究',path.startsWith('/research')||goldResearch],
+    ['/replay','历史回放',path.startsWith('/replay')],['/paper/realtime','模拟账户',accounts||(gold&&!goldResearch&&path!=='/gold')],
     ['/system','系统状态',path.startsWith('/system')]] as const;
   return <>
     <header className="workspace-header">
