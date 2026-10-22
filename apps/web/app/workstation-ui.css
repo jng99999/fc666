@@ -1,0 +1,266 @@
+/* Compact workstation layer. Shared controls remain in apple-ui.css. */
+.apple-ui {
+  --bg:#f7f8fa; --text:#19212e; --muted:#667080; --border:#e8ebef;
+  --accent:#0667d5; --buy:#087b60; --control:#f1f4f8; --glass:rgba(250,252,255,.91);
+}
+.apple-ui :is(button,.terminal button,.research-page button,.exchange-analysis button,a.primary,a.secondary) {
+  border-radius:8px; min-height:36px; padding:8px 12px; font-size:12px;
+  background:#fff; border:1px solid var(--border); box-shadow:none;
+}
+.apple-ui :is(button[type=submit],button.primary,a.primary),.apple-ui .valuation-action>button {background:var(--accent);color:#fff;border-color:transparent}
+.apple-ui :is(button.secondary,a.secondary) {background:#f0f6ff;color:#075bb8;border-color:transparent}
+.apple-ui button.danger {background:#b42338;color:#fff}
+.apple-ui button.danger-outline {background:#fff4f4;color:#a61c31;border-color:#f0d8db}
+.apple-ui :is(button,.terminal button,.research-page button,.exchange-analysis button):disabled {background:#f1f3f6;color:#7d8694;border-color:transparent;box-shadow:none}
+.apple-ui button:is([aria-pressed=true],[aria-selected=true],.active) {background:#edf5ff;color:var(--accent);border-color:transparent;box-shadow:none}
+.apple-ui :is(input:not([type=checkbox]):not([type=radio]),select,textarea),
+.apple-ui :is(.terminal,.research-page,.exchange-analysis) :is(input:not([type=checkbox]):not([type=radio]),select,textarea) {border-radius:8px;min-height:38px;padding:8px 10px;border-color:#dce2e9;font-size:13px;box-shadow:none}
+.apple-ui select,.apple-ui :is(.terminal,.research-page,.exchange-analysis) select {padding-right:30px}
+.apple-ui .sell {color:#c13b50}
+.apple-ui .workspace-header {height:60px;padding-inline:24px;gap:28px;border-color:#e6eaf080;box-shadow:none;z-index:30}
+.apple-ui .workspace-brand {font-size:22px;letter-spacing:-.055em;color:#182333}
+.apple-ui .workspace-brand span {font-size:10px;letter-spacing:.04em}
+.apple-ui .workspace-mode {gap:12px;font-size:11px}
+.apple-ui .workspace-mode strong {border-radius:6px;font-size:10px;padding:4px 8px;background:#fff5df;color:#855b10}
+.apple-ui .workspace-navigation a {min-height:36px;border-radius:7px;font-size:12px;padding:7px 12px}
+.apple-ui .workspace-navigation a[aria-current=page] {color:var(--accent);background:#eaf2ff}
+.apple-ui .workspace-asset-navigation {gap:24px;padding:0 24px;height:42px;align-items:stretch;background:#fff;border-bottom:1px solid var(--border)}
+.apple-ui .workspace-asset-navigation a {display:flex;align-items:center;padding:0 2px;border-radius:0;font-size:12px;border-bottom:2px solid transparent}
+.apple-ui .workspace-asset-navigation a[aria-current=page] {background:transparent;color:var(--accent);border-bottom-color:var(--accent)}
+.apple-ui .account-navigation {top:60px;z-index:20;width:auto;max-width:none;min-height:44px;margin:0;padding:0 24px;gap:24px;border-radius:0;border-bottom:1px solid var(--border);background:var(--glass);backdrop-filter:blur(20px)}
+.apple-ui .account-navigation a {min-height:44px;padding:12px 0 10px;border-radius:0;border-bottom:2px solid transparent;font-size:12px}
+.apple-ui .account-navigation a[aria-current=page] {color:var(--accent);background:transparent;box-shadow:none;border-bottom-color:var(--accent)}
+.apple-ui :is(.research-page,main:not(.terminal)) {padding:24px 24px 40px}
+.apple-ui .research-page h1 {font-size:26px;margin:0 0 6px;font-weight:700}
+.apple-ui .research-page>p {font-size:12px;line-height:1.75;margin-bottom:18px}
+.apple-ui .research-page h2 {font-size:15px}
+.apple-ui .research-page>section,
+.apple-ui :is(.research-configuration,.portfolio-panel,.health,.modules article,.watch-panel,.depth-panel,.chart-panel,.terminal-bottom,.gold-card) {border:1px solid var(--border);border-radius:12px;background:var(--panel);box-shadow:none}
+.apple-ui .research-page>section {padding:20px;margin-block:16px}
+.apple-ui .research-configuration {padding:20px}
+.apple-ui .research-section-heading {margin-bottom:18px}
+.apple-ui .research-configuration fieldset {margin-bottom:16px}
+.apple-ui .research-fields {gap:14px 16px}
+.apple-ui .research-form {gap:14px}
+.apple-ui .research-submit {gap:14px;margin-top:14px}
+.apple-ui .research-page :is(.research-metrics>div,.analysis-grid>div) {border-radius:8px;padding:12px 14px}
+.apple-ui .research-page details {border-color:var(--border);border-radius:8px;padding:8px 14px}
+.apple-ui summary {min-height:44px;padding-block:10px;line-height:1.6;font-size:12px}
+.apple-ui .research-table {border-radius:6px}
+.apple-ui .research-page thead {background:#f6f8fb}
+.apple-ui .research-page :is(td,th) {padding:10px 12px}
+.apple-ui :is(.timeframes,.paper-view-switch,.paper-record-tabs,.analysis-periods,.analysis-indicator-controls>div,.terminal-bottom [role=tablist]) {gap:3px;padding:3px;border-radius:8px;background:#f0f3f7}
+.apple-ui :is(.timeframes,.paper-view-switch,.paper-record-tabs,.analysis-periods,.analysis-indicator-controls,.terminal-bottom [role=tablist]) button {min-height:32px;padding:6px 10px;border-radius:6px;border:0;background:transparent}
+.apple-ui :is(.timeframes,.paper-view-switch,.paper-record-tabs,.analysis-periods,.analysis-indicator-controls,.terminal-bottom [role=tablist]) button:is([aria-pressed=true],[aria-selected=true],.active) {background:#fff;color:var(--accent);box-shadow:0 1px 4px #1e345414}
+.apple-ui .terminal {height:auto;min-height:calc(100dvh - 102px)}
+.apple-ui .terminal .terminal-controls {height:42px;min-height:42px;padding-inline:24px;border:0;background:transparent}
+.apple-ui .terminal-controls button {min-height:28px;padding:4px 9px}
+.apple-ui .terminal .ticker-head {display:flex;flex-wrap:wrap;margin:0 24px;padding:14px 0 18px;min-height:80px;gap:20px 36px;background:transparent;border:0;border-bottom:1px solid var(--border);border-radius:0;box-shadow:none}
+.apple-ui .ticker-symbol {display:grid;gap:3px}
+.apple-ui .ticker-symbol>span {color:var(--muted);font-size:10px}
+.apple-ui .terminal .ticker-head .ticker-symbol select {padding:0 26px 0 0;border:0;border-radius:0;background-color:transparent;min-height:30px;font-size:18px;font-weight:700}
+.apple-ui .ticker-head .ticker-value {display:flex;flex-direction:column;gap:3px;align-items:flex-start}
+.apple-ui .ticker-value .ticker-price {font:650 30px/1.2 -apple-system,BlinkMacSystemFont,sans-serif;letter-spacing:-.05em;font-variant-numeric:tabular-nums}
+.apple-ui .ticker-head small {font-size:10px;color:var(--muted)}
+.apple-ui .ticker-change {gap:5px}
+.apple-ui .ticker-change>span {font-size:16px;font-weight:600}
+.apple-ui .terminal-workspace {margin:16px 24px;min-height:480px;height:min(65vh,680px);flex:none}
+.apple-ui .chart-panel {margin-inline:6px}
+.apple-ui .panel-title {height:42px;font-size:12px;padding-inline:14px}
+.apple-ui .watch-actions {padding:4px 14px;border-bottom:1px solid var(--border);text-align:right}
+.apple-ui .terminal .watch-actions button {width:auto;padding:6px 0;min-height:36px;font-size:11px;border:0;background:transparent;color:var(--accent)}
+.apple-ui .terminal .watch-row {display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;column-gap:10px;row-gap:2px;min-height:62px;padding:10px 14px;border:0;border-bottom:1px solid var(--border);border-radius:0;background:#fff;color:var(--text);box-shadow:none;transform:none;text-align:left}
+.apple-ui .terminal .watch-row.selected {background:#f0f6ff;box-shadow:inset 2px 0 var(--accent)}
+.apple-ui .terminal .watch-row:hover {background:#f6f9fd}
+.apple-ui .watch-symbol {display:flex;align-items:baseline;gap:4px;grid-row:1/3;min-width:0}
+.apple-ui .watch-symbol strong {font-size:13px;font-weight:650}
+.apple-ui .watch-row .watch-symbol small {font-size:9px;color:var(--muted)}
+.apple-ui .watch-row .watch-price {font:600 13px/1.5 -apple-system,BlinkMacSystemFont,sans-serif;font-variant-numeric:tabular-nums;text-align:right}
+.apple-ui .watch-row .watch-change {grid-column:2;font-size:10px;text-align:right;font-weight:500}
+.apple-ui .panel-note {padding:16px 14px;font-size:11px}
+.apple-ui .panel-note a {display:inline-flex;align-items:center;min-height:36px}
+.apple-ui .watch-editor {padding:12px 14px;background:#fafbfd}
+.apple-ui .watch-editor label {font-size:11px}
+.apple-ui .terminal .watch-candidates button {padding:8px 10px;box-shadow:none}
+.apple-ui .chart-toolbar {padding:8px 10px;min-height:48px}
+.apple-ui .chart-caption {padding:10px 12px;background:#fafbfd}
+.apple-ui .chart-settings {gap:8px;max-width:480px}
+.apple-ui .chart-settings label {font-size:10px}
+.apple-ui .chart-caption .chart-settings select {padding:6px 28px 6px 8px!important}
+.apple-ui .chart-settings button {min-height:38px}
+.apple-ui .chart-data-note {margin-top:8px;font-size:10px}
+.apple-ui .chart-indicator-note {font-size:10px;margin-top:8px}
+.apple-ui .terminal-bottom {margin:0 24px 12px;min-height:100px;overflow:hidden}
+.apple-ui .terminal-bottom [role=tablist] {background:transparent;border-bottom:1px solid var(--border);border-radius:0;padding:5px 12px}
+.apple-ui .terminal-bottom [role=tabpanel] {padding:10px 16px}
+.apple-ui .terminal-bottom [role=tabpanel] p {margin:0;line-height:1.8;font-size:11px}
+.apple-ui .terminal-bottom [role=tabpanel] a {min-height:36px;margin:2px 0 0;font-size:11px}
+.apple-ui .terminal .terminal-footer {padding:8px 24px;font-size:10px}
+.apple-ui .chart-attribution {font-size:9px;border-color:var(--border);padding:6px 24px}
+.apple-ui .exchange-analysis {margin-block:20px;border:1px solid var(--border);border-radius:12px}
+.apple-ui .analysis-market-heading .analysis-symbol select {border:0;font-size:21px;font-weight:700;padding-left:0}
+.apple-ui .analysis-content-tabs {top:60px;gap:0;padding:0;border-bottom:1px solid var(--border);background:#fff;border-radius:0}
+.apple-ui .analysis-content-tabs button {flex:1;border:0;border-radius:0;border-bottom:2px solid transparent;min-height:44px;background:transparent}
+.apple-ui .analysis-content-tabs button[aria-pressed=true] {color:var(--accent);border-bottom-color:var(--accent);background:transparent;box-shadow:none}
+.apple-ui .analysis-research-actions a {border-radius:8px;background:#f0f6ff;color:var(--accent)}
+.apple-ui .realtime-page {max-width:1120px!important}
+.apple-ui .paper-page-heading {margin-bottom:16px}
+.apple-ui .paper-worker-state {font-size:11px}
+.apple-ui :is(.paper-view-switch,.paper-record-tabs) {width:max-content;max-width:100%;margin-bottom:16px}
+.apple-ui .realtime-page .paper-account-overview {padding:22px;margin-top:0}
+.apple-ui .paper-equity {padding:14px 0 18px}
+.apple-ui .paper-equity>strong {font-size:36px;letter-spacing:-.05em}
+.apple-ui .paper-balance-grid {gap:16px 24px;padding-block:16px}
+.apple-ui .paper-account-actions {display:flex;padding:16px 0}
+.apple-ui .paper-account-actions button {min-height:38px!important}
+.apple-ui .paper-feed-summary {padding-top:10px}
+.apple-ui .paper-status {border-radius:5px;padding:4px 7px;font-size:10px}
+.apple-ui .paper-account-list {display:block;border-top:1px solid var(--border)}
+.apple-ui .paper-account-list>li {padding:16px 0;margin:0;border:0;border-bottom:1px solid var(--border);border-radius:0;background:transparent}
+.apple-ui .paper-account-list>li[aria-current=true] {background:#f4f8ff;box-shadow:-12px 0 #f4f8ff,12px 0 #f4f8ff}
+.apple-ui .paper-account-list code {font-size:11px}
+.apple-ui .paper-account-list dl {margin-bottom:8px;gap:12px}
+.apple-ui .paper-account-list>li>button {width:auto;min-height:36px}
+.apple-ui .paper-picker-filter {margin:12px 0;gap:12px}
+.apple-ui .paper-picker-filter select {min-width:150px}
+.apple-ui .paper-form-fields {gap:14px 16px}
+.apple-ui .realtime-page :is(.paper-account-details,.paper-account-management) {padding:0;border:0;border-top:1px solid var(--border);border-radius:0;margin-top:12px}
+.apple-ui :is(.paper-account-details,.paper-account-management,.paper-advanced-form) summary {line-height:1.6}
+.apple-ui .realtime-page .paper-id-button {min-height:30px;background:transparent;box-shadow:none;padding:4px 0;font-weight:400}
+.apple-ui .paper-stop-dialog {background:#fcfdff;border:1px solid #fff;border-radius:16px;box-shadow:0 24px 80px #17283b33}
+.apple-ui .paper-stop-dialog::backdrop {background:#101b3066;backdrop-filter:blur(3px)}
+.apple-ui .historical-paper-form {padding:20px;border-radius:12px}
+.apple-ui .intro {padding:0 0 18px}
+.apple-ui .intro p {margin:4px 0 0;font-size:12px}
+.apple-ui .health {padding:18px 20px}
+.apple-ui .health p {font-size:12px}
+.apple-ui .health dl {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.apple-ui .health dl>div {display:flex;justify-content:space-between;font-size:12px;border-top:1px solid var(--border);padding-top:12px}
+.apple-ui .market-monitor {padding:0}
+.apple-ui .market-monitor>:is(h2,p) {margin:14px 18px}
+.apple-ui .market-monitor table {font-size:12px}
+.apple-ui .market-monitor td:nth-child(2) {font-family:inherit;font-weight:600}
+.apple-ui .gold-card {padding:20px;margin-bottom:16px}
+.apple-ui .gold-heading h1 {font-size:28px}
+.apple-ui .gold-heading {margin-bottom:18px}
+.apple-ui .gold-quote strong {font-size:28px}
+.apple-ui .gold-message {border-radius:8px;padding:12px 14px;font-size:12px}
+.apple-ui .gold-card h2 {font-size:15px;font-weight:650;margin-bottom:14px}
+.apple-ui .gold-ppo-protocol>div,.apple-ui .gold-ppo-hashes,.apple-ui .gold-ppo-hashes>div {display:block}
+@media(max-width:850px) {
+  .apple-ui .terminal .ticker-head {display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px 20px;margin:0;padding:14px 16px;background:#fff;border-bottom:0}
+  .apple-ui .ticker-symbol {grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;flex-direction:row-reverse}
+  .apple-ui .ticker-symbol>span {font-size:10px}
+  .apple-ui .terminal .ticker-symbol select {min-height:32px;font-size:17px}
+  .apple-ui .ticker-head .ticker-value {align-items:flex-start;gap:4px}
+  .apple-ui .ticker-value .ticker-price {font-size:30px}
+  .apple-ui .ticker-head .ticker-change {align-items:flex-end;gap:4px}
+  .apple-ui .terminal .mobile-tabs {display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;padding:0 8px;margin:0;border:0;border-bottom:1px solid var(--border);border-radius:0;background:#fff}
+  .apple-ui .terminal .mobile-tabs button {position:relative;min-height:44px;padding:8px 6px;font-size:13px;background:transparent;border:0;border-radius:0;box-shadow:none;color:var(--muted)}
+  .apple-ui .terminal .mobile-tabs button[aria-pressed=true] {color:var(--accent)}
+  .apple-ui .terminal .mobile-tabs button[aria-pressed=true]::after {content:'';position:absolute;bottom:0;left:30%;right:30%;height:2px;background:var(--accent);border-radius:2px}
+  .apple-ui .terminal-workspace {height:auto;min-height:0;margin:0 0 12px}
+  .apple-ui .terminal :is(.watch-panel,.depth-panel,.chart-panel) {margin:0;border:0;border-radius:0}
+  .apple-ui .terminal .watch-panel {height:auto;overflow:visible}
+  .apple-ui .panel-title {height:40px;padding-inline:16px}
+  .apple-ui .watch-actions {padding:0 16px}
+  .apple-ui .terminal .watch-row {grid-template-columns:minmax(0,1fr) minmax(90px,auto) 76px;min-height:54px;padding:8px 16px;column-gap:12px}
+  .apple-ui .watch-symbol {grid-row:auto;flex-direction:column;gap:0}
+  .apple-ui .watch-symbol strong {font-size:14px}
+  .apple-ui .watch-row .watch-symbol small {font-size:10px}
+  .apple-ui .watch-row .watch-price {font-size:14px}
+  .apple-ui .watch-row .watch-change {grid-column:3;font-size:12px}
+  .apple-ui .panel-note {padding:14px 16px;border-bottom:1px solid var(--border)}
+  .apple-ui .terminal .chart-toolbar {gap:6px;padding:6px 12px}
+  .apple-ui .terminal .timeframes {gap:2px;padding:2px}
+  .apple-ui .terminal .timeframes button {font-size:10px;min-height:36px}
+  .apple-ui .terminal .chart-toolbar>button {font-size:11px;padding-inline:8px;min-height:40px}
+  .apple-ui .terminal .chart-settings {grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;gap:8px}
+  .apple-ui .terminal .chart-settings button {grid-column:auto;width:auto;min-height:40px;font-size:11px;padding:8px}
+  .apple-ui .terminal .chart-caption .chart-settings select {min-height:40px}
+  .apple-ui .terminal .terminal-footer {display:flex;gap:8px 16px!important;margin:0 12px 10px;padding:10px 0;font-size:10px;background:transparent;border:0;border-radius:0}
+  .apple-ui .terminal-footer .mode-label {margin-left:0;padding-top:0;border:0}
+  .apple-ui .terminal-bottom {margin:0 12px 10px}
+  .apple-ui .terminal-bottom [role=tablist] button {font-size:11px;min-height:40px}
+  .apple-ui .terminal .chart-attribution {padding:6px 12px 12px}
+}
+@media(max-width:760px) {
+  .apple-ui {padding-bottom:calc(76px + env(safe-area-inset-bottom))}
+  .apple-ui .workspace-header {height:calc(48px + env(safe-area-inset-top));min-height:48px;padding:env(safe-area-inset-top) max(16px,env(safe-area-inset-right)) 0 max(16px,env(safe-area-inset-left));gap:0;flex-wrap:nowrap}
+  .apple-ui .workspace-brand {font-size:21px}
+  .apple-ui .workspace-mode strong {padding:3px 7px;font-size:10px}
+  .apple-ui .workspace-navigation {inset:auto 0 0;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));padding:5px 8px calc(5px + env(safe-area-inset-bottom));gap:2px;min-height:62px;border:0;border-top:1px solid #e0e6efb3;border-radius:0;box-shadow:0 -4px 24px #1e345408;overflow:visible}
+  .apple-ui .workspace-navigation a {min-width:0;min-height:48px;padding:4px 0!important;border-radius:9px;gap:3px;font-size:10px}
+  .apple-ui .nav-mobile-icon {width:20px;height:20px}
+  .apple-ui .workspace-asset-navigation {height:40px;gap:24px;padding-inline:16px}
+  .apple-ui .workspace-asset-navigation a {font-size:12px}
+  .apple-ui .account-navigation {top:calc(48px + env(safe-area-inset-top));padding-inline:16px;gap:24px;min-height:42px}
+  .apple-ui .account-navigation a {flex:none;min-height:42px;font-size:11px;padding:11px 0 9px}
+  .apple-ui :is(.research-page,main:not(.terminal)) {padding:18px 16px 24px}
+  .apple-ui .research-page h1 {font-size:23px;letter-spacing:-.04em}
+  .apple-ui .research-page>p {font-size:12px;line-height:1.75;margin-bottom:16px}
+  .apple-ui :is(.research-page,.exchange-analysis,.terminal) button,.apple-ui :is(a.primary,a.secondary) {min-height:44px;font-size:12px}
+  .apple-ui :is(.research-page,.exchange-analysis,.terminal) :is(input:not([type=checkbox]):not([type=radio]),select,textarea) {font-size:16px;min-height:44px}
+  .apple-ui .terminal .ticker-symbol select {min-height:32px;font-size:17px}
+  .apple-ui .terminal .watch-row {min-height:54px}
+  .apple-ui .research-page>section {padding:16px;border-radius:10px}
+  .apple-ui .research-configuration {padding:16px;border-radius:10px}
+  .apple-ui .research-fields {grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+  .apple-ui .research-configuration fieldset:first-of-type .research-fields>label:first-child,
+  .apple-ui .research-configuration fieldset:nth-of-type(2) .research-fields>label:last-child {grid-column:1/-1}
+  .apple-ui .research-form {grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+  .apple-ui .research-page :is(.research-metrics,.analysis-grid) {grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .apple-ui .research-page :is(.research-metrics>div,.analysis-grid>div) {padding:10px}
+  .apple-ui .research-metrics strong {font-size:17px}
+  .apple-ui .historical-paper-form {padding:16px;border-radius:10px}
+  .apple-ui .exchange-analysis {margin:0;max-width:none;border:0;border-radius:0;padding:12px 16px 24px!important}
+  .apple-ui .analysis-market-heading .analysis-symbol select {font-size:18px}
+  .apple-ui .analysis-content-tabs {top:calc(48px + env(safe-area-inset-top))}
+  .apple-ui .analysis-quote {gap:12px;padding-block:14px}
+  .apple-ui .analysis-quote strong {font-size:28px}
+  .apple-ui .realtime-page {padding:18px 16px 24px!important}
+  .apple-ui .paper-page-heading {align-items:flex-start;gap:8px}
+  .apple-ui .paper-worker-state {font-size:10px;padding-top:6px}
+  .apple-ui :is(.paper-view-switch,.paper-record-tabs) {width:100%;gap:2px;padding:3px}
+  .apple-ui :is(.paper-view-switch,.paper-record-tabs) button {flex:1;min-width:0;padding:8px 5px;min-height:38px;font-size:12px}
+  .apple-ui .realtime-page .paper-account-overview {padding:16px;margin-bottom:16px}
+  .apple-ui .paper-equity>strong {font-size:34px}
+  .apple-ui .paper-equity {padding-block:10px 16px}
+  .apple-ui .paper-balance-grid {gap:14px;padding-block:14px}
+  .apple-ui .paper-balance-grid dt {font-size:11px}
+  .apple-ui .paper-balance-grid dd {font-size:16px}
+  .apple-ui .paper-account-actions {display:grid;gap:8px;grid-template-columns:1fr 1fr;padding-block:14px}
+  .apple-ui .paper-account-actions button {min-height:44px!important;font-size:11px;padding-inline:5px}
+  .apple-ui .paper-picker-filter {gap:12px}
+  .apple-ui .paper-picker-filter select {min-width:0}
+  .apple-ui .paper-picker-filter button {padding-inline:10px}
+  .apple-ui .paper-picker-pagination button {min-width:110px}
+  .apple-ui .paper-form-fields {gap:12px}
+  .apple-ui .paper-stop-dialog {width:calc(100% - 16px);max-width:440px;margin:auto 8px calc(8px + env(safe-area-inset-bottom));max-height:calc(100dvh - 24px - env(safe-area-inset-bottom));padding:20px;border-radius:16px}
+  .apple-ui .health {padding:16px}
+  .apple-ui .health dl {grid-template-columns:1fr;gap:0}
+  .apple-ui .health dl>div {padding-block:10px}
+  .apple-ui .market-monitor {padding:0}
+  .apple-ui .market-monitor table {min-width:560px}
+  .apple-ui .market-monitor>:is(h2,p) {margin-inline:16px}
+  .apple-ui .gold-heading h1 {font-size:24px}
+  .apple-ui .gold-card {padding:16px;border-radius:10px;margin-bottom:14px}
+  .apple-ui .gold-quote strong {font-size:26px}
+  .apple-ui .gold-ppo-protocol {gap:14px 12px}
+  .apple-ui .gold-ppo-table tr {padding-block:14px;gap:12px}
+  .apple-ui .replay-canvas {height:min(54svh,420px);border-radius:10px;border:1px solid var(--border)}
+}
+@media(max-width:359px) {
+  .apple-ui .workspace-navigation {padding-inline:5px}
+  .apple-ui .terminal .watch-row {column-gap:8px;padding-inline:14px;grid-template-columns:minmax(0,1fr) minmax(80px,auto) 64px}
+  .apple-ui .watch-row .watch-price {font-size:13px}
+  .apple-ui .watch-row .watch-change {font-size:11px}
+  .apple-ui .terminal .chart-settings {grid-template-columns:1fr 1fr}
+  .apple-ui .terminal .chart-settings button {grid-column:1/-1;width:100%}
+  .apple-ui .research-form,.apple-ui .research-fields {grid-template-columns:minmax(0,1fr)}
+  .apple-ui .account-navigation {gap:20px}
+}
+@media(max-height:500px) and (max-width:950px) and (orientation:landscape) {
+  .apple-ui .workspace-header {position:relative}
+  .apple-ui .account-navigation,.apple-ui .analysis-content-tabs {top:0}
+}
