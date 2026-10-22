@@ -70,7 +70,7 @@ python work/audit_results.py
 
 上面训练命令路径为报告缩写；完整实际命令见 verification-commands.md。compileall 与 git diff --check 均 exit0。native 41 文件摘要和 15552 收据经重算；f64 32 文件摘要、执行helper AST和审计代码快照摘要均通过校验。A 三个actor的layers canonical字节与旧v1一致。
 
-扩大运行 tests/test_gold_research.py 和 tests/test_gold_paper.py 时收集失败：ModuleNotFoundError: No module named fastapi。未更改既有隔离依赖；Gold API测试 [未运行时验证]，不是通过。日志为 validation-tests.log。
+首次在原研究环境扩大运行 tests/test_gold_research.py 和 tests/test_gold_paper.py 时，因缺少 fastapi 收集失败（validation-tests.log 保留）。2026-10-22 按用户要求在全新独立 Python 3.12.14 环境补跑，结果为 **29 passed, 1 warning in 13.93s**。所需 FastAPI/httpx/pytest 及传递依赖均从仓库 uv.lock 取固定版本和安装包摘要，用 --require-hashes 安装；pip check 输出 No broken requirements found。原研究环境的 pip freeze 前后 SHA-256 均为 7849050d054806d56cef63365786028e9b1f140bb6d175dc31fe04ff819ff203，未向该环境安装或升级任何包。唯一警告为锁定版 Starlette TestClient 弃用 httpx 提示；未升级依赖。精确命令、版本及日志见 api-regression-summary.json、api-regression-tests.log、api-regression-dependencies.txt。此结果仅覆盖研究克隆的 Gold research/paper API 回归；父线程最终整合版本仍需独立验收。
 
 ## 限制与下一步
 
