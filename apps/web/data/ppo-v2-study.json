@@ -1766,6 +1766,126 @@
     {
       "path": "experiment-report.md",
       "sha256": "b02dc4ad8a791821ace003be53ed9a46aca5df1ce2cb717cfa6c256ede2a7b13"
+    },
+    {
+      "path": "ppo-v2-independent-reproduction/reproduction-report.json",
+      "sha256": "bbd0d8bf41db8f7fe0edaeeb63a064bfd4aa17650795a3c60d4772086eada760"
     }
-  ]
+  ],
+  "reproduction": {
+    "version": "gold-ppo-v2-independent-reproduction-v1",
+    "verified_at": "2026-10-22T12:06:11.626104+00:00",
+    "scope": "same_cpu_and_frozen_dependencies",
+    "original_source_commit": "5fc021ea1820b42c36ac2639594773157c684f10",
+    "reproduction_source_commit": "5c0a33138eae518887b2d4cb8698e2f4d21a8319",
+    "dataset": "ee9afe981db266959ebcc1557e6120ae6e60012f761265ed46d57ab57878276c",
+    "timesteps_per_model": 131072,
+    "seeds": [
+      7,
+      19,
+      42
+    ],
+    "model_count": 9,
+    "result_count": 26,
+    "actor_json_equal": 9,
+    "policy_state_equal": 9,
+    "optimizer_state_equal": 9,
+    "pytorch_variables_equal": 9,
+    "all_results_equal": true,
+    "all_conclusions_equal": true,
+    "source_files_equal": 6,
+    "dependencies_sha256": "7849050d054806d56cef63365786028e9b1f140bb6d175dc31fe04ff819ff203",
+    "protocol_differences": [
+      "created_at",
+      "source_commit"
+    ],
+    "native_zip_containers_equal": 0,
+    "original_manifest_sha256": "895dd774a30f6526b5219e8a43adff4f47779b92040ae60350573340173300fe",
+    "reproduction_manifest_sha256": "f07df075eb0c685979c6c54ef064413a194124c649b4649a77b25d188cdaa2bb",
+    "models": [
+      {
+        "arm": "A",
+        "seed": 7,
+        "actor_sha256": "74ca43c3679ce078f254c553fc5f8e0d5c39da9cc1f34b5c8aeb7765f66b441b",
+        "native_zip_bytes_equal": false,
+        "policy_state_sha256": "517e669b91271350f3aa9df7fb48647df2517589f4aab1dbeb69c94689a9a8c1",
+        "optimizer_state_sha256": "c433819a4122a65278675f9e8e173689df3b2c6b902db67f52d0b2989bdabe88",
+        "pytorch_variables_sha256": "7b6bbfc035aeac78f3ee425960893ff8bb7927d3cf3425470ac4b6c6ce280c5d"
+      },
+      {
+        "arm": "A",
+        "seed": 19,
+        "actor_sha256": "1fce8ce88622f04f64fcef19e7c2a0ee91a5e6b367fc9c0a2dba60e26595d957",
+        "native_zip_bytes_equal": false,
+        "policy_state_sha256": "9b3c29795446b3379313bcb611cc30c47e4633efd7d980e10d0ef9ca4db8c896",
+        "optimizer_state_sha256": "1e3ce401362ae6d7a65950463b7628ad669d0f4b5b2ec9652e495aff9cbc53eb",
+        "pytorch_variables_sha256": "7b6bbfc035aeac78f3ee425960893ff8bb7927d3cf3425470ac4b6c6ce280c5d"
+      },
+      {
+        "arm": "A",
+        "seed": 42,
+        "actor_sha256": "528df99d1f6c0b5aa3cd38df1d0dc64c26b091a06840ef0a891b8fe34f0127d1",
+        "native_zip_bytes_equal": false,
+        "policy_state_sha256": "5136a3b5ad715228d6a6372792e70a87e1dd31e5d4a72f4b323330828c1c95d2",
+        "optimizer_state_sha256": "52c2566c3ecb4889163c1856e25311cb6a64944dd8a88503c32d146f27029e5f",
+        "pytorch_variables_sha256": "7b6bbfc035aeac78f3ee425960893ff8bb7927d3cf3425470ac4b6c6ce280c5d"
+      },
+      {
+        "arm": "B",
+        "seed": 7,
+        "actor_sha256": "c68ab1ead91b94858112c594b10c49f436748dff226553e1de74008bb2f31fb3",
+        "native_zip_bytes_equal": false,
+        "policy_state_sha256": "187e81730b4b91a94cdbdc8f5776a3d4ff14db7541306e371e65850a37ecf341",
+        "optimizer_state_sha256": "c3a5541654e208c78a3d5e4be63a086cfa7ee1cc9aa0f9a478bc27f0787bb87c",
+        "pytorch_variables_sha256": "7b6bbfc035aeac78f3ee425960893ff8bb7927d3cf3425470ac4b6c6ce280c5d"
+      },
+      {
+        "arm": "B",
+        "seed": 19,
+        "actor_sha256": "a62db5745a0a9ff4d0d727c565b4b55a2a9c89449cac5e2f907404a7a72c54d3",
+        "native_zip_bytes_equal": false,
+        "policy_state_sha256": "1e2920d9fe7f1502bffce4972e3c8fd85bbee01d425723640a63177e23f3ab51",
+        "optimizer_state_sha256": "33afe57d3222bc4d28b4674a5447de10d39c8facd54ae4f1ca45f109b64970e3",
+        "pytorch_variables_sha256": "7b6bbfc035aeac78f3ee425960893ff8bb7927d3cf3425470ac4b6c6ce280c5d"
+      },
+      {
+        "arm": "B",
+        "seed": 42,
+        "actor_sha256": "a84be85932c1ebb86f8dc48bae04553bcb1a8221de6c83ce40db47c3a35cda16",
+        "native_zip_bytes_equal": false,
+        "policy_state_sha256": "ac4ad18377f9549f8fe8e6d0f0c344efd73dda377e1d60b30d8f7226ab3173bb",
+        "optimizer_state_sha256": "060812cc9e00c83288f2351afb8dceb0f43560619399cd2c72621467819142a1",
+        "pytorch_variables_sha256": "7b6bbfc035aeac78f3ee425960893ff8bb7927d3cf3425470ac4b6c6ce280c5d"
+      },
+      {
+        "arm": "C",
+        "seed": 7,
+        "actor_sha256": "a20a3ba2efb7caeb7a118208131d5543cb8059aa3e09da88e1d3894f15674770",
+        "native_zip_bytes_equal": false,
+        "policy_state_sha256": "1b0213aeaec3bb077e251ae0ebfea2f43b9de8dd03595b540bfbd72be3afb10c",
+        "optimizer_state_sha256": "e44aaedd35d10532dacd4da2b327c2f12c6cf53bc75d4a83dfd01380f16ca93e",
+        "pytorch_variables_sha256": "7b6bbfc035aeac78f3ee425960893ff8bb7927d3cf3425470ac4b6c6ce280c5d"
+      },
+      {
+        "arm": "C",
+        "seed": 19,
+        "actor_sha256": "0bf21786d8b02af5f92b8127fbdcd65513e0f5cc7098ea3ae727d3b7897b5092",
+        "native_zip_bytes_equal": false,
+        "policy_state_sha256": "6fff044376caa931ca2f6efd9e2885c2a09d7fc359591341f9c533a732f08d28",
+        "optimizer_state_sha256": "7684ac8a495efdff4471f4381310387797f6beffcfd033942f19088479800638",
+        "pytorch_variables_sha256": "7b6bbfc035aeac78f3ee425960893ff8bb7927d3cf3425470ac4b6c6ce280c5d"
+      },
+      {
+        "arm": "C",
+        "seed": 42,
+        "actor_sha256": "df7461ea2449c667f6e53023486356f63700c2949361a66d98c05e03a087bba4",
+        "native_zip_bytes_equal": false,
+        "policy_state_sha256": "8456a9429d3ceecdf5a1766f401cd7858a7db2cf7244e5b0a80433f7a2a80b81",
+        "optimizer_state_sha256": "b9a4277e23fd65ad4117baacbc438e7bdd51332bfca9d54e86d126b18b887814",
+        "pytorch_variables_sha256": "7b6bbfc035aeac78f3ee425960893ff8bb7927d3cf3425470ac4b6c6ce280c5d"
+      }
+    ],
+    "promotion_authorized": false,
+    "trading_enabled": false
+  }
 }

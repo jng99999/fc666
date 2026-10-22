@@ -72,6 +72,22 @@ python work/audit_results.py
 
 首次在原研究环境扩大运行 tests/test_gold_research.py 和 tests/test_gold_paper.py 时，因缺少 fastapi 收集失败（validation-tests.log 保留）。2026-10-22 按用户要求在全新独立 Python 3.12.14 环境补跑，结果为 **29 passed, 1 warning in 13.93s**。所需 FastAPI/httpx/pytest 及传递依赖均从仓库 uv.lock 取固定版本和安装包摘要，用 --require-hashes 安装；pip check 输出 No broken requirements found。原研究环境的 pip freeze 前后 SHA-256 均为 7849050d054806d56cef63365786028e9b1f140bb6d175dc31fe04ff819ff203，未向该环境安装或升级任何包。唯一警告为锁定版 Starlette TestClient 弃用 httpx 提示；未升级依赖。精确命令、版本及日志见 api-regression-summary.json、api-regression-tests.log、api-regression-dependencies.txt。此结果仅覆盖研究克隆的 Gold research/paper API 回归；父线程最终整合版本仍需独立验收。
 
+## 同协议独立复现
+
+2026-10-22 在整合提交 `5c0a331` 上使用相同 CPU 和冻结研究环境完整重跑九个模型，每模型仍为 131072 步；没有改参数、添加数据或评价 2025。六个训练源码文件 SHA256 与原协议逐一相同，pip freeze 仍为 `7849050d054806d56cef63365786028e9b1f140bb6d175dc31fe04ff819ff203`。原生进程正常退出 0，新运行耗时 456.89 秒，原运行耗时 728.89 秒；没有把耗时变化作为策略改进。
+
+真实核对结果：**9/9 actor JSON 逐字节相同，26/26 完整结果全部字段相同，27/27 policy（含 critic）、optimizer 与 variables 的二进制载荷相同**。缩放器、超参数、数据和依赖保持一致；原、新训练产物 manifest 全部摘要有效。两个协议只有创建时间和源码提交身份不同；研究源码内容没有改变。
+
+9 个 native ZIP 的容器字节均不同，条目时间、`start_time`、episode 耗时与序列化对象地址差异已逐项保留。没有将 ZIP 容器摘要误称为一致，也没有隐藏未解释的差异。该证据仅确认当前 CPU / 依赖环境的独立复现，不承诺跨设备训练权重逐字节一致。
+
+精确命令与对照报告位于本任务 `outputs/ppo-research-20261022/ppo-v2-independent-reproduction/reproduction-report.md` 及同名 JSON，后者 SHA256 为 `bbd0d8bf41db8f7fe0edaeeb63a064bfd4aa17650795a3c60d4772086eada760`。日志真实结尾：
+
+```json
+{"cases":26,"H1_supported":false,"market_increment_demonstrated":false,"seconds":456.89,"trading_enabled":false}
+```
+
+复现的是同一份失败结论，**不改变 `candidate_eligible=false` 或准入条件，不注册或启用模型**。
+
 ## 限制与下一步
 
 HistData 存在休市/未知缺口，保留因果prefix和下一真实边界paired quote、120s过期取消、0.01oz步长、10oz上限及Decimal守恒。历史报价并非当前可成交报价；没有深度、延迟、部分成交、融资/隔夜费或真实经纪商规格。HistData与Swissquote来源迁移未经验证。2024和2025均不能再称为密封盲测。仅三种子、一年训练与一年验证，无统计显著/未来盈利结论。
