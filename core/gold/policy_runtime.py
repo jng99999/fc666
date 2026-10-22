@@ -123,8 +123,11 @@ class Registry:
         """Operator directory only; expose metadata of currently verified models."""
         if self.directory is None or not self.directory.is_dir():
             return []
+        entries = list(islice(self.directory.iterdir(), 513))
+        if len(entries) > 512:
+            raise Rejected('MODEL_REGISTRY_CAPACITY_EXCEEDED')
         result = []
-        for path in islice(self.directory.iterdir(), 512):
+        for path in entries:
             if path.suffix != '.json' or not re.fullmatch(r'[a-zA-Z0-9_-]{1,64}', path.stem):
                 continue
             try:

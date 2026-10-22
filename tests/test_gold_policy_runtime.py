@@ -645,3 +645,11 @@ def test_timer_waiting_can_retry_newly_observed_prefix_but_never_two_decisions(r
     assert Decimal(filled['quantity']) > 0
     engine.advance()
     assert read(engine, account)['revision'] == filled['revision']
+
+
+def test_status_never_silently_truncates_available_models(rig):
+    engine, _, _, root = rig
+    for i in range(513):
+        (root/f'other-{i}.txt').touch()
+    with pytest.raises(Rejected, match='MODEL_REGISTRY_CAPACITY_EXCEEDED'):
+        engine.status()
