@@ -200,8 +200,8 @@
   .apple-ui :is(.research-page,main:not(.terminal)) {padding:18px 16px 24px}
   .apple-ui .research-page h1 {font-size:23px;letter-spacing:-.04em}
   .apple-ui .research-page>p {font-size:12px;line-height:1.75;margin-bottom:16px}
-  .apple-ui :is(.research-page,.exchange-analysis,.terminal) button,.apple-ui :is(a.primary,a.secondary) {min-height:44px;font-size:12px}
-  .apple-ui :is(.research-page,.exchange-analysis,.terminal) :is(input:not([type=checkbox]):not([type=radio]),select,textarea) {font-size:16px;min-height:44px}
+  .apple-ui :is(.research-page,.exchange-analysis,.terminal,.gold-workspace) button,.apple-ui :is(a.primary,a.secondary) {min-height:44px;font-size:12px}
+  .apple-ui :is(.research-page,.exchange-analysis,.terminal,.gold-workspace) :is(input:not([type=checkbox]):not([type=radio]),select,textarea) {font-size:16px;min-height:44px}
   .apple-ui .terminal .ticker-symbol select {min-height:32px;font-size:17px}
   .apple-ui .terminal .watch-row {min-height:54px}
   .apple-ui .research-page>section {padding:16px;border-radius:10px}

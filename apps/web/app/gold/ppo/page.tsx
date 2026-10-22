@@ -52,6 +52,7 @@ export default function PpoResearch() {
   const {protocol} = study;
   return <main className="gold-workspace gold-ppo">
     <header className="gold-heading"><div><p>黄金 · AI 策略实验</p><h1>PPO 强化学习研究</h1><span>冻结模型的历史评估 · 本页只读 · 实盘关闭</span></div><Link href="/gold/research">返回策略对比</Link></header>
+    <div className="gold-ppo-links"><Link href="/gold/ppo/v2">查看第二轮输入与静态仓位对照</Link></div>
     <section className="gold-card gold-ppo-gate" aria-labelledby="ppo-gate-heading">
       <div className="gold-ppo-status"><span className="gold-ppo-badge">只读研究</span><span className="gold-ppo-badge gold-ppo-disabled">实盘关闭</span></div>
       <h2 id="ppo-gate-heading">{study.gate.eligible ? '达到本次研究门槛' : '未达到模拟试运行门槛'}</h2>

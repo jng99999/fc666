@@ -3,7 +3,8 @@ async function proxy(request:Request,context:{params:Promise<{segments:string[]}
  const {segments}=await context.params;
  const id=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
  const research=segments[0]==='research'&&((segments.length===2&&((segments[1]==='catalogue'&&request.method==='GET')||(segments[1]==='runs'&&['GET','POST'].includes(request.method))))||(segments[1]==='runs'&&id.test(segments[2]??'')&&request.method==='GET'&&(segments.length===3||(segments.length===4&&segments[3]==='manifest')||(segments.length===5&&segments[3]==='members'&&/^\d{1,3}$/.test(segments[4])))));
- const valid=research||(segments.length===1&&((segments[0]==='market'&&request.method==='GET')||(segments[0]==='accounts'&&['GET','POST'].includes(request.method))))||
+ const policy=segments[0]==='policy'&&((segments.length===2&&((segments[1]==='status'&&request.method==='GET')||(segments[1]==='accounts'&&['GET','POST'].includes(request.method))))||(segments[1]==='requests'&&segments.length===3&&id.test(segments[2]??'')&&request.method==='GET')||(segments[1]==='accounts'&&id.test(segments[2]??'')&&((segments.length===3&&request.method==='GET')||(segments.length===4&&segments[3]==='command'&&request.method==='POST'))));
+ const valid=research||policy||(segments.length===1&&((segments[0]==='market'&&request.method==='GET')||(segments[0]==='accounts'&&['GET','POST'].includes(request.method))))||
   (segments[0]==='accounts'&&id.test(segments[1]??'')&&((segments.length===2&&request.method==='GET')||(segments.length===3&&((segments[2]==='command'&&request.method==='POST')||(segments[2]==='events'&&request.method==='GET')))));
  if(!valid)return Response.json({detail:'Unsupported gold resource'},{status:404});
  const origin=request.headers.get('origin');let sameOrigin=true;

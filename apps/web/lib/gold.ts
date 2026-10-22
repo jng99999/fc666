@@ -13,9 +13,13 @@ export type GoldAccountType=z.infer<typeof GoldAccount>;
 export type GoldDetailType=z.infer<typeof GoldDetail>;
 export type GoldEventType=z.infer<typeof GoldEvent>;
 export type GoldMarketType=z.infer<typeof GoldMarket>;
+export class GoldRequestError extends Error{
+ readonly status:number;
+ constructor(message:string,status:number){super(message);this.name='GoldRequestError';this.status=status;}
+}
 export async function goldRequest(path:string,signal?:AbortSignal,body?:unknown){
  const response=await fetch(`/api/gold/${path}`,{method:body===undefined?'GET':'POST',headers:body===undefined?undefined:{'Content-Type':'application/json'},body:body===undefined?undefined:JSON.stringify(body),signal:signal??AbortSignal.timeout(15000),cache:'no-store'});
  const data:unknown=await response.json();
- if(!response.ok){const detail=z.object({detail:z.string()}).safeParse(data);const issues=z.object({detail:z.array(z.object({loc:z.array(z.union([z.string(),z.number()])),msg:z.string()}))}).safeParse(data);throw new Error(detail.success?detail.data.detail:issues.success?issues.data.detail.slice(0,3).map(v=>`${v.loc.filter(p=>p!=='body').join('.')||'配置'}：${v.msg}`).join('；'):'黄金请求校验失败，请检查参数并刷新账本。');}
+ if(!response.ok){const detail=z.object({detail:z.string()}).safeParse(data);const issues=z.object({detail:z.array(z.object({loc:z.array(z.union([z.string(),z.number()])),msg:z.string()}))}).safeParse(data);throw new GoldRequestError(detail.success?detail.data.detail:issues.success?issues.data.detail.slice(0,3).map(v=>`${v.loc.filter(p=>p!=='body').join('.')||'配置'}：${v.msg}`).join('；'):'黄金请求校验失败，请检查参数并刷新账本。',response.status);}
  return data;
 }

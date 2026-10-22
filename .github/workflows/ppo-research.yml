@@ -2,9 +2,9 @@ name: Isolated PPO research checks
 on:
   workflow_dispatch:
   push:
-    paths: ['core/gold/rl.py', 'scripts/study_gold_ppo.py', 'tests/test_gold_rl.py', 'requirements-rl.txt', '.github/workflows/ppo-research.yml']
+    paths: ['core/gold/rl.py', 'core/gold/rl_experiments/**', 'scripts/study_gold_ppo*.py', 'tests/test_gold_rl*.py', 'requirements-rl.txt', '.github/workflows/ppo-research.yml']
   pull_request:
-    paths: ['core/gold/rl.py', 'scripts/study_gold_ppo.py', 'tests/test_gold_rl.py', 'requirements-rl.txt', '.github/workflows/ppo-research.yml']
+    paths: ['core/gold/rl.py', 'core/gold/rl_experiments/**', 'scripts/study_gold_ppo*.py', 'tests/test_gold_rl*.py', 'requirements-rl.txt', '.github/workflows/ppo-research.yml']
 permissions:
   contents: read
 jobs:
@@ -23,4 +23,4 @@ jobs:
           python -m pip install torch==2.8.0 --index-url https://download.pytorch.org/whl/cpu
           python -m pip install -r requirements-rl.txt
       - name: Causality, accounting, model export and admission checks
-        run: python -m pytest tests/test_gold_rl.py -q
+        run: python -m pytest tests/test_gold_rl.py tests/test_gold_rl_experiments.py -q
