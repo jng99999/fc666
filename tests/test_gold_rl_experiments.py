@@ -125,3 +125,72 @@ def test_saved_json_actor_matches_reloaded_ppo_with_raw_observation(arm, tmp_pat
     for invalid in mutations:
         with pytest.raises(ValueError):
             actor_action(invalid, np.concatenate((raw[env.index], obs[7:])))
+
+
+def criterion_rows():
+    rows = []
+    for scenario in ('configured_costs', 'double_cost_stress'):
+        for arm, gain, dd in [('A', '.10', '.02'), ('B', '.20', '.01'), ('C', '.05', '.03')]:
+            for seed in (7, 19, 42):
+                rows.append({'arm': arm, 'seed': seed, 'scenario': scenario,
+                             'action_counts': [10, 80, 10],
+                             'metrics': {'total_return': gain, 'max_drawdown': dd, 'fill_count': 5}})
+        for action, gain in enumerate(('0', '.08', '.12')):
+            rows.append({'arm': 'fixed', 'fixed_action': action, 'scenario': scenario,
+                         'metrics': {'total_return': gain, 'max_drawdown': '.04'}})
+        rows.append({'arm': 'hold', 'scenario': scenario,
+                     'metrics': {'total_return': '.13', 'max_drawdown': '.05'}})
+    return rows
+
+
+def test_predeclared_criteria_and_no_average_hiding_one_failed_seed():
+    from scripts.study_gold_ppo_v2 import interpret
+    rows = criterion_rows()
+    outcome = interpret(rows)
+    assert outcome['H1']['supported'] and outcome['H2_market_increment']['demonstrated']
+    assert not outcome['promotion_authorized'] and not outcome['live_trading']
+    bad = deepcopy(rows)
+    next(r for r in bad if r['arm'] == 'B' and r['seed'] == 42)['metrics']['total_return'] = '.11'
+    assert interpret(bad)['H1']['supported']  # Still positive median; H2 must inspect every seed.
+    assert not interpret(bad)['H2_market_increment']['demonstrated']
+    for row in rows:
+        if row['arm'] == 'B':
+            row['action_counts'] = [0, 100, 0]
+    assert not interpret(rows)['H1']['supported']
+    with pytest.raises(ValueError, match='cases'):
+        interpret(rows+rows[:1])
+    with pytest.raises(ValueError, match='cases'):
+        interpret(rows[1:])
+
+
+def test_f64_market_formulas_causal_and_collapse_contract_distinct():
+    from core.gold.rl_experiments.f64_audit import f64_market_features, VERSION as F64_VERSION
+    rows = varied_bars()
+    changed = rows[:170]+[replace(b, bid_close=b.bid_close*2, ask_close=b.ask_close*2,
+                                  high=b.high*2, low=b.low*2) for b in rows[170:]]
+    f64 = f64_market_features(rows)
+    assert f64[:170] == f64_market_features(changed)[:170]
+    np.testing.assert_allclose(f64, market_features(rows), rtol=1e-6, atol=1e-8)
+    assert F64_VERSION != VERSION and F64_VERSION != 'gold-policy-json-f64-v1'
+
+
+def test_f64_row_order_margin_and_tie_no_cross_precision_promise():
+    from core.gold.rl_experiments.f64_audit import logits_and_margin
+    actor = {'layers': [{'kind': 'linear', 'weight': [[0.]*10]*3, 'bias': [0., 0., -1.]}]}
+    logits, margin = logits_and_margin(actor, [0.]*10)
+    assert max(range(3), key=logits.__getitem__) == 0 and margin == 0
+    actor['layers'][0]['bias'] = [0., 1e-9, -1.]
+    logits, margin = logits_and_margin(actor, [0.]*10)
+    assert max(range(3), key=logits.__getitem__) == 1 and 0 < margin < 1e-6
+
+
+def test_refusal_consumes_hour_without_selling_existing_inventory():
+    from core.gold.rl_experiments.f64_audit import AuditEnv
+    from tests.test_gold_rl import COSTS, opening_quotes
+    rows = varied_bars()
+    env = AuditEnv(rows, opening_quotes(rows), START, rows[-1].start+HOUR, COSTS)
+    env.step(2)
+    before = env.quantity, env.cash, len(env.fills), sum(env.actions.values()), env.index
+    env.step_abstain()
+    assert (env.quantity, env.cash, len(env.fills), sum(env.actions.values())) == before[:4]
+    assert env.index == before[4]+1
