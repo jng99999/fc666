@@ -20,5 +20,5 @@ test('analysis server preview disables native controls until event handlers can 
  const controls=[...html.matchAll(/<(?:button|select)\b([^>]*)>/g)];
  assert.ok(controls.length>=20,'all analysis control groups must be present in the preview');
  for(const [tag] of controls)assert.match(tag,/\bdisabled=""/,tag);
- assert.match(html,/href="\/research\?symbol=BTCUSDT"/,'native navigation remains available');
+ assert.match(html,/href="\/research\?symbol=BTCUSDT&amp;timeframe=1h"/,'native navigation preserves the selected symbol and timeframe');
 });

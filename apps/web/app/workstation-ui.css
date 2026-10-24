@@ -215,7 +215,7 @@
   .apple-ui .research-page :is(.research-metrics>div,.analysis-grid>div) {padding:10px}
   .apple-ui .research-metrics strong {font-size:17px}
   .apple-ui .historical-paper-form {padding:16px;border-radius:10px}
-  .apple-ui .exchange-analysis {margin:0;max-width:none;border:0;border-radius:0;padding:12px 16px 24px!important}
+  .apple-ui .exchange-analysis {margin:0;max-width:none;border:0;border-radius:0;padding:12px 16px 24px}
   .apple-ui .analysis-market-heading .analysis-symbol select {font-size:18px}
   .apple-ui .analysis-content-tabs {top:calc(48px + env(safe-area-inset-top))}
   .apple-ui .analysis-quote {gap:12px;padding-block:14px}

@@ -1,7 +1,7 @@
 import {createChart,CandlestickSeries,HistogramSeries,LineSeries,ColorType,createSeriesMarkers,type ISeriesApi,type UTCTimestamp} from "lightweight-charts";
 import type {Candle,IndicatorRow} from "./market";
 export type ChartBar = Pick<Candle,"open_time"|"open"|"high"|"low"|"close"|"volume">;
-export interface ChartAdapter {setIndicators:(rows:IndicatorRow[],visible:boolean)=>void;setHistory:(bars:ChartBar[])=>void;update:(bar:ChartBar)=>void;dispose:()=>void;fit:()=>void;}
+export interface ChartAdapter {setMode?:(mode:'candles'|'line')=>void;setIndicators:(rows:IndicatorRow[],visible:boolean)=>void;setHistory:(bars:ChartBar[])=>void;update:(bar:ChartBar)=>void;dispose:()=>void;fit:()=>void;}
 const WINDOW=5000;
 // Float conversion is confined to rendering; financial data keeps decimal strings.
 const point=(bar:ChartBar)=>({time:(Date.parse(bar.open_time)/1000) as UTCTimestamp,open:Number(bar.open),high:Number(bar.high),low:Number(bar.low),close:Number(bar.close)});
@@ -9,6 +9,7 @@ const volume=(bar:ChartBar)=>({time:point(bar).time,value:Number(bar.volume),col
 export function createChartAdapter(container:HTMLElement):ChartAdapter {
   const chart=createChart(container,{autoSize:true,localization:{locale:"zh-CN"},layout:{background:{type:ColorType.Solid,color:"#ffffff"},textColor:"#6e6e73",attributionLogo:true},grid:{vertLines:{color:"#f0f1f4"},horzLines:{color:"#f0f1f4"}},timeScale:{timeVisible:true,secondsVisible:false},rightPriceScale:{borderColor:"#e3e5e9",scaleMargins:{top:.1,bottom:.25}},crosshair:{vertLine:{color:"#0071e3"},horzLine:{color:"#0071e3"}}});
   const prices=chart.addSeries(CandlestickSeries,{upColor:"#00875a",downColor:"#d94d62",borderVisible:false,wickUpColor:"#00875a",wickDownColor:"#d94d62"});
+  const trend=chart.addSeries(LineSeries,{color:'#2c6ef2',lineWidth:2,visible:false});
   const volumes=chart.addSeries(HistogramSeries,{priceFormat:{type:"volume"},priceScaleId:"volume",lastValueVisible:false,priceLineVisible:false});
   chart.priceScale("volume").applyOptions({visible:false,scaleMargins:{top:.82,bottom:0}});
   const overlays=([['sma','#f5c96a'],['ema','#0071e3'],['bollinger_upper','#ab94dd'],['bollinger_lower','#ab94dd'],['vwap','#ef99c0']] as const).map(([key,color])=>({key,series:chart.addSeries(LineSeries,{color,lineWidth:1,lastValueVisible:false,priceLineVisible:false,visible:false})}));
@@ -32,7 +33,7 @@ export function createChartAdapter(container:HTMLElement):ChartAdapter {
     const range=preserve?chart.timeScale().getVisibleRange():null;
     applying=true;start=first;end=until;
     const window=history.slice(start,end);
-    prices.setData(window.map(point));volumes.setData(window.map(volume));renderIndicators();
+    prices.setData(window.map(point));trend.setData(window.map(bar=>({time:point(bar).time,value:Number(bar.close)})));volumes.setData(window.map(volume));renderIndicators();
     if(range && window.length)chart.timeScale().setVisibleRange(range);
     applying=false;
   }
@@ -42,6 +43,7 @@ export function createChartAdapter(container:HTMLElement):ChartAdapter {
     else if(range.to>end-start-100&&end<history.length){const until=Math.min(history.length,end+WINDOW/2);render(Math.max(0,until-WINDOW),until);}
   });
   return {
+    setMode:mode=>{prices.applyOptions({visible:mode==='candles'});trend.applyOptions({visible:mode==='line'});},
     setIndicators:(rows,visible)=>{indicators=rows;overlayVisible=visible;configurePanes(visible);renderIndicators();},
     setHistory:bars=>{
       const initial=last===-Infinity,following=end===history.length;
@@ -57,7 +59,7 @@ export function createChartAdapter(container:HTMLElement):ChartAdapter {
       last=Number(value.time);
       if(!following)return;
       if(history.length-start>WINDOW)render(history.length-WINDOW,history.length);
-      else {prices.update(value);volumes.update(volume(bar));end=history.length;}
+      else {prices.update(value);trend.update({time:value.time,value:Number(bar.close)});volumes.update(volume(bar));end=history.length;}
     },
     fit:()=>chart.timeScale().fitContent(),dispose:()=>chart.remove(),
   };

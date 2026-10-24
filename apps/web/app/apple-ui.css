@@ -244,7 +244,7 @@
   .apple-ui .historical-paper-form > button { width: 100%; }
   .apple-ui .paper-stop-dialog { width: calc(100% - 20px); margin: auto 10px calc(10px + env(safe-area-inset-bottom)); max-height: calc(100dvh - 32px - env(safe-area-inset-bottom)); padding: 24px 20px; border-radius: 28px; }
   .apple-ui .paper-stop-dialog::before { content: ''; display: block; width: 36px; height: 5px; margin: -10px auto 20px; border-radius: 99px; background: #c7c7cf; }
-  .apple-ui .exchange-analysis { margin: 16px 12px; max-width: calc(100% - 24px); padding: 12px 14px 20px!important; border-radius: 22px; }
+  .apple-ui .exchange-analysis { margin: 16px 12px; max-width: calc(100% - 24px); padding: 12px 14px 20px; border-radius: 22px; }
   .apple-ui .analysis-market-heading { gap: 8px; }
   .apple-ui .analysis-symbol { min-width: 0; }
   .apple-ui .analysis-market-heading .analysis-symbol select { font-size: 18px; padding-left: 8px; }

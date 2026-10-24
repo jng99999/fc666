@@ -1,0 +1,6 @@
+/* Keep existing business pages styled while approved components own their exact visual rules. */
+@import './globals.css' layer(legacy);
+@import './workstation.css' layer(legacy);
+@import './workspace.css' layer(legacy);
+@import './apple-ui.css' layer(legacy);
+@import './workstation-ui.css' layer(legacy);

@@ -1,0 +1,354 @@
+/* Approved E desktop / B mobile account layout, backed by existing paper data. */
+.approved-account-page{min-width:0;color:var(--text,#152236);font-variant-numeric:tabular-nums}
+.approved-account-page svg{width:18px;height:18px;flex:none}
+.approved-account-page .account-page-heading{display:flex;align-items:center;justify-content:space-between;gap:14px;margin:0 0 18px;height:auto;min-height:32px;border:0}
+.approved-account-page .account-page-heading>div,.approved-account-page .account-heading-actions{display:flex;align-items:center;gap:12px;min-width:0}
+.approved-account-page h1{font-size:24px;margin:0;letter-spacing:-.035em}
+.approved-account-page h2{font-size:17px;margin:0;font-weight:650;letter-spacing:-.02em}
+.approved-account-page h3{font-size:16px;margin:0;line-height:1.4}
+.approved-account-page p{line-height:1.65}
+.approved-account-page .account-badge{font-size:11px;font-weight:500;color:#6d83a2;background:#f0f5fc;padding:5px 8px;border-radius:7px;white-space:nowrap}
+.approved-account-page .account-heading-actions>button{display:flex;align-items:center;gap:7px;background:#fff;border:1px solid #e2ebf6;color:#35516f;font-size:12px;min-height:34px;padding:7px 12px}
+.approved-account-page .account-heading-actions>button span{color:#8798b0;font-size:11px}
+.approved-account-page a{color:var(--accent,#2c6ef2);text-decoration:none}
+.approved-account-page .account-heading-actions>a,.approved-account-page .account-panel-heading>a{display:inline-flex;align-items:center;gap:2px;font-size:12px;white-space:nowrap}
+.approved-account-page .account-heading-actions>a svg,.approved-account-page .account-panel-heading>a svg{width:14px;height:14px}
+.approved-account-page .account-layout{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:16px;align-items:start}
+.approved-account-page .account-main-column{display:flex;flex-direction:column;gap:16px;min-width:0}
+.approved-account-page .account-card{padding:20px;background:#fff;border:1px solid #fff;border-radius:24px;min-width:0;box-shadow:0 6px 22px #5879a005}
+.approved-account-page .account-overview{grid-column:1;grid-row:1}
+.approved-account-page .account-holdings{grid-column:1;grid-row:2}
+.approved-account-page .account-aside{grid-column:2;grid-row:1;display:flex;flex-direction:column;gap:16px;min-width:0}
+.approved-account-page .account-balance-row{display:flex;align-items:center;justify-content:space-between;gap:20px}
+.approved-account-page .account-total-label{display:flex;gap:7px;align-items:center;line-height:22px}
+.approved-account-page .account-total-label h2{font-size:13px;font-weight:600;color:#35465f}
+.approved-account-page .account-icon-button{padding:0;width:30px;min-width:30px;min-height:30px;height:30px;display:inline-flex;align-items:center;justify-content:center;border:0;background:transparent;color:#7891af;border-radius:9px}
+.approved-account-page .account-icon-button svg{width:17px;height:17px}
+.approved-account-page .account-total-value{display:flex;align-items:baseline;gap:8px;margin-top:2px;min-width:0}
+.approved-account-page .account-total-value strong{font-size:clamp(30px,3.15vw,43px);font-weight:720;line-height:1.2;letter-spacing:-1.5px;overflow-wrap:anywhere}
+.approved-account-page .account-total-value>span{font-size:15px;color:#758aa6;flex:none}
+.approved-account-page .account-period-change{padding-top:9px;max-width:44%;text-align:right}
+.approved-account-page .account-period-change strong{font-size:23px;line-height:1.2;font-weight:650}
+.approved-account-page .account-period-change small{display:block;font-size:11px;color:#7d8eaa;margin-top:6px;line-height:1.5}
+.approved-account-page .account-up{color:#079f62}.approved-account-page .account-down{color:#d73e5c}
+.approved-account-page .account-category-tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:15px 0}
+.approved-account-page .account-category-tile{display:flex;align-items:center;gap:9px;min-width:0;padding:10px;background:#f4f7fd;border:1px solid #edf2fa;border-radius:14px;color:inherit}
+.approved-account-page .account-category-tile>div{min-width:0}
+.approved-account-page .account-category-tile>div>span{font-size:11px;color:#7c8fa9;display:block;margin-bottom:4px}
+.approved-account-page .account-category-tile strong{font-size:16px;font-weight:650;display:flex;align-items:center;gap:4px;overflow-wrap:anywhere}
+.approved-account-page .account-category-tile strong svg{width:13px;height:13px}
+.approved-account-page .account-category-tile strong small{font-size:10px;font-weight:500;color:#8294b0}
+.approved-account-page .account-asset-icon{width:31px;height:31px;flex:0 0 31px;display:inline-flex;align-items:center;justify-content:center;border-radius:50%;background:#e9f1ff;color:#3677e9}
+.approved-account-page .account-asset-icon svg{width:24px;height:24px}
+.approved-account-page .asset-btc{background:#ff9d05;color:white}.approved-account-page .asset-eth{background:#6e6afc;color:white}.approved-account-page .asset-xau{background:#ffe3a2;color:#765315;border-radius:10px}.approved-account-page .asset-usdt{background:#20b99a;color:white}
+.approved-account-page .account-chart-heading{display:flex;justify-content:space-between;align-items:center;gap:12px;border-top:1px solid #edf2f8;padding-top:12px;margin-bottom:10px}
+.approved-account-page .account-chart-heading h2{font-size:15px}.approved-account-page .account-chart-heading h2 span{font-size:10px;color:#8b9db6;font-weight:500;margin-left:6px}
+.approved-account-page .account-range,.approved-account-page .account-filter{display:flex;gap:3px;background:#f0f5fc;padding:3px;border-radius:10px}
+.approved-account-page .account-range button{font-size:11px;min-height:26px;padding:4px 14px;border:0;border-radius:8px;color:#8094af;background:transparent;line-height:1.3}
+.approved-account-page :is(.account-range,.account-filter) button[aria-pressed=true]{background:#2c6ef2;color:#fff;box-shadow:0 2px 6px #2c6ef226}
+.approved-account-page .account-chart-empty{min-height:150px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;text-align:center;background:repeating-linear-gradient(to bottom,transparent 0 49px,#edf3fa 49px 50px);border-radius:10px;font-size:12px;color:#7d91ae;padding:12px}
+.approved-account-page .account-chart-empty p{margin:0}.approved-account-page .account-chart-empty a{font-size:12px}
+.approved-account-page .account-chart-empty button{font-size:12px;padding:6px 12px;min-height:32px}
+.approved-account-page .account-equity-svg{width:100%;height:150px;display:block;overflow:visible}
+.approved-account-page .account-equity-svg circle:focus{outline:none;stroke:#183e85;stroke-width:3}
+.approved-account-page .account-chart-note{font-size:10px;color:#8194ae;margin:6px 0 0}
+.approved-account-page .account-chart-scenario{display:flex;align-items:center;gap:8px;font-size:11px;color:#7b8eaa;margin-bottom:6px}
+.approved-account-page .account-chart-scenario select{padding:4px 8px;min-height:30px;max-width:85%;font-size:11px}
+.approved-account-page .account-overview-footer{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-top:10px;font-size:10px;color:#8195af}
+.approved-account-page .account-text-button{display:inline-flex;align-items:center;justify-content:center;gap:4px;color:#2c6ef2;background:transparent;border:0;padding:3px;min-height:28px;font-size:11px;white-space:nowrap}
+.approved-account-page .account-text-button svg{width:13px;height:13px}
+.approved-account-page .account-panel-heading{display:flex;align-items:center;gap:10px;margin-bottom:14px;justify-content:space-between;min-width:0}
+.approved-account-page .account-filter{margin-right:auto;min-width:0}
+.approved-account-page .account-filter button{padding:5px 10px;min-height:28px;border:0;border-radius:8px;font-size:11px;line-height:1.3;color:#7c90ab;background:transparent;white-space:nowrap}
+.approved-account-page .account-holdings-table{min-width:0}
+.approved-account-page .account-holdings-table table{width:100%;border-collapse:collapse;font-size:12px;table-layout:auto}
+.approved-account-page .account-holdings-table th{text-align:right;color:#8093ae;font-size:10px;padding:5px 7px 9px;background:none;font-weight:500;white-space:nowrap}
+.approved-account-page .account-holdings-table td{text-align:right;border-top:1px solid #edf2f8;padding:7px;height:52px;vertical-align:middle;color:#405875;font-variant-numeric:tabular-nums}
+.approved-account-page .account-holdings-table :is(th,td):first-child{text-align:left;padding-left:0}
+.approved-account-page .account-holdings-table :is(th,td):last-child{padding-right:0}
+.approved-account-page .account-holding-name{display:flex;align-items:center;gap:9px;text-align:left;padding:0;background:none;border:0;min-height:36px;width:100%;color:inherit}
+.approved-account-page .account-holding-name>span:last-child{display:flex;flex-direction:column;gap:3px;min-width:0}
+.approved-account-page .account-holding-name strong{font-size:13px;color:#253952;font-weight:650}.approved-account-page .account-holding-name small{font-size:10px;color:#95a4b9;font-weight:400}
+.approved-account-page .account-holding-value strong{color:#172e4b;font-weight:650;font-size:13px}
+.approved-account-page .account-holding-value>small,.approved-account-page .account-mobile-price{display:none}
+.approved-account-page .account-row-action{width:20px}
+.approved-account-page .account-row-action button{width:23px;min-width:23px}
+.approved-account-page .account-footnote{color:#8597af;font-size:10px;line-height:1.65;margin:10px 0 0}
+.approved-account-page .account-empty{min-height:190px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;padding:20px;text-align:center;color:#7790ac}
+.approved-account-page .account-empty>svg{width:30px;height:30px;color:#9bafc7}
+.approved-account-page .account-empty p{font-size:12px;margin:0;max-width:420px}
+.approved-account-page .account-empty h3{color:#405c7c}.approved-account-page .account-empty a{display:inline-flex;align-items:center;font-size:12px;gap:3px}
+.approved-account-page .account-empty a svg{height:14px;width:14px}.approved-account-page .account-empty ul{text-align:left;font-size:12px}
+.approved-account-page .account-primary{display:inline-flex;align-items:center;justify-content:center;gap:5px;background:#2c6ef2;color:white;border:0;border-radius:11px;padding:10px 16px;min-height:38px;font-size:12px;font-weight:600}
+.approved-account-page .account-primary svg{height:14px;width:14px}.approved-account-page .account-full-link{width:100%;box-sizing:border-box}
+.approved-account-page .account-allocation-bar{display:flex;height:17px;background:#edf2f8;border-radius:12px;overflow:hidden;margin:7px 0 11px}
+.approved-account-page .account-allocation-bar>i{display:block;height:100%;min-width:0}.approved-account-page .account-allocation-bar.is-private{background:#e0e8f2}
+.approved-account-page .allocation-crypto{background:#5c94fa}.approved-account-page .allocation-cash{background:#cbd8e7}
+.approved-account-page .allocation-gold{background:#e9bd72}
+.approved-account-page .account-allocation-items>div{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(70px,auto);align-items:center;gap:9px;padding:12px 0;border-bottom:1px solid #edf2f8;font-size:12px}
+.approved-account-page .account-allocation-items>div:last-child{border-bottom:0}
+.approved-account-page .account-allocation-items span{display:flex;align-items:center;gap:7px;color:#57718f;white-space:nowrap}
+.approved-account-page .account-allocation-items span i{width:9px;height:9px;border-radius:50%;flex:none}
+.approved-account-page .account-allocation-items strong{font-size:12px;font-weight:650}.approved-account-page .account-allocation-items p{margin:0;text-align:right;font-size:12px;font-weight:600;overflow-wrap:anywhere}.approved-account-page .account-allocation-items p small{display:block;font-size:9px;font-weight:400;color:#92a2b7}
+.approved-account-page .account-connection-row{display:flex;align-items:center;gap:9px;padding:12px 0;border-bottom:1px solid #edf2f8;color:inherit}
+.approved-account-page .account-connection-row:last-of-type{border:0}
+.approved-account-page .account-connection-row>span:nth-child(2){flex:1;min-width:0}.approved-account-page .account-connection-row strong{display:block;font-size:12px;color:#253c58;margin-bottom:5px}.approved-account-page .account-connection-row small{display:block;font-size:10px;color:#8196b0;line-height:1.4}
+.approved-account-page .account-connection-row>.account-badge{font-size:10px;padding:5px 7px;font-weight:500}
+.approved-account-page .account-connection-row>svg{width:13px;height:13px;color:#8ca1bb}.approved-account-page .account-gold-badge{color:#9d7022;background:#fff6e6}
+.approved-account-page .account-records>p,.approved-account-page .account-risk>p{font-size:12px;color:#7b90aa}
+.approved-account-page .account-record-link{font-size:12px;display:flex;align-items:center;justify-content:space-between;margin-top:15px}
+.approved-account-page .account-risk ul{padding-left:17px;font-size:12px;color:#916c28;line-height:1.8}
+.approved-account-page .account-inline-risk{border-top:1px solid #edf2f8;padding-top:12px;margin-top:15px;font-size:11px;color:#7b90aa}
+.approved-account-page .account-inline-risk summary{cursor:pointer;color:#57718f;font-weight:550}.approved-account-page .account-inline-risk p{font-size:11px;line-height:1.7}.approved-account-page .account-inline-risk ul{padding-left:16px;color:#916c28;line-height:1.8}
+.approved-account-page .account-additional-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;padding:10px 0}
+.approved-account-page .account-additional-metrics dt{font-size:11px;color:#8194ae}.approved-account-page .account-additional-metrics dd{margin:5px 0 0;font-size:13px;color:#405b7a}
+.approved-account-page .account-contract{margin:18px 0 0;color:#7b90ab;font-size:11px;line-height:1.7;border-radius:16px;border:1px solid #e0e9f3;padding:12px 16px}
+.approved-account-page .account-contract summary{cursor:pointer;font-weight:550;color:#54708f}
+.approved-account-page .account-contract code{overflow-wrap:anywhere;font-size:10px}
+.approved-account-page .account-message{border-radius:13px;padding:12px 15px;margin:0 0 14px;font-size:12px}
+.approved-account-page .account-error{color:#b1304d;background:#fff3f5;padding:10px 12px;border-radius:11px;font-size:12px;line-height:1.6}
+.approved-account-page .account-dialog{margin:auto;border:1px solid #e3edf7;border-radius:24px;padding:24px;width:min(640px,calc(100vw - 28px));max-height:85dvh;overflow:auto;color:#253c58;background:#fff;box-shadow:0 22px 100px #1a345c35}
+.approved-account-page .account-dialog::backdrop{background:#172e4a55;backdrop-filter:blur(5px)}
+.approved-account-page .account-dialog-heading{display:flex;justify-content:space-between;align-items:center;gap:15px;margin-bottom:18px}
+.approved-account-page .account-dialog-heading p{font-size:12px;color:#8294ab;margin:5px 0 0}
+.approved-account-page .account-picker-toolbar{display:flex;gap:12px;align-items:center;border-bottom:1px solid #e8eef6;padding-bottom:10px;font-size:12px}
+.approved-account-page .account-picker-toolbar>strong{margin-right:auto}
+.approved-account-page .account-picker-list{display:flex;flex-direction:column;gap:5px;margin-top:9px;max-height:300px;overflow:auto}
+.approved-account-page .account-picker-row{display:flex;align-items:center;gap:10px;padding:11px 10px;border-radius:13px;cursor:pointer;background:#f8fafd;min-height:66px;box-sizing:border-box}
+.approved-account-page .account-picker-row.is-selected{background:#eaf2ff}
+.approved-account-page .account-picker-row input{width:17px;height:17px;flex:none;accent-color:#2c6ef2;cursor:pointer}
+.approved-account-page .account-picker-row>span:nth-last-child(2){flex:1;min-width:0}
+.approved-account-page .account-picker-row strong{display:block;font-size:13px;margin-bottom:4px}.approved-account-page .account-picker-row strong small{font-size:10px;font-weight:500;color:#8596b0;margin-left:5px}
+.approved-account-page .account-picker-row code{font-size:10px;color:#90a1b6}.approved-account-page .account-picker-row>b{font-size:10px;font-weight:500;color:#64829f;max-width:85px;text-align:right}
+.approved-account-page .account-picker-empty{padding:25px 12px;text-align:center;font-size:12px;color:#8194ad;line-height:1.7}
+.approved-account-page .account-picker-empty a{display:inline-flex;align-items:center;gap:4px;margin-top:12px}
+.approved-account-page .account-picker-pagination{display:flex;gap:8px;justify-content:space-between;margin-top:10px}
+.approved-account-page .account-picker-pagination button{font-size:11px;min-height:32px;padding:6px 10px}
+.approved-account-page .account-selected-ids{display:flex;flex-wrap:wrap;gap:5px;margin-top:14px}
+.approved-account-page .account-selected-ids button{display:flex;align-items:center;gap:7px;font-size:10px;padding:4px 7px;min-height:28px;background:#eef4fc;border:0}
+.approved-account-page .account-selected-ids code{font-size:10px;min-width:0;overflow-wrap:anywhere}
+.approved-account-page .account-picker-limits{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:20px 0 10px}
+.approved-account-page .account-picker-limits label{font-size:12px;color:#5d7796;display:block}
+.approved-account-page .account-picker-limits small{font-size:10px;margin-left:4px;color:#97a5ba}
+.approved-account-page .account-picker-limits input{width:100%;box-sizing:border-box;margin-top:8px;min-height:40px;border:1px solid #dce7f4;background:#fafdff}
+.approved-account-page .account-picker-limits input[aria-invalid=true]{border-color:#ce657b}
+.approved-account-page .account-dialog>.account-full-link{margin-top:16px}
+.approved-account-page .account-detail-row{padding:13px 0;border-top:1px solid #e9eff7;font-size:12px}
+.approved-account-page .account-detail-row>code{display:block;color:#8295ad;font-size:11px;overflow-wrap:anywhere}
+.approved-account-page .account-detail-row dl{display:block;margin:10px 0}.approved-account-page .account-detail-row dl>div{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:6px 0}.approved-account-page .account-detail-row dt{color:#7f94ae}.approved-account-page .account-detail-row dd{margin:0;text-align:right;overflow-wrap:anywhere}
+.approved-account-page .account-detail-row>p{font-size:10px;color:#90a1b7;overflow-wrap:anywhere}
+@media(min-width:761px) and (max-width:1250px){.approved-account-page .account-layout{grid-template-columns:minmax(0,1fr) 290px}.approved-account-page .account-card{padding:17px}.approved-account-page .account-total-value strong{font-size:34px}.approved-account-page .account-category-tile{padding:9px 7px;gap:6px}.approved-account-page .account-category-tile .account-asset-icon{width:26px;height:26px;flex-basis:26px}.approved-account-page .account-category-tile strong{font-size:14px}.approved-account-page .account-category-tile strong small{display:none}.approved-account-page .account-period-change strong{font-size:20px}.approved-account-page .account-holdings-table th{font-size:9px}}
+@media(min-width:761px) and (max-width:1050px){.approved-account-page .account-layout{grid-template-columns:minmax(0,1fr)}.approved-account-page .account-aside{grid-column:1;grid-row:2;display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.approved-account-page .account-total-value strong{font-size:39px}.approved-account-page .account-equity-svg{height:180px}}
+@media(max-width:760px){
+ .approved-account-page .account-page-heading{margin:0 0 12px;gap:8px}.approved-account-page h1{font-size:23px}.approved-account-page .account-page-heading>div{gap:7px}.approved-account-page .account-page-heading>div>.account-badge{display:none}.approved-account-page .account-heading-actions{gap:7px}.approved-account-page .account-heading-actions>button{font-size:11px;padding:5px 9px;min-height:32px}.approved-account-page .account-heading-actions>button>svg{width:14px;height:14px}.approved-account-page .account-heading-actions>a{font-size:11px}
+ .approved-account-page .account-layout{display:flex;flex-direction:column;gap:12px}.approved-account-page .account-card{padding:16px;border-radius:22px;width:100%;box-sizing:border-box}.approved-account-page .account-aside,.approved-account-page .account-main-column{display:contents}.approved-account-page .account-overview{order:1}.approved-account-page .account-allocation{order:2}.approved-account-page .account-holdings{order:3}.approved-account-page .account-connections{order:4}.approved-account-page .account-records{order:5}.approved-account-page .account-risk{order:6}
+ .approved-account-page .account-balance-row{display:block}.approved-account-page .account-total-label{gap:5px}.approved-account-page .account-total-label h2{font-size:12px}.approved-account-page .account-total-value{gap:6px}.approved-account-page .account-total-value strong{font-size:34px;font-weight:720;line-height:1.2}.approved-account-page .account-total-value>span{font-size:13px}.approved-account-page .account-period-change{max-width:none;text-align:left;padding-top:7px;display:flex;align-items:baseline;gap:10px}.approved-account-page .account-period-change strong{font-size:17px}.approved-account-page .account-period-change small{display:inline;font-size:10px;margin:0;line-height:1.4}.approved-account-page .account-category-tiles{display:none}
+ .approved-account-page .account-chart-heading{border:0;margin:12px 0 5px;padding:0}.approved-account-page .account-chart-heading h2{display:none}.approved-account-page .account-range{width:100%;padding:2px;gap:2px}.approved-account-page .account-range button{flex:1;font-size:11px;padding:3px 5px;min-height:27px}.approved-account-page .account-chart-empty{min-height:112px;font-size:11px;gap:8px;padding:8px}.approved-account-page .account-equity-svg{height:112px}.approved-account-page .account-chart-note{font-size:9px;margin-top:5px;line-height:1.55}.approved-account-page .account-overview-footer{font-size:9px;gap:7px;align-items:flex-start}.approved-account-page .account-overview-footer>span{max-width:74%}.approved-account-page .account-overview-footer button{font-size:10px;min-height:25px;flex:none}
+ .approved-account-page .account-panel-heading{gap:8px;margin-bottom:10px}.approved-account-page .account-panel-heading h2{font-size:16px;white-space:nowrap}.approved-account-page .account-filter{margin-right:0;margin-left:auto;padding:2px;gap:1px}.approved-account-page .account-filter button{font-size:10px;padding:4px 7px;min-height:27px}.approved-account-page .account-download{display:none}
+ .approved-account-page .account-allocation-bar{height:12px;margin:8px 0 11px}.approved-account-page .account-allocation-items{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.approved-account-page .account-allocation-items>div{display:flex;flex-direction:column;align-items:flex-start;padding:0;gap:4px;border:0}.approved-account-page .account-allocation-items>div>span{font-size:10px;order:2}.approved-account-page .account-allocation-items>div>strong{font-size:14px;order:1}.approved-account-page .account-allocation-items>div>p{font-size:10px;order:3;text-align:left}.approved-account-page .account-allocation-items p small{display:none}.approved-account-page .account-allocation-items span i{display:none}.approved-account-page .account-footnote{font-size:9px;margin-top:9px}.approved-account-page .account-additional-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .approved-account-page .account-holdings-table table{table-layout:fixed}.approved-account-page .account-holdings-table thead{display:none}.approved-account-page .account-holdings-table td{padding:8px 0;font-size:11px;height:55px;overflow-wrap:anywhere}.approved-account-page .account-holdings-table tr:first-child td{border:0}.approved-account-page .account-holdings-table td:first-child{width:35%}.approved-account-page .account-holdings-table td:nth-child(2){width:26%}.approved-account-page .account-holdings-table td.account-holding-value{width:33%}.approved-account-page .account-holdings-table td.account-row-action{width:6%}.approved-account-page .account-holdings-table .account-desktop-price,.approved-account-page .account-holdings-table .account-desktop-weight{display:none}
+ .approved-account-page .account-holding-name{gap:7px;min-height:38px}.approved-account-page .account-holding-name .account-asset-icon{width:28px;height:28px;flex-basis:28px}.approved-account-page .account-holding-name strong{font-size:12px}.approved-account-page .account-holding-name small{font-size:9px}.approved-account-page .account-holding-value strong{font-size:12px;display:block}.approved-account-page .account-holding-value>small{display:block;font-size:10px;color:#8499b5;margin-top:4px}.approved-account-page .account-mobile-price{display:block;font-size:9px;line-height:1.4;margin-top:4px;color:#8a9eb9}.approved-account-page .account-mobile-price>span{display:none}.approved-account-page .account-row-action button{width:18px;min-width:18px;min-height:34px}.approved-account-page .account-row-action svg{width:12px;height:12px}.approved-account-page .account-empty{min-height:165px;padding:12px 4px}.approved-account-page .account-empty h3{font-size:15px}.approved-account-page .account-empty p{font-size:12px}
+ .approved-account-page .account-connection-row strong{font-size:13px}.approved-account-page .account-connection-row small{font-size:11px}.approved-account-page .account-records>p,.approved-account-page .account-risk>p{font-size:12px}.approved-account-page .account-contract{font-size:11px;padding:12px;margin-top:15px}.approved-account-page .account-dialog{width:calc(100vw - 24px);padding:19px;max-height:85dvh;border-radius:22px}.approved-account-page .account-dialog-heading h2{font-size:18px}.approved-account-page .account-dialog-heading p{font-size:11px}.approved-account-page .account-picker-toolbar{gap:9px;font-size:11px}.approved-account-page .account-picker-toolbar .account-text-button{font-size:10px}.approved-account-page .account-picker-row{padding:10px 7px;gap:7px}.approved-account-page .account-picker-row .account-asset-icon{width:27px;height:27px;flex-basis:27px}.approved-account-page .account-picker-row strong{font-size:12px}.approved-account-page .account-picker-row>b{font-size:9px;max-width:62px}.approved-account-page .account-picker-limits{gap:10px}.approved-account-page .account-picker-limits label{font-size:11px}.approved-account-page .account-picker-limits input{font-size:14px;min-height:42px}.approved-account-page .account-detail-row dl{font-size:12px}
+}
+@media(prefers-reduced-motion:reduce){.approved-account-page :is(button,a){transition:none!important}}
+/* Keep the approved compact controls independent from legacy global button minimums. */
+body.approved-ui .approved-account-page .account-icon-button{min-height:30px;height:30px;padding:0}
+body.approved-ui .approved-account-page .account-range button{min-height:26px;padding:4px 14px;font-size:11px;border-radius:8px}
+body.approved-ui .approved-account-page .account-filter button{min-height:28px;padding:5px 10px;font-size:11px;border-radius:8px}
+body.approved-ui .approved-account-page .account-text-button{min-height:28px;padding:3px;font-size:11px}
+body.approved-ui .approved-account-page .account-heading-actions>button{min-height:34px;padding:7px 12px;font-size:12px}
+body.approved-ui .approved-account-page .account-holding-name{min-height:36px;padding:0}
+body.approved-ui .approved-account-page .account-contract summary,body.approved-ui .approved-account-page .account-inline-risk summary{min-height:0;padding:0}
+body.approved-ui .approved-account-page .account-primary{background:#2c6ef2;color:#fff;font-size:12px}
+body.approved-ui .approved-account-page .account-primary:disabled{background:#e9eff7;color:#8194ae}
+body.approved-ui .approved-account-page .account-period-change:not(.account-up):not(.account-down){color:#7186a3}
+@media(max-width:760px){
+ body.approved-ui .approved-account-page .account-range button{min-height:24px;padding:3px 5px;font-size:11px}
+ body.approved-ui .approved-account-page .account-filter button{min-height:24px;padding:4px 7px;font-size:10px}
+ body.approved-ui .approved-account-page .account-heading-actions>button{min-height:30px;padding:5px 9px;font-size:11px}
+ body.approved-ui .approved-account-page .account-overview-footer .account-text-button{min-height:22px;font-size:10px}
+ .approved-account-page .account-equity-svg text{font-size:25px}
+}
+/* Exact account.css measurements from the approved source; data and units remain real. */
+body.approved-ui .approved-account-page{color:#13213b;font-size:14px;line-height:1.5}
+body.approved-ui .approved-account-page :is(h1,h2,h3,p){margin:0}
+body.approved-ui .approved-account-page p{line-height:1.5}
+body.approved-ui .approved-account-page .account-page-heading{height:auto;min-height:37.5px;margin:0 0 18px;gap:12px}
+body.approved-ui .approved-account-page .account-page-heading h1{font-size:25px;line-height:1.5;font-weight:750;letter-spacing:-.035em}
+body.approved-ui .approved-account-page .account-page-heading>div{gap:14px}
+body.approved-ui .approved-account-page .account-heading-actions{gap:7px}
+body.approved-ui .approved-account-page .account-snapshot{font-size:12px;color:#71839e}
+body.approved-ui .approved-account-page .account-refresh{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;min-height:0;padding:0;border:0;background:none;color:#7b8da5}
+body.approved-ui .approved-account-page .account-refresh svg{width:16px;height:16px}
+body.approved-ui .approved-account-page .account-layout{grid-template-columns:minmax(0,1fr) 320px;gap:16px}
+body.approved-ui .approved-account-page .account-card{padding:18px;border-radius:24px;border:1px solid #ffffffed;box-shadow:0 8px 30px #304e7509}
+body.approved-ui .approved-account-page .account-aside{grid-column:2;grid-row:1/span 2;gap:16px}
+body.approved-ui .approved-account-page .account-balance-row{gap:18px}
+body.approved-ui .approved-account-page .account-total-label{gap:8px;line-height:20px}
+body.approved-ui .approved-account-page .account-total-label h2{font-size:13px;font-weight:650;line-height:20px;color:#25344b}
+body.approved-ui .approved-account-page .account-total-label .account-icon-button{width:26px;min-width:26px;height:20px;min-height:0;border:0;background:none;color:#64809e}
+body.approved-ui .approved-account-page .account-total-value{margin:0;gap:9px;letter-spacing:-1.5px}
+body.approved-ui .approved-account-page .account-total-value strong{font-size:clamp(31px,3.15vw,43px);line-height:1.16;font-weight:730;color:#0f1c32}
+body.approved-ui .approved-account-page .account-total-value>span{font-size:17px;letter-spacing:0;font-weight:500;color:#71859f}
+body.approved-ui .approved-account-page .account-period-change{padding-top:13px;text-align:left;flex-shrink:0}
+body.approved-ui .approved-account-page .account-period-change strong{font-size:24px;font-weight:700;line-height:1.2}
+body.approved-ui .approved-account-page .account-period-change small{font-size:11px;color:#8b9ab1;margin-top:5px;line-height:1.5}
+body.approved-ui .approved-account-page .account-up{color:#08b970}
+body.approved-ui .approved-account-page .account-down{color:#f24061}
+body.approved-ui .approved-account-page .account-category-tiles{gap:10px;margin:12px 0}
+body.approved-ui .approved-account-page .account-category-tile{gap:9px;padding:9px 10px;line-height:1.25;background:linear-gradient(125deg,#f0f5ff,#f8fafd);border:1px solid #f0f4f9;border-radius:14px}
+body.approved-ui .approved-account-page .account-category-tile .account-asset-icon{width:32px;height:32px;flex-basis:32px}
+body.approved-ui .approved-account-page .account-category-tile>div>span{color:#677d9a;font-size:11px;margin-bottom:4px;white-space:nowrap}
+body.approved-ui .approved-account-page .account-category-tile strong{display:block;font-size:17px;line-height:1.25;color:#1b2b43;letter-spacing:-.2px;white-space:nowrap}
+body.approved-ui .approved-account-page .account-category-tile strong small{font-size:10px;color:#91a0b5;font-weight:500}
+body.approved-ui .approved-account-page .account-category-tile strong svg{display:inline-block;vertical-align:middle}
+body.approved-ui .approved-account-page .asset-btc{background:linear-gradient(145deg,#ffb529,#ff8c00)}
+body.approved-ui .approved-account-page .asset-eth{background:linear-gradient(145deg,#7689ff,#4054fa)}
+body.approved-ui .approved-account-page .asset-xau{background:linear-gradient(140deg,#ffe9a0,#e9b844);color:#3d2909;border-radius:12px}
+body.approved-ui .approved-account-page .asset-usdt{background:#15b79d}
+body.approved-ui .approved-account-page .account-history-chart{position:relative}
+body.approved-ui .approved-account-page .account-chart-heading{gap:15px;padding-top:10px;border-top:1px solid #edf1f7;margin:0 0 9px}
+body.approved-ui .approved-account-page .account-chart-heading h2{font-size:16px;font-weight:650;line-height:1.5}
+body.approved-ui .approved-account-page .account-chart-heading h2 span{font-size:11px;font-weight:500;color:#8496b0;margin-left:10px}
+body.approved-ui .approved-account-page .account-range{min-width:166px;max-width:230px;padding:3px;border-radius:10px;background:#f1f5fb;gap:2px}
+body.approved-ui .approved-account-page .account-range button{flex:1;min-height:25px;padding:3px 15px;font-size:12px;line-height:1.4;border-radius:8px;color:#6c83a2}
+body.approved-ui .approved-account-page :is(.account-range,.account-filter) button[aria-pressed=true]{color:#fff;background:#176bff;box-shadow:0 2px 6px #176bff1f}
+body.approved-ui .approved-account-page .account-chart-empty{height:150px;min-height:150px;box-sizing:border-box;font-size:13px;color:#8b9ab0}
+body.approved-ui .approved-account-page .account-chart-plot{height:150px;position:relative;min-width:0}
+body.approved-ui .approved-account-page .account-equity-svg{height:100%;width:100%;display:block;overflow:hidden}
+body.approved-ui .approved-account-page .account-equity-svg text{font-size:10px}
+body.approved-ui .approved-account-page .account-equity-svg .account-svg-missing{font-size:14px}
+body.approved-ui .approved-account-page .account-equity-svg .account-svg-note{font-size:11px}
+body.approved-ui .approved-account-page .account-chart-note{position:absolute;width:1px;height:1px;padding:0;margin:0;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+body.approved-ui .approved-account-page .account-chart-source{position:absolute;left:0;top:0;font-size:9px;color:#94a4bb;pointer-events:none}
+body.approved-ui .approved-account-page .account-panel-heading{gap:10px;margin-bottom:12px}
+body.approved-ui .approved-account-page .account-panel-heading h2{font-size:17px;font-weight:700;line-height:1.3}
+body.approved-ui .approved-account-page .account-panel-heading>a{font-size:11px;font-weight:550;gap:3px;color:#2676fa}
+body.approved-ui .approved-account-page .account-badge{display:inline-flex;align-items:center;font-size:10px;line-height:1.5;padding:3px 7px;border-radius:7px;background:#f0f5fc;color:#8595ad;font-weight:500}
+body.approved-ui .approved-account-page .account-allocation-bar{height:17px;margin:0 0 12px;border-radius:20px;background:#edf2f8}
+body.approved-ui .approved-account-page .allocation-crypto{background:linear-gradient(90deg,#669aff,#4287fc)}
+body.approved-ui .approved-account-page .allocation-gold{background:linear-gradient(90deg,#e4b568,#f2cd92)}
+body.approved-ui .approved-account-page .allocation-cash{background:#cad6e5}
+body.approved-ui .approved-account-page .account-allocation-items>div{grid-template-columns:minmax(0,1fr) auto minmax(76px,auto);gap:10px;min-height:49px;padding:0;border-color:#f1f4f8;font-size:12px}
+body.approved-ui .approved-account-page .account-allocation-items span{gap:8px;color:#445570}
+body.approved-ui .approved-account-page .account-allocation-items span i{width:9px;height:9px;box-shadow:0 0 0 3px #f0f4fa}
+body.approved-ui .approved-account-page .account-allocation-items strong{font-size:13px;color:#1a2942;font-weight:650}
+body.approved-ui .approved-account-page .account-allocation-items p{font-size:13px;font-weight:650;line-height:1.5;color:#1a2942}
+body.approved-ui .approved-account-page .account-allocation-items p small{font-size:10px;line-height:1.5;color:#9aa8bb}
+body.approved-ui .approved-account-page .account-allocation-items p a{font-size:11px;white-space:nowrap}
+body.approved-ui .approved-account-page .account-holdings .account-panel-heading{justify-content:flex-start;margin-bottom:7px}
+body.approved-ui .approved-account-page .account-filter{max-width:300px;margin-left:0;margin-right:auto;gap:3px;padding:3px;background:#f1f5fb;border-radius:12px}
+body.approved-ui .approved-account-page .account-filter button{padding:6px 13px;min-height:29px;font-size:12px;line-height:1.4;color:#6c83a2;border-radius:9px}
+body.approved-ui .approved-account-page .account-select-button{border:0;padding:0;min-height:0;white-space:nowrap;background:none;font-size:10px;color:#8496b0;font-weight:500}
+body.approved-ui .approved-account-page .account-download{width:30px;height:30px;min-height:0;margin-left:auto;color:#8195af}
+body.approved-ui .approved-account-page .account-holdings-table table{width:100%;font-size:12px;border-collapse:collapse;white-space:nowrap}
+body.approved-ui .approved-account-page .account-holdings-table th{height:29px;padding:4px 8px;font-size:10px;font-weight:500;color:#8b9cb3;line-height:1.5}
+body.approved-ui .approved-account-page .account-holdings-table td{height:42px;padding:4px 8px;border-top:1px solid #eef2f7;color:#405371}
+body.approved-ui .approved-account-page .account-holdings-table :is(td,th):first-child{padding-left:0}
+body.approved-ui .approved-account-page .account-holdings-table :is(td,th):last-child{padding-right:0}
+body.approved-ui .approved-account-page .account-holding-name{gap:9px;min-height:32px;padding:0;background:none}
+body.approved-ui .approved-account-page .account-holding-name>.account-asset-icon{width:29px;height:29px;flex-basis:29px}
+body.approved-ui .approved-account-page .account-holding-name>span:last-child{gap:2px}
+body.approved-ui .approved-account-page .account-holding-name strong{font-size:13px;line-height:16px;color:#25344e}
+body.approved-ui .approved-account-page .account-holding-name small{font-size:10px;line-height:12px;color:#96a5ba}
+body.approved-ui .approved-account-page .account-holding-value strong{font-size:13px;font-weight:650;color:#15233c}
+body.approved-ui .approved-account-page .account-connection-row{gap:10px;padding:10px 0;border-bottom:1px solid #eff3f8;color:#1c2c46}
+body.approved-ui .approved-account-page .account-connection-row:last-child{border-bottom:0;padding-bottom:0}
+body.approved-ui .approved-account-page .account-connection-row>.account-asset-icon{width:36px;height:36px;flex-basis:36px}
+body.approved-ui .approved-account-page .account-connection-row strong{font-size:13px;line-height:1.5;margin-bottom:4px;color:#1c2c46}
+body.approved-ui .approved-account-page .account-connection-row small{font-size:10px;line-height:1.5;color:#91a2b9;white-space:nowrap}
+body.approved-ui .approved-account-page .account-connection-row>.account-badge{font-size:10px;padding:5px 8px;line-height:1.5}
+body.approved-ui .approved-account-page .account-workflow-table{border-collapse:collapse;width:100%;font-size:11px;white-space:nowrap}
+body.approved-ui .approved-account-page .account-workflow-table th{background:#f3f7fd;color:#91a2b9;font-size:10px;font-weight:500;padding:6px 5px;line-height:1.5;text-align:left}
+body.approved-ui .approved-account-page .account-workflow-table th:first-child{border-radius:10px 0 0 10px}
+body.approved-ui .approved-account-page .account-workflow-table th:last-child{border-radius:0 10px 10px 0;text-align:right}
+body.approved-ui .approved-account-page .account-workflow-table td{height:34px;padding:8px 5px;border-bottom:1px solid #eff3f8;line-height:1.5}
+body.approved-ui .approved-account-page .account-workflow-table tr:last-child td{border:0}
+body.approved-ui .approved-account-page .account-record-link{font-size:11px;line-height:1.5;margin:0;gap:4px;justify-content:flex-end}
+body.approved-ui .approved-account-page .account-record-link svg{width:12px;height:12px}
+body.approved-ui .approved-account-page .account-workflow-table .account-text-button{width:100%;justify-content:flex-end;gap:4px;min-height:0;padding:0;font-size:11px;line-height:1.5;font-weight:500}
+body.approved-ui .approved-account-page .account-footnote{font-size:10px;line-height:1.5;color:#99a8bb;margin:10px 0 0}
+body.approved-ui .approved-account-page .account-holdings-table .account-footnote{margin-top:6px;white-space:normal}
+@media(min-width:761px) and (max-width:1250px){
+ body.approved-ui .approved-account-page .account-layout{grid-template-columns:minmax(0,1fr) 290px;gap:14px}
+ body.approved-ui .approved-account-page .account-balance-row{gap:8px}
+ body.approved-ui .approved-account-page .account-total-value strong{font-size:32px}
+ body.approved-ui .approved-account-page .account-period-change strong{font-size:20px}
+ body.approved-ui .approved-account-page .account-category-tile{padding:10px 8px;gap:7px}
+ body.approved-ui .approved-account-page .account-category-tile .account-asset-icon{width:27px;height:27px;flex-basis:27px}
+ body.approved-ui .approved-account-page .account-category-tile strong{font-size:14px}
+ body.approved-ui .approved-account-page .account-category-tile strong small{display:none}
+ body.approved-ui .approved-account-page .account-allocation-items>div{gap:7px;font-size:11px}
+ body.approved-ui .approved-account-page .account-allocation-items :is(strong,p){font-size:12px}
+}
+@media(min-width:761px) and (max-width:1050px){
+ body.approved-ui .approved-account-page .account-layout{grid-template-columns:minmax(0,1fr)}
+ body.approved-ui .approved-account-page .account-aside{grid-column:1;grid-row:3;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+ body.approved-ui .approved-account-page .account-records{grid-column:1/-1}
+ body.approved-ui .approved-account-page .account-total-value strong{font-size:38px}
+ body.approved-ui .approved-account-page .account-chart-plot,body.approved-ui .approved-account-page .account-chart-empty{height:200px;min-height:200px}
+}
+@media(max-width:760px){
+ body.approved-ui .approved-account-page .account-page-heading{display:none}
+ body.approved-ui .approved-account-page .account-layout{display:flex;flex-direction:column;gap:12px}
+ body.approved-ui .approved-account-page .account-card{padding:15px;border-radius:21px;width:100%;box-sizing:border-box;box-shadow:0 5px 20px #5879a005}
+ body.approved-ui .approved-account-page .account-aside{display:contents}
+ body.approved-ui .approved-account-page .account-total-label{line-height:21px;gap:6px}
+ body.approved-ui .approved-account-page .account-total-label h2{font-size:12px;line-height:21px}
+ body.approved-ui .approved-account-page .account-total-label .account-icon-button{height:22px;width:25px;min-width:25px}
+ body.approved-ui .approved-account-page .account-total-label .account-icon-button svg{width:16px;height:16px}
+ body.approved-ui .approved-account-page .account-total-value{gap:6px;letter-spacing:-1px}
+ body.approved-ui .approved-account-page .account-total-value strong{font-size:34px;line-height:1.22;font-weight:730}
+ body.approved-ui .approved-account-page .account-total-value>span{font-size:14px}
+ body.approved-ui .approved-account-page .account-period-change{padding-top:5px;gap:10px;max-width:none}
+ body.approved-ui .approved-account-page .account-period-change strong{font-size:17px;line-height:1.2}
+ body.approved-ui .approved-account-page .account-period-change small{font-size:9px;margin:0;line-height:1.5}
+ body.approved-ui .approved-account-page .account-category-tiles{display:none}
+ body.approved-ui .approved-account-page .account-chart-heading{margin:12px 0 6px;padding:0;border:0}
+ body.approved-ui .approved-account-page .account-range{width:100%;max-width:none;min-width:0;height:27px;padding:2px;box-sizing:border-box;gap:2px}
+ body.approved-ui .approved-account-page .account-range button{min-height:23px;padding:2px 0;font-size:11px;line-height:1.1}
+ body.approved-ui .approved-account-page .account-chart-plot,body.approved-ui .approved-account-page .account-chart-empty{height:112px;min-height:112px;font-size:12px}
+ body.approved-ui .approved-account-page .account-equity-svg text{font-size:9px}
+ body.approved-ui .approved-account-page .account-panel-heading{margin-bottom:11px;gap:8px}
+ body.approved-ui .approved-account-page .account-panel-heading h2{font-size:16px;line-height:20px}
+ body.approved-ui .approved-account-page .account-allocation .account-badge{font-size:9px}
+ body.approved-ui .approved-account-page .account-allocation-bar{height:12px;margin:0 0 10px;border-radius:10px}
+ body.approved-ui .approved-account-page .account-allocation-items{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+ body.approved-ui .approved-account-page .account-allocation-items>div{display:flex;flex-direction:column;align-items:flex-start;min-height:0;gap:3px;padding:0;border:0}
+ body.approved-ui .approved-account-page .account-allocation-items>div>span{font-size:10px;line-height:13px;order:2;color:#97a5ba}
+ body.approved-ui .approved-account-page .account-allocation-items>div>strong{font-size:13px;line-height:18px;order:1}
+ body.approved-ui .approved-account-page .account-allocation-items>div>p{order:3;text-align:left;font-size:10px;line-height:15px;font-weight:500;color:#5b7190}
+ body.approved-ui .approved-account-page .account-allocation-items p a{font-size:9px;line-height:15px}
+ body.approved-ui .approved-account-page .account-allocation-items p small{display:none}
+ body.approved-ui .approved-account-page .account-holdings .account-panel-heading{justify-content:space-between;gap:8px;margin-bottom:4px}
+ body.approved-ui .approved-account-page .account-filter{width:auto;max-width:none;min-width:0;gap:1px;padding:2px;margin:0 0 0 auto}
+ body.approved-ui .approved-account-page .account-filter button{min-height:27px;padding:4px 11px;font-size:10px;line-height:1.2}
+ body.approved-ui .approved-account-page .account-select-button{font-size:9px}
+ body.approved-ui .approved-account-page .account-holdings-table td{padding:5px 0;height:52px;font-size:12px;vertical-align:middle;border-color:#f0f4f8}
+ body.approved-ui .approved-account-page .account-holdings-table td:first-child{width:33%}
+ body.approved-ui .approved-account-page .account-holdings-table td:nth-child(2){width:27%}
+ body.approved-ui .approved-account-page .account-holdings-table td.account-holding-value{width:34%}
+ body.approved-ui .approved-account-page .account-holding-name{gap:7px;min-height:40px}
+ body.approved-ui .approved-account-page .account-holding-name>.account-asset-icon{width:28px;height:28px;flex-basis:28px}
+ body.approved-ui .approved-account-page .account-holding-name>span:last-child{gap:3px;min-width:0}
+ body.approved-ui .approved-account-page .account-holding-name strong{font-size:12px;line-height:15px}
+ body.approved-ui .approved-account-page .account-holding-name small{font-size:9px;line-height:11px;max-width:68px;overflow:hidden;text-overflow:ellipsis}
+ body.approved-ui .approved-account-page .account-mobile-price{font-size:9px;line-height:12px;color:#97a5bc;margin-top:4px}
+ body.approved-ui .approved-account-page .account-holding-value strong{font-size:12px;line-height:16px}
+ body.approved-ui .approved-account-page .account-holding-value>small{font-size:10px;line-height:13px;margin-top:4px}
+ body.approved-ui .approved-account-page .account-footnote{font-size:9px;margin-top:9px}
+ body.approved-ui .approved-account-page .account-connection-row{padding:12px 0}
+ body.approved-ui .approved-account-page .account-connection-row small{font-size:11px}
+ body.approved-ui .approved-account-page .account-connection-row>.account-badge{font-size:10px}
+ body.approved-ui .approved-account-page .account-workflow-table td{padding:12px 5px;font-size:11px}
+}
+@media(max-width:374px){
+ body.approved-ui .approved-account-page .account-total-value strong{font-size:31px}
+ body.approved-ui .approved-account-page .account-period-change{gap:6px}
+ body.approved-ui .approved-account-page .account-period-change strong{font-size:16px}
+ body.approved-ui .approved-account-page .account-period-change small{font-size:8px}
+ body.approved-ui .approved-account-page .account-filter button{padding:4px 9px}
+ body.approved-ui .approved-account-page .account-allocation-items p{font-size:9px}
+ body.approved-ui .approved-account-page .account-holding-name{gap:5px}
+ body.approved-ui .approved-account-page .account-holding-name>.account-asset-icon{width:25px;height:25px;flex-basis:25px}
+}
