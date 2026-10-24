@@ -16,6 +16,31 @@
 @media(prefers-reduced-motion:reduce){.exchange-analysis *,.exchange-analysis *:before,.exchange-analysis *:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
 
 /* Real-data availability and preserved advanced capabilities. */
+.exchange-analysis .analysis-modal:has(.analysis-product-picker){width:min(460px,calc(100% - 32px));max-height:min(85dvh,660px)}
+.exchange-analysis .analysis-product-search{display:flex;align-items:center;gap:10px;background:#f3f7fd;border:1px solid #e8eef7;border-radius:12px;padding:9px 13px;margin:0 0 12px;color:#7c8fa9}
+.exchange-analysis .analysis-product-search>.icon{width:17px;height:17px}
+.exchange-analysis .analysis-product-search input{border:0;border-radius:0;background:none;box-shadow:none;padding:0;min-width:0;min-height:28px;width:100%;font-size:14px;color:var(--text)}
+.exchange-analysis .analysis-product-search input::-webkit-search-cancel-button{display:none}
+.exchange-analysis .analysis-product-search button{display:grid;place-items:center;flex:0 0 28px;width:28px;height:28px;min-height:28px;border:0;border-radius:50%;background:#e7eef8;color:#7287a5;padding:6px}
+.exchange-analysis .analysis-product-search button .icon{width:15px;height:15px}
+.exchange-analysis .analysis-product-results{display:grid;gap:5px;max-height:min(42dvh,360px);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
+.exchange-analysis .analysis-product-results>button{display:flex;align-items:center;gap:12px;width:100%;min-width:0;min-height:66px;padding:10px 12px;border:1px solid transparent;border-radius:13px;background:#f7faff;text-align:left;color:var(--text)}
+.exchange-analysis .analysis-product-results>button:hover{background:#edf4ff}
+.exchange-analysis .analysis-product-results>button[aria-pressed=true]{border-color:#abcaff;background:#edf4ff}
+.exchange-analysis .analysis-product-results .coin{width:34px;height:34px;flex:0 0 34px;border-radius:10px}
+.exchange-analysis .analysis-product-identity{display:flex;flex:1;min-width:0;flex-direction:column;gap:3px}
+.exchange-analysis .analysis-product-identity strong{font-size:14px;font-weight:650;overflow-wrap:anywhere}
+.exchange-analysis .analysis-product-identity small{font-size:11px;line-height:1.5;color:#8094af;overflow-wrap:anywhere}
+.exchange-analysis .analysis-product-current{display:flex;align-items:center;gap:5px;color:var(--blue);font-size:11px;white-space:nowrap}
+.exchange-analysis .analysis-product-results>button>.icon,.exchange-analysis .analysis-product-current .icon{width:17px;height:17px;color:#7f98b8}
+.exchange-analysis .analysis-product-current .icon{color:var(--blue)}
+.exchange-analysis .analysis-product-empty{display:grid;justify-items:center;gap:10px;padding:24px 10px;text-align:center;color:#7b8ea8}
+.exchange-analysis .analysis-product-empty strong{font-size:15px;color:#425a7a}
+.exchange-analysis .analysis-product-empty p{font-size:12px}
+.exchange-analysis .analysis-product-footer{border-top:1px solid var(--line);margin-top:14px;padding-top:14px}
+.exchange-analysis .analysis-product-footer .analysis-modal-note{margin-top:10px;font-size:11px}
+body:has(.exchange-analysis .analysis-product-picker){overflow:hidden}
+@media(max-width:760px){.exchange-analysis button.mobile-symbol-select{width:100%;margin:0 0 5px;background:#fff;color:var(--text);text-align:left}.exchange-analysis .mobile-symbol-label{display:block;line-height:26px;min-width:0;min-height:26px;flex:1;width:100%;padding-right:20px;font-size:12px;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.exchange-analysis .analysis-product-search input{font-size:16px}.exchange-analysis .analysis-modal:has(.analysis-product-picker){width:calc(100% - 24px);padding:20px;border-radius:22px}.exchange-analysis .analysis-product-results>button{min-height:62px;padding:9px 10px}}
 .exchange-analysis h1,.exchange-analysis h2,.exchange-analysis h3,.exchange-analysis h4{font-weight:700}.exchange-analysis .watchlist-card{contain:size}.exchange-analysis .quote-chart-wrap{overflow:hidden}
 .exchange-analysis .chart-toolbar{padding:0;min-height:0;border:0;background:none;flex-wrap:nowrap}.exchange-analysis .timeframes{margin:0;flex:0 1 auto}.exchange-analysis .instrument-title h1{line-height:1.5}.exchange-analysis .coin-BTC{background:linear-gradient(145deg,#ffb529,#ff8c00);color:white;border-radius:50%}.exchange-analysis .coin-ETH{background:linear-gradient(145deg,#7689ff,#4054fa);color:white;border-radius:50%}.exchange-analysis .coin-SOL{background:#101e31;color:#8b75ff;border-radius:11px}.exchange-analysis .coin-XAU{background:linear-gradient(140deg,#ffe9a0,#e9b844);color:#3d2909}.exchange-analysis .coin-USDT{background:#15b79d;color:white;border-radius:50%}.exchange-analysis .coin-USD{background:#277dff;color:white;border-radius:50%}.exchange-analysis .watchlist-card .coin{border-radius:10px}.exchange-analysis .instrument-title .coin{border-radius:10px}
 @media(max-width:760px){.exchange-analysis .timeframes{flex:1}.exchange-analysis .sub-chart-label{left:52px}}

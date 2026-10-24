@@ -19,7 +19,8 @@ if __name__=='__main__':
         try:
             page.goto('http://127.0.0.1:3000/paper/realtime',wait_until='domcontentloaded')
             expect(page.get_by_test_id('paper-worker')).to_have_attribute('data-healthy','true')
-            page.get_by_label('实时模拟交易对',exact=True).select_option('ETHUSDT')
+            page.get_by_role('button',name='实时模拟交易对',exact=True).click()
+            page.get_by_role('dialog',name='实时模拟交易对',exact=True).get_by_role('option',name='ETHUSDT',exact=True).click()
             page.get_by_label('预热柱数',exact=True).fill('8')
             page.get_by_label('实时均线周期',exact=True).fill('2')
             page.get_by_label('实时前柱量参与率（0..0.1）',exact=True).fill('0.1')
@@ -79,7 +80,7 @@ if __name__=='__main__':
             page.get_by_role('button',name='停止实时新买入',exact=True).click();expect(panel).to_have_attribute('data-halted','true')
             page.reload(wait_until='domcontentloaded');expect(panel).to_have_attribute('data-halted','true')
             expect(page.get_by_label('实时均线周期',exact=True)).to_have_value('2')
-            expect(page.get_by_label('实时模拟交易对',exact=True)).to_have_value('ETHUSDT')
+            expect(page.get_by_role('button',name='实时模拟交易对',exact=True)).to_have_text('ETHUSDT')
             with page.expect_download() as download:page.get_by_role('button',name='下载实时模拟账本',exact=True).click()
             output=ROOT/'.runtime/browser-paper-stream.json';download.value.save_as(str(output))
             exported=json.loads(output.read_text());verify(exported)

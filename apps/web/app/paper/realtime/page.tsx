@@ -12,6 +12,7 @@ import {CandleSchema,Symbols,Intervals,MarketProvider} from '../../../lib/market
 import {PaperSelectionKey as KEY,restoredPaperAccount,samePaperAccount,type AccountIdentity} from '../../../lib/paper-account-selection';
 import StopAccountDialog,{type StopTarget} from './stop-account-dialog';
 import PaperLedger from './paper-ledger';
+import WorkspaceSelect from '../../../components/workspace-select';
 import './paper-mobile.css';
 const D=z.string().regex(/^-?\d+(\.\d+)?([Ee][+-]?\d+)?$/),Time=z.iso.datetime({offset:true});
 const Config=z.object({initial_cash:D,period:z.number().int(),fee_rate:D,slippage_rate:D,allocation:D,participation:D});
@@ -27,8 +28,9 @@ const money=(v:string)=>Number(v).toLocaleString('zh-CN',{minimumFractionDigits:
 export default function RealtimePaper(){
  const [fields,setFields]=useState(defaultFields),[view,setView]=useState<View|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState(''),[pollError,setPollError]=useState(''),[worker,setWorker]=useState(false);
  const [panel,setPanel]=useState<'overview'|'accounts'|'create'>('overview'),[stopTarget,setStopTarget]=useState<StopTarget|null>(null),[notice,setNotice]=useState('');
- const [recordTab,setRecordTab]=useState<'fills'|'orders'|'checks'>('fills');
+ const [recordTab,setRecordTab]=useState<'fills'|'orders'|'checks'>('fills'),[ready,setReady]=useState(false);
  const current=useRef<View|null>(null),raw=useRef<Record<string,unknown>|null>(null),locked=useRef(false);
+ useEffect(()=>setReady(true),[]);
  const set=(key:keyof typeof defaultFields,value:string)=>setFields(f=>({...f,[key]:value}));
  function rememberAccount(id:string,recent:boolean){try{sessionStorage.setItem(KEY,id);if(recent)localStorage.setItem(KEY,id);}catch{setNotice('账户已读取，但浏览器未保存选择；刷新后请从账户列表重新选择。');}}
  function adopt(data:Record<string,unknown>,remember=false){const next=State.parse(data);if(current.current?.session_id===next.session_id&&next.manifest.snapshot_sha256!==current.current.manifest.snapshot_sha256)throw new Error('固定账户快照变化');if(current.current?.session_id===next.session_id&&next.revision<current.current.revision)return current.current;raw.current=data;current.current=next;setView(next);if(remember){rememberAccount(next.session_id,true);setPanel('overview');window.scrollTo(0,0);}return next;}
@@ -47,17 +49,17 @@ export default function RealtimePaper(){
  function downloadLedger(){if(!raw.current||!view)return;const url=URL.createObjectURL(new Blob([JSON.stringify(raw.current,null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download=`fc666-paper-stream-${view.session_id}-${view.accepted_bars}.json`;a.click();URL.revokeObjectURL(url);}
  async function copyAccount(){if(!view)return;try{await navigator.clipboard.writeText(view.session_id);setNotice('已复制完整账户编号');}catch{setNotice('复制未完成，请在账户参数中查看完整编号。');}}
  const input=(key:keyof typeof defaultFields,label:string,numeric=false,min?:number,max?:number)=><label key={key}>{label}<input required value={fields[key]} onChange={e=>set(key,e.target.value)} type={numeric?'number':'text'} inputMode={numeric?'numeric':'decimal'} min={min} max={max}/></label>;
- return <main className="research-page paper-page realtime-page">
+ return <main className="paper-page approved-paper-page">
   <div className="paper-page-heading"><div><h1>实时模拟</h1><p>{MarketProvider==='bitget'?'Bitget':'Binance'} 现货 · 独立模拟资金</p></div><span data-testid="paper-worker" data-healthy={worker} className={`paper-worker-state ${worker?'buy':'warning'}`}>{worker?'模拟服务在线':'服务状态待确认'}</span></div>
-  <div className="paper-view-switch" role="group" aria-label="模拟账户视图">{([['overview','账户概览'],['accounts','切换账户'],['create','新建账户']] as const).map(([value,label])=><button key={value} className="secondary" aria-pressed={panel===value} disabled={busy} onClick={()=>{setPanel(value);setError('');setNotice('');}}>{label}</button>)}</div>
+  <div className="paper-view-switch" role="group" aria-label="模拟账户视图">{([['overview','账户概览'],['accounts','切换账户'],['create','新建账户']] as const).map(([value,label])=><button key={value} className="secondary" aria-pressed={panel===value} disabled={busy||!ready} onClick={()=>{setPanel(value);setError('');setNotice('');}}>{label}</button>)}</div>
   {pollError?<p className="paper-message warning" role="alert" data-testid="paper-poll-error">{pollError}</p>:null}
   {error&&!stopTarget?<p className="paper-message" role="alert">{error}</p>:null}{notice?<p className="paper-message" role="status">{notice}</p>:null}
   {panel==='accounts'?<AccountList kind="streams" layout="cards" selected={view?.session_id} revision={view?.revision} busy={busy} onSelect={selectAccount}/>:null}
   {panel==='create'?<section className="paper-create"><div className="paper-section-title"><h2>创建独立模拟账户</h2><span>实盘关闭</span></div><p>新账户从零交易状态开始，历史柱只用于预热。资金、参数与其他账户独立。</p><form onSubmit={create}>
    <fieldset disabled={busy} className="paper-form-fields"><legend>市场与策略</legend>
-    <label>交易对<select aria-label="实时模拟交易对" value={fields.symbol} onChange={e=>set('symbol',e.target.value)}>{Symbols.map(value=><option key={value}>{value}</option>)}</select></label>
-    <label>周期<select aria-label="实时模拟周期" value={fields.timeframe} onChange={e=>set('timeframe',e.target.value)}>{Intervals.map(value=><option key={value}>{value}</option>)}</select></label>
-    <label>策略<select aria-label="实时模拟策略" value={fields.strategy} onChange={e=>set('strategy',e.target.value)}><option value="ema_long_flat_v1">EMA Long / Flat v1</option><option value="sma_long_flat_v1">SMA Long / Flat v1</option></select></label>
+    <label>交易对<WorkspaceSelect label="实时模拟交易对" value={fields.symbol} onValueChange={value=>set("symbol",value)} disabled={busy||!ready} options={Symbols.map(value=>({value,label:value}))}/></label>
+    <label>周期<WorkspaceSelect label="实时模拟周期" value={fields.timeframe} onValueChange={value=>set("timeframe",value)} disabled={busy||!ready} options={Intervals.map(value=>({value,label:value}))}/></label>
+    <label>策略<WorkspaceSelect label="实时模拟策略" value={fields.strategy} onValueChange={value=>set("strategy",value)} disabled={busy||!ready} options={[{value:"ema_long_flat_v1",label:"EMA Long / Flat v1"},{value:"sma_long_flat_v1",label:"SMA Long / Flat v1"}]}/></label>
     {input('initial_cash','实时初始资金 USDT')}{input('limit','预热柱数',true,2,500)}{input('period','实时均线周期',true,2,500)}
     {fields.strategy==='sma_long_flat_v1'?<>{input('fast','实时 SMA 快周期',true,2,499)}{input('slow','实时 SMA 慢周期',true,Number(fields.fast)+1,500)}</>:null}
    </fieldset>
@@ -65,7 +67,7 @@ export default function RealtimePaper(){
     {input('max_order_quote','实时单笔买入上限 USDT')}{input('max_position_quote','实时持仓买入上限 USDT')}{input('max_drawdown','实时回撤停止阈值（0..1）')}{input('allocation','实时买入资金比例（0..1）')}{input('participation','实时前柱量参与率（0..0.1）')}{input('fee_rate','实时手续费率')}{input('slippage_rate','实时滑点率')}{input('max_lag_seconds','允许闭合柱延迟秒数',true,1,60)}
    </fieldset></details><button className="paper-create-submit" disabled={busy} type="submit">{busy?'正在创建…':'创建实时模拟账户'}</button>
   </form></section>:null}
-  {panel==='overview'&&view?<>
+  {panel==='overview'&&view?<div className="paper-dashboard">
    <section className="paper-account-overview" data-testid="paper-stream-state" data-status={view.status} data-account-id={view.session_id} data-revision={view.revision} data-accepted={view.accepted_bars} data-fills={view.fills.length} data-halted={view.risk.entry_halted}>
     <div className="paper-account-heading"><div><h2>{view.manifest.request.symbol}<span>{view.manifest.request.timeframe}</span></h2><button className="paper-id-button secondary" onClick={()=>void copyAccount()} aria-label="复制完整账户编号">{view.session_id.slice(0,8)}…{view.session_id.slice(-4)} <span>复制</span></button></div><span className={`paper-status ${view.status==='RUNNING'?'is-running':''}`}>{view.status==='RUNNING'?'运行中':view.status==='PAUSED'?'已暂停':view.status==='STOPPED'?'已停止':labels[view.status]}</span></div>
     <div className="paper-equity"><span>模拟权益 <small>USDT</small></span><strong title={view.account.equity}>{money(view.account.equity)}</strong><p className={Number(view.account.net_pnl)>=0?'buy':'sell'}>净盈亏 {Number(view.account.net_pnl)>0?'+':''}{money(view.account.net_pnl)} USDT</p></div>
@@ -75,9 +77,9 @@ export default function RealtimePaper(){
     <details className="paper-account-details"><summary>账户参数与执行口径</summary><p>账户编号：<code>{view.session_id}</code></p><p>{view.manifest.request.strategy} · {JSON.stringify(view.manifest.request.parameters)} · 初始资金 {view.manifest.request.config.initial_cash} USDT</p><p>费率 {view.manifest.request.config.fee_rate} · 滑点 {view.manifest.request.config.slippage_rate} · 资金比例 {view.manifest.request.config.allocation} · 前柱量参与率 {view.manifest.request.config.participation}</p><p>单笔上限 {view.manifest.request.risk.max_order_quote} · 持仓上限 {view.manifest.request.risk.max_position_quote} · 回撤停止 {view.manifest.request.risk.max_drawdown} · 延迟上限 {view.manifest.request.max_lag_seconds} 秒</p><p>收到闭合柱后按收盘参考价模拟成交，容量使用前柱量代理；不是交易所订单。{MarketProvider==='bitget'?'Bitget 历史与当前行情接口一致后才确认闭合柱。':''}迟到柱不补造成交，历史修正或规则变化会阻断账户。金额展示为近似值，下载保留原始精度。</p><p>每个标签页独立记住当前账户，后台轮询不切换账户。关闭网页不停止模拟。当前环境无多用户鉴权，实盘关闭。</p><p>初始快照 SHA256：{view.manifest.snapshot_sha256}</p></details>
     <details className="paper-account-management"><summary>账户管理</summary><p>暂停可恢复；停止新买入仍允许策略卖出。永久停止不能恢复，不自动平仓，保留全部账本、现金和库存。</p><div className="paper-management-actions"><button className="secondary" disabled={busy||!active||view.risk.manual_halt_at!==null} onClick={()=>void command('halt')}>停止实时新买入</button><button className="danger-outline" disabled={busy||view.status==='STOPPED'} onClick={confirmStop}>停止此实时账户</button></div></details>
    </section>
-   <div className="paper-record-tabs" role="group" aria-label="模拟记录视图">{([['fills','成交'],['orders','订单'],['checks','运行核对']] as const).map(([value,label])=><button key={value} className="secondary" aria-pressed={recordTab===value} onClick={()=>setRecordTab(value)}>{label}</button>)}</div>
+   <div className="paper-record-panel"><div className="paper-record-tabs" role="group" aria-label="模拟记录视图">{([['fills','成交'],['orders','订单'],['checks','运行核对']] as const).map(([value,label])=><button key={value} className="secondary" aria-pressed={recordTab===value} onClick={()=>setRecordTab(value)}>{label}</button>)}</div>
    {recordTab!=='checks'?<PaperLedger key={`${view.session_id}:${recordTab}`} view={view} kind={recordTab} labels={labels}/>:<div className="paper-checks"><details><summary>执行恢复与回执</summary><Recovery key={`recovery:${view.session_id}`} id={view.session_id} disabled={busy}/><Intents key={`intents:${view.session_id}`} id={view.session_id} disabled={busy}/></details><details><summary>准备、授权与生命周期</summary><Preparations key={`preparations:${view.session_id}`} id={view.session_id} disabled={busy}/><Authorizations key={`authorizations:${view.session_id}`} id={view.session_id} disabled={busy}/><Lifecycle key={`lifecycle:${view.session_id}`} id={view.session_id} disabled={busy}/></details><details><summary>资金预留核对</summary><Funding key={`funding:${view.session_id}`} id={view.session_id} disabled={busy}/></details><details><summary>控制操作记录</summary><ControlHistory key={view.session_id} kind="streams" id={view.session_id} revision={view.revision}/></details></div>}
-  </>:panel==='overview'?<section className="paper-record-empty" role="status"><h2>{busy?'正在恢复模拟账户…':'选择一个模拟账户'}</h2><p>{busy?'正在读取服务器确认的账本。':'可以切换已有账户，或用独立模拟资金创建新账户。'}</p><button disabled={busy} onClick={()=>setPanel('accounts')}>查看已有账户</button></section>:null}
+  </div></div>:panel==='overview'?<section className="paper-record-empty" role="status"><h2>{busy?'正在恢复模拟账户…':'选择一个模拟账户'}</h2><p>{busy?'正在读取服务器确认的账本。':'可以切换已有账户，或用独立模拟资金创建新账户。'}</p><button disabled={busy||!ready} onClick={()=>setPanel('accounts')}>查看已有账户</button></section>:null}
   {stopTarget?<StopAccountDialog target={stopTarget} busy={busy} error={error} onCancel={()=>{setStopTarget(null);setError('');}} onConfirm={async()=>{if(await command('stop',stopTarget))setStopTarget(null);}}/>:null}
  </main>;
 }

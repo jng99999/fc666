@@ -1,7 +1,7 @@
 "use client";
 import Link from 'next/link';
 import {usePathname} from 'next/navigation';
-import {useEffect,useRef,useState} from 'react';
+import {useEffect,useRef,useState,type ReactNode} from 'react';
 import {Symbols} from '../lib/market';
 import {StrategyCatalog,StrategyIds} from '../lib/research-strategies';
 
@@ -20,7 +20,7 @@ function Icon({name}:{name:IconName}){
  };
  return <svg className="workspace-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={paths[name]}/></svg>;
 }
-export default function WorkspaceNav(){
+export default function WorkspaceNav({children}:{children:ReactNode}){
  const path=usePathname();
  const [search,setSearch]=useState(''),[searchError,setSearchError]=useState(''),[ready,setReady]=useState(false);
  const dialog=useRef<HTMLDialogElement>(null),input=useRef<HTMLInputElement>(null);
@@ -46,9 +46,10 @@ export default function WorkspaceNav(){
    </div>
   </header>
   <aside className="approved-workspace-navigation" aria-label="工作台主导航"><nav className="workspace-primary-nav">{items.map(([href,label,aria,icon,active])=><Link key={href} href={href} aria-label={aria} aria-current={active?'page':undefined}><Icon name={icon}/><span>{label}</span></Link>)}</nav><Link className="workspace-settings" href="/system" aria-label="设置与连接状态" aria-current={path.startsWith('/system')?'page':undefined}><Icon name="settings"/></Link></aside>
-  <div className="workspace-mobile-title"><h1>{title}</h1><span className="workspace-live-badge">实盘关闭</span><button className="workspace-icon-button" disabled={!ready} onClick={openSearch} aria-label="搜索品种"><Icon name="search"/></button></div>
+  <div className="approved-workspace-content"><div className="workspace-mobile-title"><h1>{title}</h1><span className="workspace-live-badge">实盘关闭</span><button className="workspace-icon-button" disabled={!ready} onClick={openSearch} aria-label="搜索品种"><Icon name="search"/></button></div>
   {gold?<nav className="workspace-asset-navigation" aria-label="资产市场"><Link href="/">数字资产</Link><Link href="/gold" aria-current="page">黄金 XAU/USD</Link></nav>:null}
   {accounts&&path!=='/portfolio'?<nav className="account-navigation" aria-label="模拟账户功能">{accountTabs.map(([href,label])=><Link key={href} href={href} aria-current={path===href?'page':undefined}>{label}</Link>)}</nav>:null}
+  {children}</div>
   <dialog ref={dialog} className="workspace-search-dialog" aria-labelledby="workspace-search-title" onClick={event=>{if(event.target===event.currentTarget){const box=event.currentTarget.getBoundingClientRect();if(event.clientX<box.left||event.clientX>box.right||event.clientY<box.top||event.clientY>box.bottom)event.currentTarget.close();}}}>
    <header><h2 id="workspace-search-title">搜索品种与策略</h2><button className="workspace-icon-button" aria-label="关闭搜索" onClick={()=>dialog.current?.close()}><Icon name="close"/></button></header>
    <form role="search" onSubmit={event=>{event.preventDefault();submit();}}><label htmlFor="workspace-search" className="workspace-visually-hidden">搜索品种、交易对或策略</label><div className="workspace-search-field"><Icon name="search"/><input ref={input} id="workspace-search" autoComplete="off" value={search} onChange={event=>{setSearch(event.target.value);setSearchError('');}} placeholder="例如 BTCUSDT、黄金、均线"/><button type="submit">搜索</button></div>{searchError?<p role="alert">{searchError}</p>:null}</form>

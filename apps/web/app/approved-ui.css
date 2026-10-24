@@ -17,10 +17,13 @@ body.apple-ui.approved-ui {
   font-variant-numeric:tabular-nums; font-synthesis:weight style;
   -webkit-font-smoothing:antialiased;
 }
-body.approved-ui > :where(main,.market-depth-workspace,.workspace-asset-navigation,.account-navigation,.deployment-notice) {
-  grid-column:2; min-width:0; max-width:none; margin:0; padding:0;
+body.approved-ui .approved-workspace-content {
+  grid-column:2; grid-row:2; display:flex; flex-direction:column; gap:20px; min-width:0;
 }
-body.approved-ui > :where(main) { background:transparent; border:0; box-shadow:none; border-radius:0; }
+body.approved-ui .approved-workspace-content > :where(main,.market-depth-workspace,.workspace-asset-navigation,.account-navigation,.deployment-notice) {
+  min-width:0; max-width:none; margin:0; padding:0;
+}
+body.approved-ui .approved-workspace-content > :where(main) { background:transparent; border:0; box-shadow:none; border-radius:0; }
 body.approved-ui :where(h1,h2,h3,h4,p) { margin:0; }
 body.approved-ui :where(h1,h2,h3,h4) { letter-spacing:-.035em; }
 body.approved-ui :where(button,input,select,textarea) { font:inherit; }
@@ -90,11 +93,11 @@ body.approved-ui .workspace-settings {
 body.approved-ui .workspace-settings[aria-current=page] { background:var(--blue); color:white; }
 body.approved-ui .workspace-mobile-title { display:none; }
 body.approved-ui .workspace-asset-navigation,
-body.approved-ui .account-navigation { display:flex; flex-wrap:wrap; align-items:center; gap:18px; border:0; background:none; min-height:32px; }
+body.approved-ui .account-navigation { position:static; top:auto; z-index:auto; display:flex; flex-wrap:wrap; align-items:center; align-self:flex-start; gap:4px; border:0; background:#f1f5fb; min-height:32px; height:auto; width:auto; max-width:100%; padding:3px; border-radius:12px; box-shadow:none; backdrop-filter:none; }
 body.approved-ui .workspace-asset-navigation a,
-body.approved-ui .account-navigation a { padding:6px 10px; color:var(--muted); font-size:12px; white-space:nowrap; border-radius:10px; text-decoration:none; }
+body.approved-ui .account-navigation a { display:inline-flex; align-items:center; justify-content:center; min-height:32px; padding:6px 12px; border:0; box-shadow:none; color:var(--muted); font-size:12px; white-space:nowrap; border-radius:9px; text-decoration:none; }
 body.approved-ui .workspace-asset-navigation a[aria-current=page],
-body.approved-ui .account-navigation a[aria-current=page] { color:var(--blue); background:var(--blue-soft); }
+body.approved-ui .account-navigation a[aria-current=page] { color:var(--blue); background:white; box-shadow:0 2px 5px #36567414; }
 body.approved-ui .workspace-visually-hidden { position:absolute; width:1px; height:1px; padding:0; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; }
 body.approved-ui .workspace-search-dialog {
   display:none; width:min(680px,calc(100% - 32px)); max-width:none; max-height:min(85dvh,900px);
@@ -142,6 +145,7 @@ body.approved-ui :where(.gold-card,.health,.watch-panel,.depth-panel,.chart-pane
 }
 @media(max-width:760px) {
   body.apple-ui.approved-ui { display:block; padding:12px 14px calc(102px + env(safe-area-inset-bottom)); font-size:13px; --radius:21px; }
+  body.approved-ui .approved-workspace-content { display:block; }
   body.approved-ui .approved-workspace-header { height:38px; margin-bottom:12px; padding:0 2px; gap:0; }
   body.approved-ui .approved-workspace-brand { font-size:22px; }
   body.approved-ui .approved-workspace-header-tools { gap:9px; }
@@ -161,6 +165,8 @@ body.approved-ui :where(.gold-card,.health,.watch-panel,.depth-panel,.chart-pane
   body.approved-ui .workspace-settings { display:none; }
   body.approved-ui .workspace-asset-navigation,
   body.approved-ui .account-navigation { margin:0 0 12px; gap:8px; flex-wrap:nowrap; overflow-x:auto; }
+  body.approved-ui .workspace-asset-navigation,body.approved-ui .account-navigation { width:100%;max-width:100%;gap:3px; }
+  body.approved-ui .workspace-asset-navigation a,body.approved-ui .account-navigation a { flex:1;min-height:36px;font-size:11px;padding:6px 8px; }
   body.approved-ui .account-navigation a { flex-shrink:0; }
   body.approved-ui .workspace-search-dialog { width:calc(100% - 24px); padding:20px; border-radius:22px; max-height:88dvh; }
   body.approved-ui .workspace-search-dialog h2 { font-size:20px; }

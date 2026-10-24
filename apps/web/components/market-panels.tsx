@@ -1,5 +1,6 @@
 "use client";
 import {useEffect,useState} from "react";
+import WorkspaceSelect from './workspace-select';
 import {useMarketStore} from "../lib/market-store";
 import {keyFor,Symbols,MarketProvider,type SymbolName,type TickerSnapshot,type BookSnapshot,type TradeSnapshot,type Snapshot} from "../lib/market";
 export function decimalDisplay(value:string|undefined) {
@@ -26,7 +27,7 @@ export function Watchlist({symbol,symbols,onSelect,onChange}:{symbol:SymbolName;
 }
 export function TickerHeader({symbol,onSelect}:{symbol:SymbolName;onSelect:(symbol:SymbolName)=>void}) {
   const value=useFresh(symbol,"ticker") as TickerSnapshot|undefined;
-  return <div className="ticker-head"><label className="ticker-symbol"><span>现货 · USDT</span><select aria-label="交易对摘要选择" value={symbol} onChange={event=>onSelect(event.target.value as SymbolName)}>{Symbols.map(s=><option key={s} value={s}>{s.replace("USDT"," / USDT")}</option>)}</select></label><div className="ticker-value"><span className="ticker-price mono" data-testid="live-price">{decimalDisplay(value?.payload.price)}</span><small>{value?"公共行情在线":"等待真实行情"}</small></div><div className="ticker-change"><small>24h 涨跌</small><span className={value?(Number(value.payload.change_percent)<0?"sell":"buy"):undefined}>{value?`${Number(value.payload.change_percent).toFixed(2)}%`:"—"}</span></div><div className="volume-head"><small>24h 成交量</small><span className="mono">{decimalDisplay(value?.payload.volume)}</span></div></div>;
+  return <div className="ticker-head"><label className="ticker-symbol"><span>现货 · USDT</span><WorkspaceSelect label="交易对摘要选择" value={symbol} onValueChange={value=>onSelect(value as SymbolName)} options={Symbols.map(value=>({value,label:value.replace("USDT"," / USDT")}))}/></label><div className="ticker-value"><span className="ticker-price mono" data-testid="live-price">{decimalDisplay(value?.payload.price)}</span><small>{value?"公共行情在线":"等待真实行情"}</small></div><div className="ticker-change"><small>24h 涨跌</small><span className={value?(Number(value.payload.change_percent)<0?"sell":"buy"):undefined}>{value?`${Number(value.payload.change_percent).toFixed(2)}%`:"—"}</span></div><div className="volume-head"><small>24h 成交量</small><span className="mono">{decimalDisplay(value?.payload.volume)}</span></div></div>;
 }
 export function BookPanel({symbol}:{symbol:SymbolName}) {
   const value=useFresh(symbol,"book") as BookSnapshot|undefined;

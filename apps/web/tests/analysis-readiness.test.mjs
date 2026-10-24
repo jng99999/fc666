@@ -17,6 +17,13 @@ test('analysis server preview disables native controls until event handlers can 
  const html=renderToStaticMarkup(createElement(module.exports.default));
  assert.match(html,/<main[^>]*aria-busy="true"/);
  assert.ok(html.includes('正在准备分析控件…'));
+ const productTrigger=html.match(/<button\b[^>]*class="mobile-symbol-select"[^>]*>/)?.[0];
+ assert.ok(productTrigger,'mobile product picker is a site-owned button, never a native select');
+ assert.match(productTrigger,/aria-label="选择产品"/);
+ assert.match(productTrigger,/aria-haspopup="dialog"/);
+ assert.match(productTrigger,/aria-expanded="false"/);
+ assert.match(productTrigger,/\bdisabled=""/,'first click waits for hydration');
+ assert.doesNotMatch(html,/<select\b[^>]*aria-label="分析交易对"/,'the native system menu is removed rather than hidden');
  const controls=[...html.matchAll(/<(?:button|select)\b([^>]*)>/g)];
  assert.ok(controls.length>=20,'all analysis control groups must be present in the preview');
  for(const [tag] of controls)assert.match(tag,/\bdisabled=""/,tag);

@@ -1,0 +1,129 @@
+/* Extend the approved base/strategy/account source to the existing gold workflows. */
+body.approved-ui .gold-workspace.gold-workspace{max-width:none;margin:0;padding:0;color:var(--text);min-width:0;font-variant-numeric:tabular-nums}
+body.approved-ui .gold-workspace.gold-workspace .gold-heading{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:0;height:auto;margin:0 0 16px;border:0;padding:0}
+body.approved-ui .gold-workspace.gold-workspace .gold-heading h1{font-size:25px;line-height:1.3;font-weight:750;letter-spacing:-.035em;margin:4px 0}
+body.approved-ui .gold-workspace.gold-workspace .gold-heading p{font-size:11px;color:#967237;margin:0}
+body.approved-ui .gold-workspace.gold-workspace .gold-heading span{font-size:12px;color:var(--muted)}
+body.approved-ui .gold-workspace.gold-workspace .gold-heading>a{font-size:12px;min-height:38px;display:inline-flex;align-items:center;color:var(--blue)}
+body.approved-ui .gold-workspace.gold-workspace .gold-card{background:#fff;border:1px solid #ffffffed;border-radius:24px;padding:22px;margin:0 0 18px;box-shadow:var(--shadow);min-width:0;overflow-wrap:anywhere}
+body.approved-ui .gold-workspace.gold-workspace .gold-card h2{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:18px;font-weight:700;line-height:1.3;margin:0 0 18px}
+body.approved-ui .gold-workspace.gold-workspace .gold-card h2 small{font-size:10px;font-weight:400;color:#8a9cb4}
+body.approved-ui .gold-workspace.gold-workspace .gold-card h3{font-size:15px;line-height:1.4}
+body.approved-ui .gold-workspace.gold-workspace .gold-card p{font-size:12px;color:var(--muted);line-height:1.7;margin:10px 0}
+body.approved-ui .gold-workspace.gold-workspace .gold-card small{color:var(--muted);font-size:11px;line-height:1.6}
+body.approved-ui .gold-workspace.gold-workspace button{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:38px;border:1px solid #e6edf7;border-radius:11px;padding:8px 16px;font-size:13px;font-weight:600;line-height:1.5;background:#fff;color:#243957;box-shadow:none;cursor:pointer}
+body.approved-ui .gold-workspace.gold-workspace button:hover{background:#f3f7ff}
+body.approved-ui .gold-workspace.gold-workspace button:disabled{background:#f1f5fb;color:#8294ac;border-color:#edf2f8;opacity:.55;cursor:not-allowed}
+body.approved-ui .gold-workspace.gold-workspace .gold-primary,body.approved-ui .gold-workspace.gold-workspace form>button{background:var(--blue);border-color:var(--blue);color:#fff;box-shadow:0 4px 10px #176bff13}
+body.approved-ui .gold-workspace.gold-workspace .gold-primary:disabled,body.approved-ui .gold-workspace.gold-workspace form>button:disabled{background:#dbe8fc;border-color:#dbe8fc;color:#7e9cc5;box-shadow:none}
+body.approved-ui .gold-workspace.gold-workspace .gold-card label{font-size:12px;color:#637e9d;line-height:1.5;margin:12px 0;gap:7px;min-width:0}
+body.approved-ui .gold-workspace.gold-workspace input:not([type=checkbox]),body.approved-ui .gold-workspace.gold-workspace select{min-width:0;max-width:100%;width:100%;min-height:40px;border:1px solid #e4ebf5;border-radius:10px;padding:9px 11px;background:#fff;color:#203450;font:inherit;font-size:13px;box-shadow:none}
+body.approved-ui .gold-workspace.gold-workspace input[type=checkbox]{accent-color:var(--blue);width:18px;height:18px;min-height:0;margin:0;flex-shrink:0}
+body.approved-ui .gold-workspace.gold-workspace fieldset{border:1px solid #edf2f8;border-radius:12px;padding:14px;margin:16px 0;min-width:0}
+body.approved-ui .gold-workspace.gold-workspace legend{font-size:11px;color:var(--muted);padding:0 6px}
+body.approved-ui .gold-workspace.gold-workspace .gold-form-fields{border:0;padding:0;margin:0}
+body.approved-ui .gold-workspace.gold-workspace summary{font-size:12px;color:#637e9d;cursor:pointer;line-height:1.6;min-height:30px;padding:4px 0}
+body.approved-ui .gold-workspace.gold-workspace .gold-grid{display:grid;grid-template-columns:minmax(0,1fr) 320px;align-items:start;gap:18px}
+body.approved-ui .gold-workspace.gold-workspace .gold-grid>*{min-width:0}
+body.approved-ui .gold-workspace.gold-workspace .gold-values{display:block;margin:0 0 16px}
+body.approved-ui .gold-workspace.gold-workspace .gold-values>div{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:12px 0;border-bottom:1px solid #edf1f7}
+body.approved-ui .gold-workspace.gold-workspace .gold-values dt{font-size:12px;color:var(--muted)}
+body.approved-ui .gold-workspace.gold-workspace .gold-values dd{font-size:13px;line-height:1.5;overflow-wrap:anywhere;min-width:0}
+body.approved-ui .gold-workspace.gold-workspace .gold-actions{display:flex;flex-wrap:wrap;gap:9px;margin:14px 0}
+body.approved-ui .gold-workspace.gold-workspace .gold-actions>button{flex:1 1 120px}
+body.approved-ui .gold-workspace.gold-workspace .gold-events li{border-color:#edf1f7;padding:14px 0}
+body.approved-ui .gold-workspace.gold-workspace .gold-events li>div{font-size:12px;flex-wrap:wrap;gap:6px}
+body.approved-ui .gold-workspace.gold-workspace .gold-events p{margin:6px 0}
+body.approved-ui .gold-workspace.gold-workspace .gold-events time{font-size:10px;color:#8a9cb4}
+body.approved-ui .gold-workspace.gold-workspace .gold-message{border:1px solid #e6eef9;background:#f1f6fd;padding:12px 14px;border-radius:12px;font-size:12px;line-height:1.7;margin:0 0 14px;color:#637e9d}
+body.approved-ui .gold-workspace.gold-workspace .gold-error,body.approved-ui .gold-workspace.gold-workspace [role=alert]{background:#fff0f3;color:#bf3450;border-radius:10px;padding:10px 12px;font-size:12px;line-height:1.7}
+body.approved-ui .gold-workspace.gold-workspace .gold-heading+div,body.approved-ui .gold-workspace.gold-workspace .gold-workflow-links{margin:0 0 16px}
+body.approved-ui .gold-workspace.gold-workspace .gold-workflow-links{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+body.approved-ui .gold-workspace.gold-workspace .gold-workflow-links>a{display:inline-flex;align-items:center;gap:10px;padding:7px 12px;border-radius:10px;color:var(--blue);background:var(--blue-soft);font-size:11px}
+body.approved-ui .gold-workspace.gold-workspace .gold-panel-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}
+body.approved-ui .gold-workspace.gold-workspace .gold-panel-heading h2{justify-content:flex-start;margin:0}
+body.approved-ui .gold-workspace.gold-workspace .gold-asset-mark{display:inline-grid;place-items:center;background:linear-gradient(140deg,#ffe9a0,#e9b844);color:#3d2909;border-radius:10px;width:34px;height:34px;font-size:15px;font-weight:700}
+body.approved-ui .gold-workspace.gold-workspace .gold-source-badge{font-size:10px;border-radius:7px;padding:4px 7px;color:#a57a32;background:#fff7e8;white-space:nowrap}
+body.approved-ui .gold-workspace.gold-workspace .gold-quote{display:grid;grid-template-columns:1fr 1fr .75fr;gap:12px;margin-bottom:16px}
+body.approved-ui .gold-workspace.gold-workspace .gold-quote>div{padding:0;border:0;display:block;min-width:0;grid-column:auto}
+body.approved-ui .gold-workspace.gold-workspace .gold-quote strong{font-size:clamp(20px,2.4vw,31px);font-weight:750;letter-spacing:-.7px;line-height:1.3;margin-top:5px;display:block;overflow-wrap:normal}
+body.approved-ui .gold-workspace.gold-workspace .gold-quote p{grid-column:1/-1;font-size:10px;margin:0}
+body.approved-ui .gold-workspace.gold-workspace .gold-quote .gold-ok{color:#079f62}
+body.approved-ui .gold-workspace.gold-workspace .gold-quote .gold-wait{color:#ae7b27}
+body.approved-ui .gold-workspace.gold-workspace .gold-chart-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}
+body.approved-ui .gold-workspace.gold-workspace .gold-timeframe{font-size:11px;color:var(--blue);background:var(--blue-soft);padding:6px 12px;border-radius:9px}
+body.approved-ui .gold-workspace.gold-workspace .gold-segmented{display:flex;align-items:center;gap:2px;padding:3px;background:#f1f5fb;border-radius:12px}
+body.approved-ui .gold-workspace.gold-workspace .gold-segmented button{font-size:11px;min-height:29px;padding:5px 13px;border:0;border-radius:9px;background:none;color:#6c83a2;box-shadow:none}
+body.approved-ui .gold-workspace.gold-workspace .gold-segmented button[aria-pressed=true]{background:var(--blue);color:white;box-shadow:0 2px 6px #176bff1f}
+body.approved-ui .gold-workspace.gold-workspace .gold-chart-wrap{position:relative}
+body.approved-ui .gold-workspace.gold-workspace .gold-sampled-chart{height:350px;width:100%;min-width:0}
+body.approved-ui .gold-workspace.gold-workspace .gold-chart-empty{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:8px;color:#8a9cb4;pointer-events:none}
+body.approved-ui .gold-workspace.gold-workspace .gold-chart-empty strong{font-size:14px;color:#637e9d}
+body.approved-ui .gold-workspace.gold-workspace .gold-chart-caption{font-size:10px;color:#8a9cb4;display:flex;justify-content:space-between;gap:10px;margin-top:10px}
+body.approved-ui .gold-workspace.gold-workspace .gold-data-notes{margin-top:10px;border-top:1px solid #edf1f7;padding-top:7px}
+body.approved-ui .gold-workspace.gold-workspace .gold-data-notes summary{font-size:10px;min-height:24px}
+body.approved-ui .gold-workspace.gold-workspace .gold-ledger-details{background:#fff;border:1px solid #ffffffed;border-radius:24px;padding:18px 22px;margin-bottom:18px;box-shadow:var(--shadow)}
+body.approved-ui .gold-workspace.gold-workspace .gold-ledger-details>summary{display:flex;justify-content:space-between;align-items:center;gap:12px;font-size:16px;font-weight:650;list-style:none;color:var(--text)}
+body.approved-ui .gold-workspace.gold-workspace .gold-ledger-details>summary:after{content:'+';font-size:20px;color:#7e91ab;font-weight:400}
+body.approved-ui .gold-workspace.gold-workspace .gold-ledger-details[open]>summary:after{content:'−'}
+body.approved-ui .gold-workspace.gold-workspace .gold-ledger-details>summary span{font-size:10px;font-weight:400;color:var(--muted);margin-left:auto}
+body.approved-ui .gold-workspace.gold-workspace .gold-ledger-details>.gold-card{padding:16px 0 0;margin:0;border:0;border-radius:0;box-shadow:none}
+body.approved-ui .gold-workspace.gold-workspace .gold-notes{padding:16px 22px}
+body.approved-ui .gold-workspace.gold-workspace .gold-notes summary{color:var(--text);font-size:13px;font-weight:600}
+body.approved-ui .gold-workspace.gold-workspace .gold-research-fields{gap:4px 16px}
+body.approved-ui .gold-workspace.gold-workspace .gold-research-stats{gap:12px}
+body.approved-ui .gold-workspace.gold-workspace .gold-research-stats>div{background:#f7faff;border:1px solid #edf2f8;padding:12px;border-radius:12px}
+body.approved-ui .gold-workspace.gold-workspace .gold-research-stats strong{font-size:21px;font-weight:700;margin-top:5px}
+body.approved-ui .gold-workspace.gold-workspace .gold-comparison th,body.approved-ui .gold-workspace.gold-workspace .gold-comparison td,body.approved-ui .gold-workspace.gold-workspace .gold-fill-scroll th,body.approved-ui .gold-workspace.gold-workspace .gold-fill-scroll td{border-color:#edf1f7}
+body.approved-ui .gold-workspace.gold-workspace .gold-comparison th{background:#f8faff;color:var(--muted)}
+body.approved-ui .gold-workspace.gold-workspace .gold-comparison td{font-size:12px}
+body.approved-ui .gold-workspace.gold-workspace progress{accent-color:var(--blue)}
+body.approved-ui .gold-workspace.gold-workspace .gold-automation-dialog{border:1px solid #eef3fa;border-radius:24px;padding:24px;width:min(520px,calc(100% - 32px));max-height:85dvh;background:#fff;color:var(--text);box-shadow:0 24px 90px #10295133}
+body.approved-ui .gold-workspace.gold-workspace .gold-ppo-badge{border-radius:7px;font-size:11px;padding:4px 8px}
+body.approved-ui .gold-workspace.gold-workspace .gold-ppo-table th,body.approved-ui .gold-workspace.gold-workspace .gold-ppo-table td{border-color:#edf1f7}
+@media(max-width:1100px) and (min-width:761px){body.approved-ui .gold-workspace.gold-workspace .gold-grid{grid-template-columns:minmax(0,1fr) 280px;gap:14px}body.approved-ui .gold-workspace.gold-workspace .gold-card{padding:18px}body.approved-ui .gold-workspace.gold-workspace .gold-quote strong{font-size:22px}}
+@media(max-width:760px){
+ body.approved-ui .gold-workspace.gold-workspace .gold-heading{margin-bottom:12px;flex-direction:row;align-items:center;gap:10px}
+ body.approved-ui .gold-workspace.gold-workspace .gold-heading h1{font-size:18px;line-height:1.3;margin:0}
+ body.approved-ui .gold-workspace.gold-workspace .gold-heading p,body.approved-ui .gold-workspace.gold-workspace .gold-heading span{display:none}
+ body.approved-ui .gold-workspace.gold-workspace .gold-heading>a{font-size:11px;min-height:30px;flex-shrink:0}
+ body.approved-ui .gold-workspace.gold-workspace .gold-heading>button{min-height:32px;font-size:11px;padding:5px 10px}
+ body.approved-ui .gold-workspace.gold-workspace .gold-card{padding:16px;border-radius:21px;margin-bottom:12px}
+ body.approved-ui .gold-workspace.gold-workspace .gold-card h2{font-size:17px;margin-bottom:12px;flex-wrap:wrap}
+ body.approved-ui .gold-workspace.gold-workspace .gold-card p{font-size:11px;line-height:1.7}
+ body.approved-ui .gold-workspace.gold-workspace .gold-card small{font-size:10px}
+ body.approved-ui .gold-workspace.gold-workspace .gold-card h2 small{font-size:10px}
+ body.approved-ui .gold-workspace.gold-workspace .gold-grid{display:flex;flex-direction:column;gap:0}
+ body.approved-ui .gold-workspace.gold-workspace .gold-grid>*{width:100%}
+ body.approved-ui .gold-workspace.gold-workspace button{min-height:40px;border-radius:10px}
+ body.approved-ui .gold-workspace.gold-workspace input:not([type=checkbox]),body.approved-ui .gold-workspace.gold-workspace select{font-size:16px;min-height:42px}
+ body.approved-ui .gold-workspace.gold-workspace .gold-values>div{padding:10px 0}
+ body.approved-ui .gold-workspace.gold-workspace .gold-values dt{font-size:11px}
+ body.approved-ui .gold-workspace.gold-workspace .gold-values dd{font-size:12px}
+ body.approved-ui .gold-workspace.gold-workspace .gold-workflow-links{display:flex;flex-wrap:nowrap;margin:0 0 12px;gap:7px}
+ body.approved-ui .gold-workspace.gold-workspace .gold-workflow-links>a{flex:1;justify-content:space-between;padding:7px 9px;font-size:10px}
+ body.approved-ui .gold-workspace.gold-workspace .gold-panel-heading{margin-bottom:12px;gap:7px}
+ body.approved-ui .gold-workspace.gold-workspace .gold-panel-heading h2{margin:0;font-size:15px;gap:7px;flex-wrap:nowrap}
+ body.approved-ui .gold-workspace.gold-workspace .gold-asset-mark{width:28px;height:28px;border-radius:8px;font-size:12px}
+ body.approved-ui .gold-workspace.gold-workspace .gold-source-badge{font-size:8px;padding:4px 5px}
+ body.approved-ui .gold-workspace.gold-workspace .gold-quote{gap:8px;margin-bottom:10px}
+ body.approved-ui .gold-workspace.gold-workspace .gold-quote small{font-size:9px}
+ body.approved-ui .gold-workspace.gold-workspace .gold-quote strong{font-size:20px;line-height:1.3;letter-spacing:-.5px}
+ body.approved-ui .gold-workspace.gold-workspace .gold-quote>div:last-of-type strong{font-size:16px}
+ body.approved-ui .gold-workspace.gold-workspace .gold-quote p{font-size:9px;line-height:1.5}
+ body.approved-ui .gold-workspace.gold-workspace .gold-sampled-chart{height:252px}
+ body.approved-ui .gold-workspace.gold-workspace .gold-chart-toolbar{margin-bottom:6px}
+ body.approved-ui .gold-workspace.gold-workspace .gold-segmented button{min-height:29px}
+ body.approved-ui .gold-workspace.gold-workspace .gold-ledger-details{padding:14px 16px;border-radius:21px;margin-bottom:12px}
+ body.approved-ui .gold-workspace.gold-workspace .gold-ledger-details>summary{font-size:14px}
+ body.approved-ui .gold-workspace.gold-workspace .gold-ledger-details>summary span{font-size:9px}
+ body.approved-ui .gold-workspace.gold-workspace .gold-research-fields{grid-template-columns:repeat(2,minmax(0,1fr));gap:2px 12px}
+ body.approved-ui .gold-workspace.gold-workspace .gold-research-stats{display:grid;grid-template-columns:1fr;gap:7px}
+ body.approved-ui .gold-workspace.gold-workspace .gold-research-stats>div{padding:10px 12px}
+ body.approved-ui .gold-workspace.gold-workspace .gold-research-stats strong{font-size:16px;margin:0}
+ body.approved-ui .gold-workspace.gold-workspace .gold-comparison th{background:none}
+ body.approved-ui .gold-workspace.gold-workspace .gold-comparison td{font-size:12px}
+ body.approved-ui .gold-workspace.gold-workspace .gold-notes{padding:12px 16px}
+ body.approved-ui .gold-workspace.gold-workspace .gold-automation-dialog{padding:20px;border-radius:22px;width:calc(100% - 24px);max-height:88dvh}
+}
+@media(max-width:360px){body.approved-ui .gold-workspace.gold-workspace .gold-quote{grid-template-columns:1fr 1fr}body.approved-ui .gold-workspace.gold-workspace .gold-quote>div:last-of-type{grid-column:1/-1;display:flex;justify-content:space-between;align-items:center}body.approved-ui .gold-workspace.gold-workspace .gold-source-badge{display:none}}

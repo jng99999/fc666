@@ -2,6 +2,7 @@
 import Link from 'next/link';
 import {useEffect,useRef,useState} from 'react';
 import {z} from 'zod';
+import WorkspaceSelect from '../../components/workspace-select';
 
 const decimal=z.string().regex(/^-?\d+(\.\d+)?([Ee][+-]?\d+)?$/).refine(value=>Number.isFinite(Number(value)));
 const Scene=z.object({scenario_id:z.uuid(),definition:z.object({name:z.string(),session_ids:z.array(z.uuid()),limits:z.object({max_gross_weight:decimal,max_asset_weight:decimal})})});
@@ -62,7 +63,7 @@ export default function PortfolioHistoryChart({ids,gross,asset,refresh,hidden}:P
  const lastAvailable=points.findLast(point=>point.equity!==null);
  return <div className="account-history-chart">
   <div className="account-chart-heading"><h2>资产曲线 <span>USDT · 已保存观察</span></h2><div className="account-range" aria-label="资产曲线时间范围">{(['1W','1M','3M'] as const).map(key=><button key={key} type="button" disabled={!sample?.points.length} aria-pressed={range===key} onClick={()=>setRange(key)}>{key==='1W'?'1周':key==='1M'?'1月':'3月'}</button>)}</div></div>
-  {matching.length>1?<label className="account-chart-scenario">场景<select aria-label="资产曲线场景" value={activeId??''} onChange={event=>setChosen(event.target.value)}>{matching.map(scene=><option key={scene.scenario_id} value={scene.scenario_id}>{scene.definition.name}</option>)}</select></label>:null}
+  {matching.length>1?<label className="account-chart-scenario"><span style={{whiteSpace:'nowrap'}}>场景</span><WorkspaceSelect label="资产曲线场景" value={activeId??''} onValueChange={setChosen} options={matching.map(scene=>({value:scene.scenario_id,label:scene.definition.name}))}/></label>:null}
   {hidden?<div className="account-chart-empty account-private-chart"><span>资产信息已隐藏</span></div>:loading?<div className="account-chart-empty" role="status"><span>正在读取已保存观察…</span></div>:error?<div className="account-chart-empty"><p role="alert">{error}</p><button type="button" onClick={()=>setRetry(value=>value+1)}>重新读取</button></div>:!points.length?<div className="account-chart-empty"><span>{active?'这个场景尚无已保存观察':'尚无同账户、同阈值的场景记录'}</span><Link href="/portfolio/history">创建场景并保存估值 <span aria-hidden="true">→</span></Link></div>:<>
    <div className="account-chart-plot" ref={plot}><span className="account-chart-source">已保存观察 · USDT</span><svg viewBox={'0 0 '+bounds.width+' '+bounds.height} className="account-equity-svg" role="img" aria-label="保存顺序中的模拟权益观察，仅同一可比区间连接" aria-describedby="account-history-note"><title>{active?.definition.name} · {points.length} 个实际保存观察，间距不代表经过时间</title>
     {[12,(12+chartBottom)/2,chartBottom].map(at=><line key={at} x1="0" x2={chartRight} y1={at} y2={at} stroke="#e7eef8" strokeDasharray="2 3"/>)}
