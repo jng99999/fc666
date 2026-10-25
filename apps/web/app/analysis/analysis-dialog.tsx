@@ -10,7 +10,7 @@ export default function AnalysisDialog({title,onClose,children,wide=false}:{titl
   current?.showModal();
   return()=>{current?.close();previous?.focus();};
  },[]);
- return <dialog ref={dialog} className={`analysis-modal${wide?' analysis-modal-wide':''}`} aria-labelledby="analysis-modal-title" onCancel={event=>{event.preventDefault();close.current();}} onClick={event=>{if(event.target===dialog.current)close.current();}}>
+ return <dialog ref={dialog} className={`analysis-modal${wide?' analysis-modal-wide':''}`} aria-labelledby="analysis-modal-title" onCancel={event=>{event.preventDefault();close.current();}} onKeyDown={event=>{if(event.key==='Escape'){event.preventDefault();event.stopPropagation();close.current();}}} onClick={event=>{if(event.target===event.currentTarget){const box=event.currentTarget.getBoundingClientRect();if(event.clientX<box.left||event.clientX>box.right||event.clientY<box.top||event.clientY>box.bottom)close.current();}}}>
   <header className="dialog-header"><h2 id="analysis-modal-title">{title}</h2><button type="button" className="icon-btn" aria-label="关闭弹窗" onClick={onClose}><svg className="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button></header>
   <div className="analysis-modal-body">{children}</div>
  </dialog>;
