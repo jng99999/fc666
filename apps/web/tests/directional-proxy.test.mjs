@@ -23,12 +23,15 @@ test('directional proxy constrains paths, origin and cookies and never retries a
   const response=await POST(new Request('https://app.example/api/directional/anything',{method:'POST',headers,body:'{}'}),params(segments));assert.equal(response.status,status);
  }
  assert.equal(calls.length,1);
+ const behindProxy=await POST(new Request('http://localhost:3000/api/directional/accounts',{method:'POST',headers:{host:'app.example','x-forwarded-proto':'https',origin:'https://app.example','content-type':'application/json'},body:'{}'}),params(['accounts']));
+ assert.equal(behindProxy.status,200,'same browser origin must survive the internal Next.js host/protocol');
+ assert.equal(calls.length,2);
  t.mock.method(globalThis,'fetch',async()=>{calls.push('failure');throw new TypeError('offline');});
  const response=await POST(new Request('https://app.example/api/directional/accounts',{method:'POST',headers:{origin:'https://app.example','content-type':'application/json'},body:'{}'}),params(['accounts']));
- assert.equal(response.status,502);assert.equal(calls.length,2);assert.equal(response.headers.get('cache-control'),'no-store');
+ assert.equal(response.status,502);assert.equal(calls.length,3);assert.equal(response.headers.get('cache-control'),'no-store');
  delete process.env.DIRECTIONAL_API_BASE_URL;
  assert.equal((await GET(new Request('https://app.example/api/directional/status'),params(['status']))).status,503);
- assert.equal(calls.length,2);
+ assert.equal(calls.length,3);
 });
 
 test('health preserves real upstream 503 and distinguishes proxy failure without retries',async t=>{
