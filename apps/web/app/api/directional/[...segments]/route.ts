@@ -12,10 +12,9 @@ async function proxy(request:Request,context:{params:Promise<{segments:string[]}
  if(!configured)return Response.json({detail:'独立双向模拟服务尚未连接，未发送账户操作。'},{status:503,headers});
  if(!read){
   const origin=request.headers.get('origin');
-  const expected=new URL(request.url),protocol=request.headers.get('x-forwarded-proto')?.split(',')[0].trim();
-  expected.host=request.headers.get('host')??expected.host;
-  if(protocol==='http'||protocol==='https')expected.protocol=protocol+':';
-  if(request.headers.get('sec-fetch-site')==='cross-site'||origin!==expected.origin)return Response.json({detail:'Same-origin commands required'},{status:403,headers});
+  const internal=new URL(request.url),protocol=request.headers.get('x-forwarded-proto')?.split(',')[0].trim();
+  const expected=(protocol==='http'||protocol==='https'?protocol:internal.protocol.slice(0,-1))+'://'+(request.headers.get('host')??internal.host);
+  if(request.headers.get('sec-fetch-site')==='cross-site'||origin!==expected)return Response.json({detail:'Same-origin commands required'},{status:403,headers});
   if(request.headers.get('content-type')?.split(';')[0]!=='application/json')return Response.json({detail:'JSON requests required'},{status:415,headers});
  }
  const body=read?undefined:await request.text();
