@@ -39,6 +39,15 @@ uvicorn apps.tradingagents_worker:create_app --factory --host 127.0.0.1 --port 1
 
 生产/测试服务器如使用容器，worker与API的私有可达地址应由运维明确配置，不能把容器内127.0.0.1误当宿主机。此worker端口不应直接暴露公网。模型未选定时不部署带凭据worker，账户API不设置上述runner变量，页面明确显示未配置，仍可保存真实快照。
 
+更新既有独立测试账户服务时，基于原runtime镜像构建轻量API增量；保留原image标签和数据卷。必须包含新增override，避免以后单独运行旧compose又选回旧功能镜像：
+
+```sh
+docker build -f infrastructure/tradingagents-directional.Dockerfile -t fc666-directional-test:ta-shadow-20261029 .
+docker compose -f infrastructure/directional.compose.yaml -f infrastructure/tradingagents-directional.override.yaml up -d --no-deps directional
+```
+
+更新前先对现有SQLite执行一致性backup，保存金融状态摘要；更新后核对原账户配置、余额、持仓、操作头和成交记录。这里只替换独立directional测试服务，不触碰旧API、现货worker、黄金服务或其数据。
+
 ## 接口
 
 全部在 `/api/v1/directional/research`，复用现有HttpOnly浏览器会话、同源POST检查及8KB命令体限制。
