@@ -48,3 +48,20 @@ test('health preserves real upstream 503 and distinguishes proxy failure without
  assert.equal(logs[1][0],'health_proxy_failure');assert.doesNotMatch(JSON.stringify(logs),/internal address/);
  assert.equal(failed.headers.get('cache-control'),'no-store');
 });
+
+test('research proxy permits only owner-scoped research paths and preserves no-retry semantics',async t=>{
+ const previous=process.env.DIRECTIONAL_API_BASE_URL;
+ process.env.DIRECTIONAL_API_BASE_URL='https://backend.example';
+ t.after(()=>{if(previous===undefined)delete process.env.DIRECTIONAL_API_BASE_URL;else process.env.DIRECTIONAL_API_BASE_URL=previous;});
+ const calls=[];
+ t.mock.method(globalThis,'fetch',async(url,options)=>{calls.push({url:String(url),options});return Response.json({mode:'SHADOW_ONLY',trading_enabled:false});});
+ for(const segments of [['research','status'],['research','jobs'],['research','jobs',uuid]])assert.equal((await GET(new Request('https://app.example/api/directional/'+segments.join('/')),params(segments))).status,200);
+ const headers={origin:'https://app.example','content-type':'application/json',cookie:'other=private; fc666_directional_session='+'A'.repeat(43)};
+ assert.equal((await POST(new Request('https://app.example/api/directional/research/accounts/'+uuid,{method:'POST',headers,body:'{}'}),params(['research','accounts',uuid]))).status,200);
+ assert.equal(calls.length,4);assert.equal(calls[3].options.headers.Cookie,'fc666_directional_session='+'A'.repeat(43));
+ for(const segments of [['research','execute'],['research','jobs',uuid,'execute'],['research','accounts','invalid']])assert.equal((await POST(new Request('https://app.example/api/directional/research',{method:'POST',headers,body:'{}'}),params(segments))).status,404);
+ assert.equal(calls.length,4);
+ t.mock.method(globalThis,'fetch',async()=>{calls.push('failed');throw new Error('offline');});
+ const failed=await POST(new Request('https://app.example/api/directional/research/accounts/'+uuid,{method:'POST',headers,body:'{}'}),params(['research','accounts',uuid]));
+ assert.equal(failed.status,502);assert.match((await failed.json()).detail,/同一请求/);assert.equal(calls.length,5);
+});

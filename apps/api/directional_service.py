@@ -123,7 +123,7 @@ def file_news(path):
 
 
 def create_app(path=None, *, provider=fetch_quote, news_provider=None, news_source=None,
-               background=True, secure=True, clock=None, interval=10, allowed_origins=None):
+               background=True, secure=True, clock=None, interval=10, allowed_origins=None, research_runner=None):
     if os.environ.get('LIVE_TRADING', 'false').lower() not in ('false', '0'):
         raise ValueError('Directional service requires LIVE_TRADING=false')
     path = path or os.environ.get('DIRECTIONAL_DB_PATH', '/app/.runtime/directional/paper.sqlite3')
@@ -254,10 +254,13 @@ def create_app(path=None, *, provider=fetch_quote, news_provider=None, news_sour
         thread = Thread(target=collect, daemon=True, name='directional-paper-clock') if background else None
         if thread:
             thread.start()
+        if background:
+            research.start()
         yield
         stop.set()
         if thread:
             thread.join(timeout=8)
+        research.close()
 
     app = FastAPI(title='FC666 Directional Research Paper', lifespan=lifespan)
     app.state.store = store
@@ -310,6 +313,11 @@ def create_app(path=None, *, provider=fetch_quote, news_provider=None, news_sour
             response.set_cookie(COOKIE, token, max_age=31536000, httponly=True,
                                 secure=secure, samesite='strict', path='/api')
         return hashlib.sha256(token.encode()).hexdigest()
+
+    from apps.api.tradingagents_research import Service as ResearchService, router_for as research_router
+    research = ResearchService(Path(path).with_name('tradingagents.research.sqlite3'), store, snapshot, clock, runner=research_runner)
+    app.state.research = research
+    app.include_router(research_router(research, owner))
 
     @app.get('/health/live')
     def live():
