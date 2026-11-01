@@ -57,7 +57,7 @@ class Advice(Boundary):
         return self
 
 
-def freeze(view, *, now, news):
+def freeze(view, *, now, news, evidence=None):
     now = aware(now)
     config = Config.model_validate(view['config'])
     quote = None if view['last_quote'] is None else Quote.model_validate(view['last_quote'])
@@ -84,6 +84,14 @@ def freeze(view, *, now, news):
               'news': news_summary, 'entry_gate': gate,
               'unavailable': ['closed_candles', 'ohlcv_indicators', 'social_sentiment', 'company_fundamentals'],
               'trading_enabled': False}
+    if evidence is not None:
+        if evidence.get('instrument') != config.instrument or evidence.get('quote_source') != config.quote_source:
+            raise ValueError('Research history must retain its original market identity')
+        result['market_evidence'] = evidence
+        if evidence.get('status') == 'READY':
+            result['unavailable'] = ['social_sentiment', 'company_fundamentals']
+            if evidence.get('indicator_scope') == 'PRICE_ONLY':
+                result['unavailable'].append('global_market_volume')
     return {'snapshot': result, 'sha256': digest(result)}
 
 
@@ -125,6 +133,8 @@ def assess(snapshot, advice, view, *, now, news):
         reason = 'ACCOUNT_BUSY'
     elif view['last_quote'] is None:
         reason = 'QUOTE_UNAVAILABLE'
+    elif data.get('market_evidence', {}).get('status', 'READY') != 'READY':
+        reason = 'HISTORY_UNAVAILABLE'
     else:
         quote = Quote.model_validate(view['last_quote'])
         if quote.instrument != config.instrument or quote.source != config.quote_source:

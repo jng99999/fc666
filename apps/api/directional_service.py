@@ -13,6 +13,9 @@ import sqlite3
 from threading import Event, Lock, Thread
 from typing import Literal
 from uuid import UUID
+from urllib.parse import urlsplit
+
+import httpx
 
 from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.responses import JSONResponse
@@ -32,7 +35,7 @@ class Create(Boundary):
     model_config = ConfigDict(frozen=True, extra='forbid', allow_inf_nan=False)
     request_id: UUID
     instrument: str = Field(min_length=1, max_length=32)
-    strategy: Literal['MANUAL', 'SMA20_QUOTES']
+    strategy: Literal['MANUAL', 'SMA20_QUOTES', 'AI_RESEARCH']
     initial_cash: Decimal = Field(gt=0, le=1000000)
     tick_size: Decimal = Field(gt=0, le=1)
     quantity_step: Decimal = Field(gt=0, le=1)
@@ -122,6 +125,25 @@ def file_news(path):
     return read
 
 
+def http_news(url, token=None):
+    """Operator endpoint must return original News timestamps, never a fabricated clear calendar."""
+    parsed = urlsplit(url)
+    if parsed.scheme != 'https' or not parsed.hostname or parsed.username or parsed.password or parsed.fragment:
+        raise ValueError('HTTPS operator news URL required')
+    def read(instrument, now):
+        headers = {'Authorization': 'Bearer ' + token} if token else {}
+        with httpx.Client(timeout=5, follow_redirects=False, trust_env=False) as client:
+            with client.stream('GET', url, headers=headers, params={'instrument': instrument}) as response:
+                response.raise_for_status()
+                raw = bytearray()
+                for chunk in response.iter_bytes():
+                    raw.extend(chunk)
+                    if len(raw) > 2000000:
+                        raise ValueError('Oversized operator news snapshot')
+        return News.model_validate_json(raw)
+    return read
+
+
 def create_app(path=None, *, provider=fetch_quote, news_provider=None, news_source=None,
                background=True, secure=True, clock=None, interval=10, allowed_origins=None, research_runner=None):
     if os.environ.get('LIVE_TRADING', 'false').lower() not in ('false', '0'):
@@ -130,6 +152,8 @@ def create_app(path=None, *, provider=fetch_quote, news_provider=None, news_sour
     news_source = news_source or os.environ.get('DIRECTIONAL_NEWS_SOURCE')
     if news_provider is None and os.environ.get('DIRECTIONAL_NEWS_FILE'):
         news_provider = file_news(os.environ['DIRECTIONAL_NEWS_FILE'])
+    if news_provider is None and os.environ.get('DIRECTIONAL_NEWS_URL'):
+        news_provider = http_news(os.environ['DIRECTIONAL_NEWS_URL'], os.environ.get('DIRECTIONAL_NEWS_TOKEN'))
     if news_provider is not None and not news_source:
         raise ValueError('A server-authorized news source name is required')
     if interval <= 0:

@@ -7,7 +7,7 @@ export const DirectionalConfig=z.object({instrument:z.string(),quote_source:z.st
 export const DirectionalAccount=z.object({
  account_id:z.uuid(),revision:z.number().int().nonnegative(),status:z.enum(['RUNNING','STOPPED']),created_at:Time,updated_at:Time,
  mode:z.literal('RESEARCH_PAPER'),trading_enabled:z.literal(false),config:DirectionalConfig,
- metadata:z.object({strategy:z.enum(['MANUAL','SMA20_QUOTES']),quantity:DecimalString.nullable().optional(),stop_loss_percent:DecimalString.nullable().optional(),take_profit_percent:DecimalString.nullable().optional()}),
+ metadata:z.object({strategy:z.enum(['MANUAL','SMA20_QUOTES','AI_RESEARCH']),quantity:DecimalString.nullable().optional(),stop_loss_percent:DecimalString.nullable().optional(),take_profit_percent:DecimalString.nullable().optional()}),
  balance:DecimalString,equity:DecimalString,fees:DecimalString,gross_pnl:DecimalString,unrealized_pnl:DecimalString,entry_halted:z.boolean(),
  position:z.object({direction:z.enum(['LONG','SHORT']),quantity:DecimalString,entry:DecimalString,stop_loss:DecimalString,take_profit:DecimalString}).nullable(),
  pending:z.object({request_id:z.string(),target:z.enum(['LONG','SHORT','FLAT']),accepted_at:Time}).nullable(),

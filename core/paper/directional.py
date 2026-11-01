@@ -251,8 +251,10 @@ class DirectionalPaper:
                 self.pending = None
                 self.pending_accepted_at = None
                 if pending.target == 'FLAT':
-                    if self.position is not None:
-                        self._close('SIGNAL_EXIT')
+                    if (now - pending.available_at).total_seconds() > self.config.decision_ttl_seconds:
+                        self._record('ENTRY_REJECTED', {'request_id': pending.request_id, 'reason': 'DECISION_EXPIRED'})
+                    elif self.position is not None:
+                        self._close('SIGNAL_EXIT', request_id=pending.request_id)
                 else:
                     reason = ('DECISION_EXPIRED' if (now - pending.available_at).total_seconds() > self.config.decision_ttl_seconds
                               else 'ENTRY_HALTED' if self.halted or self.balance <= 0 else entry_gate(self.config, now, news))
@@ -289,10 +291,10 @@ class DirectionalPaper:
                          'entry_decision_id': proposal.request_id, 'reserved_collateral': notional,
                          'stop_loss': proposal.stop_loss, 'take_profit': proposal.take_profit}
         self._fill('OPEN', direction, quantity, price, fee, Decimal(0), 'SIGNAL_ENTRY',
-                   decision_at=proposal.available_at.isoformat(), accepted_at=accepted_at.isoformat())
+                   decision_at=proposal.available_at.isoformat(), accepted_at=accepted_at.isoformat(), request_id=proposal.request_id)
         return 'CLEAR'
 
-    def _close(self, reason):
+    def _close(self, reason, request_id=None):
         p = self.position
         direction = p['direction']
         price = rounded(self.quote.bid - self.config.slippage if direction == 'LONG' else self.quote.ask + self.config.slippage,
@@ -305,7 +307,7 @@ class DirectionalPaper:
         self.position = None
         if self.balance <= 0:
             self.halted = True
-        self._fill('CLOSE', direction, p['quantity'], price, fee, pnl, reason)
+        self._fill('CLOSE', direction, p['quantity'], price, fee, pnl, reason, request_id=request_id or p.get('entry_decision_id'))
 
     def _fill(self, action, direction, quantity, price, fee, pnl, reason, **timing):
         fill = {'action': action, 'direction': direction, 'quantity': str(quantity), 'price': str(price),

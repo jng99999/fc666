@@ -65,3 +65,25 @@ test('research proxy permits only owner-scoped research paths and preserves no-r
  const failed=await POST(new Request('https://app.example/api/directional/research/accounts/'+uuid,{method:'POST',headers,body:'{}'}),params(['research','accounts',uuid]));
  assert.equal(failed.status,502);assert.match((await failed.json()).detail,/同一请求/);assert.equal(calls.length,5);
 });
+
+test('automation proxy forwards only explicit account control routes and never retries a timed-out control',async t=>{
+ const previous=process.env.DIRECTIONAL_API_BASE_URL;
+ process.env.DIRECTIONAL_API_BASE_URL='https://backend.example';
+ t.after(()=>{if(previous===undefined)delete process.env.DIRECTIONAL_API_BASE_URL;else process.env.DIRECTIONAL_API_BASE_URL=previous;});
+ const calls=[];
+ t.mock.method(globalThis,'fetch',async(url,options)=>{calls.push({url:String(url),options});return Response.json({account_id:uuid,enabled:false,trading_enabled:false});});
+ const segments=['research','automation',uuid],url='https://app.example/api/directional/'+segments.join('/');
+ assert.equal((await GET(new Request(url),params(segments))).status,200);
+ const body=JSON.stringify({request_id:uuid,expected_epoch:3,expected_revision:7,action:'START',interval_seconds:300});
+ const headers={origin:'https://app.example','content-type':'application/json',cookie:'secret=hidden; fc666_directional_session='+'C'.repeat(43)};
+ assert.equal((await POST(new Request(url,{method:'POST',headers,body}),params(segments))).status,200);
+ assert.equal(calls[1].options.body,body);
+ assert.equal(calls[1].options.headers.Cookie,'fc666_directional_session='+'C'.repeat(43));
+ assert.equal(calls[1].url,'https://backend.example/api/v1/directional/research/automation/'+uuid);
+ assert.equal((await POST(new Request(url,{method:'POST',headers:{...headers,origin:'https://evil.example'},body}),params(segments))).status,403);
+ for(const invalid of [['research','automation'],['research','automation','bad'],['research','automation',uuid,'execute']])assert.equal((await GET(new Request(url),params(invalid))).status,404);
+ assert.equal(calls.length,2);
+ t.mock.method(globalThis,'fetch',async()=>{calls.push('timeout');throw new Error('timeout');});
+ const uncertain=await POST(new Request(url,{method:'POST',headers,body}),params(segments));
+ assert.equal(uncertain.status,502);assert.match((await uncertain.json()).detail,/同一请求/);assert.equal(calls.length,3);
+});

@@ -5,6 +5,7 @@ import logging
 import os
 from pathlib import Path
 import sqlite3
+import time
 from threading import Event, Thread
 from urllib.parse import urlsplit
 from uuid import UUID
@@ -24,6 +25,14 @@ class Create(Boundary):
     request_id: UUID
     mode: str = Field(pattern=r'^(PREPARE|ANALYZE)$')
     expected_revision: int = Field(ge=0, strict=True)
+
+
+class Control(Boundary):
+    request_id: UUID
+    expected_epoch: int = Field(ge=0, strict=True)
+    expected_revision: int = Field(ge=0, strict=True)
+    action: str = Field(pattern=r'^(START|PAUSE)$')
+    interval_seconds: int = Field(ge=300, le=86400, strict=True)
 
 
 def unique(pairs):
@@ -52,6 +61,24 @@ class Runner:
             if len(self.token) < 32:
                 raise ValueError('Research runner token must contain at least 32 characters')
         self.configured = bool(self.url and self.token)
+        self.cached_ready = (0.0, False, 'WAIT_MODEL_CONFIG')
+
+    def availability(self):
+        if not self.configured:
+            return False, 'WAIT_MODEL_CONFIG'
+        if time.monotonic() - self.cached_ready[0] < 15:
+            return self.cached_ready[1:]
+        try:
+            with httpx.Client(timeout=4, follow_redirects=False, trust_env=False) as client:
+                response = client.get(self.url.rstrip('/') + '/health/ready')
+                response.raise_for_status()
+                value = response.json()
+                ready = value.get('model_configured') is True and value.get('trading_enabled') is False
+                state = 'READY' if ready else 'WAIT_MODEL_CONFIG'
+        except Exception:
+            ready, state = False, 'MODEL_UNAVAILABLE'
+        self.cached_ready = (time.monotonic(), ready, state)
+        return ready, state
 
     def __call__(self, snapshot):
         with httpx.Client(timeout=httpx.Timeout(110, connect=4), follow_redirects=False) as client:
@@ -85,17 +112,37 @@ class Service:
             logger.warning('research_config_invalid')
         self.stop = Event()
         self.thread = None
+        self.evidence_cache = {}
+        self.automation = None
+        if self.jobs is not None:
+            try:
+                from apps.api.ai_paper import Automation
+                self.automation = Automation(self)
+            except (OSError, sqlite3.Error, ValueError):
+                logger.warning('ai_paper_controls_unavailable')
 
     def status(self):
+        ready, state = self.runner.availability() if hasattr(self.runner, 'availability') else (self.runner.configured, 'READY' if self.runner.configured else 'WAIT_MODEL_CONFIG')
         return {'framework': 'TradingAgents', 'upstream_commit': UPSTREAM,
                 'runner_configured': bool(self.runner.configured and self.jobs is not None), 'mode': 'SHADOW_ONLY',
-                'state': self.error or ('READY' if self.runner.configured else 'WAIT_MODEL_CONFIG'),
+                'model_configured': bool(ready and self.jobs is not None),
+                'automation_supported': self.automation is not None,
+                'state': self.error or state,
                 'automatic_execution': False, 'trading_enabled': False}
 
     def storage(self):
         if self.jobs is None:
             raise HTTPException(503, 'Research storage is unavailable; paper accounts are unchanged')
         return self.jobs
+
+    def freeze(self, view, now, news):
+        from core.research.market_evidence import evidence
+        instrument = view['config']['instrument']
+        key = (instrument, int(now.timestamp()) // 60)
+        if key not in self.evidence_cache:
+            self.evidence_cache = {k: v for k, v in self.evidence_cache.items() if k[1] == key[1]}
+            self.evidence_cache[key] = evidence(instrument, now)
+        return freeze(view, now=now, news=news, evidence=self.evidence_cache[key])
 
     def start(self):
         if self.jobs is None:
@@ -107,9 +154,8 @@ class Service:
             self.error = 'RESEARCH_STORAGE_UNAVAILABLE'
             logger.warning('research_recovery_unavailable')
             return
-        if self.runner.configured:
-            self.thread = Thread(target=self.collect, daemon=True, name='tradingagents-shadow')
-            self.thread.start()
+        self.thread = Thread(target=self.collect, daemon=True, name='tradingagents-paper')
+        self.thread.start()
 
     def close(self):
         self.stop.set()
@@ -119,6 +165,8 @@ class Service:
     def collect(self):
         while not self.stop.is_set():
             try:
+                if self.automation:
+                    self.automation.schedule()
                 self.run_once()
             except Exception:
                 logger.warning('research_job_loop_unavailable')
@@ -129,6 +177,7 @@ class Service:
         if claimed is None:
             return
         owner, job = claimed
+        result = None
         try:
             if not self.runner.configured or job['account_id'] not in self.runner.accounts:
                 raise ValueError('RESEARCH_NOT_AUTHORIZED')
@@ -138,12 +187,16 @@ class Service:
             view = self.accounts.read(owner, job['account_id'])
             now = self.clock()
             check = assess(job['snapshot'], advice, view, now=now, news=self.news(view['config']['instrument'], now))
-            self.jobs.finish(owner, job['job_id'], 'COMPLETED',
-                             {'advice': advice.model_dump(mode='json'), 'assessment': check}, now)
+            result = {'advice': advice.model_dump(mode='json'), 'assessment': check}
+            # Persist model evidence before account admission so recovery never recalls a paid model.
+            self.jobs.save_result(owner, job['job_id'], result)
+            if job['mode'] == 'AUTO' and self.automation:
+                self.automation.apply(owner, job, advice, check)
+            self.jobs.finish(owner, job['job_id'], 'COMPLETED', result, now)
         except Exception:
             # Do not persist provider bodies, exception text, tokens or prompts.
             logger.warning('research_job_failed')
-            self.jobs.finish(owner, job['job_id'], 'FAILED', {'reason': 'RESEARCH_INVALID_OR_UNAVAILABLE'}, self.clock())
+            self.jobs.finish(owner, job['job_id'], 'FAILED', result or {'reason': 'RESEARCH_INVALID_OR_UNAVAILABLE'}, self.clock())
 
 
 def router_for(service, owner):
@@ -152,6 +205,18 @@ def router_for(service, owner):
     @router.get('/status')
     def status():
         return service.status()
+
+    @router.get('/automation/{account_id}')
+    def automation_status(account_id: UUID, request: Request, response: Response):
+        if service.automation is None:
+            raise HTTPException(503, 'AI paper controls unavailable')
+        return service.automation.view(owner(request, response), str(account_id))
+
+    @router.post('/automation/{account_id}')
+    def automation_control(account_id: UUID, body: Control, request: Request, response: Response):
+        if service.automation is None:
+            raise HTTPException(503, 'AI paper controls unavailable')
+        return service.automation.control(owner(request, response), str(account_id), body.model_dump(mode='json'))
 
     @router.get('/jobs')
     def jobs(request: Request, response: Response):
@@ -175,10 +240,10 @@ def router_for(service, owner):
             return previous
         if view['revision'] != body.expected_revision:
             raise HTTPException(409, 'Account changed; refresh before creating research snapshot')
-        if body.mode == 'ANALYZE' and (not service.runner.configured or account not in service.runner.accounts):
+        if body.mode == 'ANALYZE' and (not service.status()['model_configured'] or account not in service.runner.accounts):
             raise HTTPException(503, 'AI research is not configured or this account is not authorized; no model call was made')
         now = service.clock()
-        frozen = freeze(view, now=now, news=service.news(view['config']['instrument'], now))
+        frozen = service.freeze(view, now, service.news(view['config']['instrument'], now))
         if body.mode == 'ANALYZE' and frozen['snapshot']['entry_gate'] in ('QUOTE_UNAVAILABLE', 'QUOTE_STALE'):
             raise HTTPException(409, 'A fresh real quote is required for model research')
         return jobs.create(identity, account, str(body.request_id), body.mode, frozen, now)

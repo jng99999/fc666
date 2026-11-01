@@ -183,7 +183,8 @@ class Store:
             elif kind in ('ENTRY_REJECTED', 'ENTRY_STOPPED', 'FILL'):
                 state['last_outcome'] = {'kind': kind, 'status': 'REJECTED' if kind == 'ENTRY_REJECTED' else
                                          'STOPPED' if kind == 'ENTRY_STOPPED' else 'FILLED',
-                                         'reason': details['reason'], 'request_id': details.get('request_id'),
+                                         'reason': details['reason'], 'request_id': details.get('request_id') or
+                                         (state['pending']['request_id'] if kind == 'FILL' and details['reason'] in ('SIGNAL_ENTRY', 'SIGNAL_EXIT') and state['pending'] else None),
                                          'at': now.isoformat()}
         state.update(balance=view['balance'], fees=view['fees'], gross_pnl=view['gross_pnl'],
                      position=view['position'], pending=None if engine.pending is None else engine.pending.model_dump(mode='json'),
@@ -289,7 +290,7 @@ class Store:
                     result.append(self._view(db, state, engine))
             return result
 
-    def submit(self, owner, account_id, proposal, expected_revision, now, news=None):
+    def submit(self, owner, account_id, proposal, expected_revision, now, news=None, *, ai=False):
         proposal, now = Proposal.model_validate(proposal), aware(now)
         news = None if news is None else News.model_validate(news)
         request = proposal.model_dump(mode='json')
@@ -300,6 +301,8 @@ class Store:
             if receipt is not None:
                 return {**self._view(db, state, engine), 'decision_result': receipt['input']['result']}
             self._revision(state, expected_revision)
+            if ai and (state['metadata'].get('strategy') != 'AI_RESEARCH' or state['metadata'].get('ai_paused', True)):
+                raise Conflict('AI paper account is not enabled')
             if state['status'] == 'STOPPED' and proposal.target != 'FLAT':
                 raise Conflict('Stopped directional account cannot open new risk')
             if state['status'] == 'STOPPED' and engine.position is None:
@@ -317,6 +320,11 @@ class Store:
 
     def decision_request(self, owner, account_id, request_id):
         """Recover the originally accepted server clock on a transport retry."""
+        receipt = self.decision_receipt(owner, account_id, request_id)
+        return None if receipt is None else receipt['request']
+
+    def decision_receipt(self, owner, account_id, request_id):
+        """Read original admission evidence without driving an account transition."""
         with self.transaction() as db:
             self._load(db, account_id, owner)
             row = db.execute('SELECT payload,sha256 FROM directional_operations WHERE account_id=? AND request_key=?',
@@ -326,7 +334,7 @@ class Store:
             receipt = json.loads(row['payload'])
             if digest(receipt) != row['sha256']:
                 raise ValueError('Directional receipt integrity failed')
-            return receipt['input']['request']
+            return receipt['input']
 
     def submit_automatic(self, account_id, proposal, expected_revision, now, news=None):
         """Trusted worker entry; owner values never enter public account views."""
@@ -337,6 +345,52 @@ class Store:
             owner = db.execute('SELECT owner FROM directional_accounts WHERE account_id=?', (account_id,)).fetchone()['owner']
         # A simultaneous stop/quote bumps revision and safely rejects this signal.
         return self.submit(owner, account_id, proposal, expected_revision, now, news)
+
+    def submit_ai(self, owner, account_id, proposal, expected_revision, now, news=None):
+        return self.submit(owner, account_id, proposal, expected_revision, now, news, ai=True)
+
+    def decision_outcome(self, owner, account_id, request_id):
+        """Recover a terminal request outcome even after later account events."""
+        with self.transaction() as db:
+            self._load(db, account_id, owner)
+            row = db.execute('''SELECT o.payload,o.sha256 FROM directional_operations o,
+                json_each(o.payload,'$.engine_events') e
+                WHERE o.account_id=? AND json_extract(e.value,'$.details.request_id')=?
+                AND json_extract(e.value,'$.kind') IN ('ENTRY_REJECTED','FILL')
+                ORDER BY o.revision DESC LIMIT 1''', (account_id, identity(request_id))).fetchone()
+            if row is None:
+                return None
+            value = json.loads(row['payload'])
+            if digest(value) != row['sha256']:
+                raise ValueError('Directional outcome integrity failed')
+            for event in reversed(value['engine_events']):
+                details = event['details']
+                if event['kind'] in ('ENTRY_REJECTED', 'FILL') and details.get('request_id') == request_id:
+                    return {'status': 'FILLED' if event['kind'] == 'FILL' else 'REJECTED', 'reason': details['reason']}
+
+    def pause_ai(self, owner, account_id, request_id, expected_revision, now, paused):
+        """Cancel unfilled AI intent atomically; never remove position protections."""
+        now, request_id = aware(now), identity(request_id)
+        with self.transaction() as db:
+            state, engine = self._load(db, account_id, owner)
+            request = {'paused': bool(paused)}
+            key = 'ai-control:' + request_id
+            if self._receipt(db, state, key, request) is not None:
+                return self._view(db, state, engine)
+            self._revision(state, expected_revision)
+            if state['metadata'].get('strategy') != 'AI_RESEARCH':
+                raise Conflict('A dedicated AI_RESEARCH account is required')
+            if not paused and (state['status'] != 'RUNNING' or state['entry_halted']):
+                raise Conflict('Stopped accounts cannot resume new risk')
+            if engine.observed_at is not None and now < engine.observed_at:
+                raise Conflict('Observation clock cannot move backwards')
+            engine.pending = None
+            engine.pending_accepted_at = None
+            state['metadata'] = {**state['metadata'], 'ai_paused': bool(paused)}
+            engine._record('AI_CONTROL', {'paused': bool(paused), 'protective_exits_enabled': True})
+            state = self._commit(db, state, engine, key, 'AI_CONTROL',
+                                 {'request': request, 'now': now.isoformat()}, now)
+            return self._view(db, state, engine)
 
     def on_quote(self, account_id, quote, now, news=None):
         quote, now = Quote.model_validate(quote), aware(now)

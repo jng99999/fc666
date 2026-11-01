@@ -8,7 +8,8 @@ async function proxy(request:Request,context:{params:Promise<{segments:string[]}
   segments[0]==='accounts'&&uuid.test(segments[1]??'')&&((segments.length===2&&read)||(segments.length===3&&['decision','stop'].includes(segments[2])&&request.method==='POST'))||
   segments[0]==='research'&&((segments.length===2&&['status','jobs'].includes(segments[1])&&read)||
    (segments.length===3&&segments[1]==='jobs'&&uuid.test(segments[2])&&read)||
-   (segments.length===3&&segments[1]==='accounts'&&uuid.test(segments[2])&&request.method==='POST'));
+   (segments.length===3&&segments[1]==='accounts'&&uuid.test(segments[2])&&request.method==='POST')||
+   (segments.length===3&&segments[1]==='automation'&&uuid.test(segments[2])&&['GET','POST'].includes(request.method)));
  const headers={'Cache-Control':'no-store'};
  if(!valid)return Response.json({detail:'Unsupported directional resource'},{status:404,headers});
  const configured=process.env.DIRECTIONAL_API_BASE_URL;

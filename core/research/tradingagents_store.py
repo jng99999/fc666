@@ -57,16 +57,16 @@ class ResearchStore:
                 if previous['account'] != account or previous['mode'] != mode:
                     raise Conflict('Research request ID conflict')
                 return self._view(previous)
-            if db.execute('SELECT COUNT(*) FROM ta_jobs WHERE owner=?', (owner,)).fetchone()[0] >= 100:
+            if mode != 'AUTO' and db.execute("SELECT COUNT(*) FROM ta_jobs WHERE owner=? AND mode!='AUTO'", (owner,)).fetchone()[0] >= 100:
                 raise Conflict('Research history budget reached')
-            if mode == 'ANALYZE':
+            if mode in ('ANALYZE', 'AUTO'):
                 if db.execute("SELECT COUNT(*) FROM ta_jobs WHERE state IN ('QUEUED','RUNNING')").fetchone()[0] >= 2:
                     raise Conflict('Research capacity reached')
                 if db.execute("SELECT COUNT(*) FROM ta_jobs WHERE owner=? AND state IN ('QUEUED','RUNNING')", (owner,)).fetchone()[0]:
                     raise Conflict('Research already active in this browser')
             job = str(uuid4())
             db.execute('INSERT INTO ta_jobs VALUES(?,?,?,?,?,?,?,?,?,?)',
-                       (job, owner, account, request, mode, 'QUEUED' if mode == 'ANALYZE' else 'SNAPSHOT_ONLY',
+                       (job, owner, account, request, mode, 'QUEUED' if mode in ('ANALYZE', 'AUTO') else 'SNAPSHOT_ONLY',
                         encoded(snapshot), None, now.isoformat(), None))
             db.commit()
             return self.read(owner, job)
@@ -97,7 +97,13 @@ class ResearchStore:
             db.commit()
             return row['owner'], self.read(row['owner'], row['id'])
 
+    def save_result(self, owner, job, result):
+        with self.connect() as db:
+            db.execute("UPDATE ta_jobs SET result=? WHERE id=? AND owner=? AND state='RUNNING'", (encoded(result), job, owner))
+
     def finish(self, owner, job, state, result, now):
         with self.connect() as db:
             db.execute("UPDATE ta_jobs SET state=?,result=?,finished=? WHERE id=? AND owner=? AND state='RUNNING'",
                        (state, encoded(result), now.isoformat(), job, owner))
+            # Automatic research is bounded; immutable account/receipt ledgers remain intact.
+            db.execute("DELETE FROM ta_jobs WHERE id IN (SELECT id FROM ta_jobs WHERE owner=? AND mode='AUTO' AND state NOT IN ('RUNNING','QUEUED') ORDER BY created DESC,id DESC LIMIT -1 OFFSET 100)", (owner,))

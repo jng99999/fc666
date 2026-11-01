@@ -21,6 +21,12 @@ NOW = datetime(2026, 10, 29, 8, tzinfo=timezone.utc)
 ROOT = '/api/v1/directional'
 
 
+@pytest.fixture(autouse=True)
+def isolated_market_evidence(monkeypatch):
+    # All market/news/model inputs in this module are explicit synthetic fixtures.
+    monkeypatch.setattr('core.research.market_evidence.evidence', lambda *_: None)
+
+
 def configuration():
     return Config(mode='RESEARCH_PAPER', instrument='XAU/USD', quote_source=source_for('XAU/USD'),
                   news_sources=('TEST_NEWS',), initial_cash='10000', tick_size='.01', quantity_step='.01',
