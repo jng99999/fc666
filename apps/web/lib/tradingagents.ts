@@ -3,7 +3,7 @@ import {DirectionalConfig,DirectionalQuote} from './directional';
 
 const Time=z.iso.datetime({offset:true});
 const DecimalString=z.string().regex(/^-?\d+(\.\d+)?([Ee][+-]?\d+)?$/);
-const EvidenceBar=z.object({open_time:z.number().int().nonnegative(),close_time:z.number().int().nonnegative(),open:DecimalString,high:DecimalString,low:DecimalString,close:DecimalString,volume:DecimalString}).passthrough();
+const EvidenceBar=z.object({open_time:z.number().int().nonnegative(),close_time:z.number().int().nonnegative(),open:DecimalString,high:DecimalString,low:DecimalString,close:DecimalString,volume:DecimalString.nullable()}).passthrough();
 export const ResearchMarketEvidence=z.object({status:z.string(),reason:z.string().optional(),bars:z.array(EvidenceBar).max(200),indicators:z.object({ema20:DecimalString,rsi14:DecimalString.nullable(),atr14:DecimalString,as_of:z.number().int().nonnegative(),input_bars:z.number().int().nonnegative(),method:z.unknown()}).passthrough().nullable(),quote_source:z.string().nullable(),candle_source:z.string().nullable()}).passthrough();
 export const ResearchStatus=z.object({framework:z.literal('TradingAgents'),upstream_commit:z.string().regex(/^[a-f0-9]{40}$/),runner_configured:z.boolean(),model_configured:z.boolean(),automation_supported:z.boolean(),state:z.string(),mode:z.literal('SHADOW_ONLY'),automatic_execution:z.literal(false),trading_enabled:z.literal(false)});
 const AutomationReceipt=z.object({job_id:z.uuid(),request_id:z.string(),reason:z.string(),status:z.enum(['ACCEPTED','REJECTED','HOLD','SKIPPED','FILLED']),at:Time,account_revision:z.number().int().nonnegative().optional(),fills_count:z.number().int().nonnegative().optional()});

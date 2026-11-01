@@ -23,7 +23,7 @@
 /* Strategy / backtest: approved light E desktop and B mobile layout. */
 .workbench.workbench .srLayout { display:grid; grid-template-columns:224px minmax(0,1fr) 274px; gap:16px; align-items:stretch; min-height:calc(100dvh - 112px); }
 .workbench.workbench .srLayout > .card { min-width:0; }
-.workbench.workbench .srLibrary { padding:20px 16px; display:flex; flex-direction:column; }
+.workbench.workbench .srLibrary { padding:20px 16px; display:flex; flex-direction:column; align-self:start; }
 .workbench.workbench .srLibrary .panelHead { gap:7px; margin-bottom:18px; }
 .workbench.workbench .srLibrary .panelTitle { font-size:18px; white-space:nowrap; }
 .workbench.workbench .srLibrary .panelTitle small { color:var(--muted,#73849b); font-size:12px; font-weight:500; margin-left:4px; }
@@ -32,7 +32,7 @@
 .workbench.workbench .srFilters { padding:3px; gap:1px; margin-bottom:15px; }
 .workbench.workbench .srFilters button { padding:7px 5px; font-size:11px; flex:1; white-space:nowrap; }
 .workbench.workbench .srStrategyList { display:flex; flex-direction:column; gap:12px; }
-.workbench.workbench .srLibrary .srStrategyList { max-height:calc(100dvh - 320px); }
+.workbench.workbench .srLibrary .srStrategyList { max-height:max(260px,calc(100dvh - 320px)); flex-shrink:0; }
 .workbench.workbench .srStrategyItem { position:relative; width:100%; display:flex; gap:10px; align-items:flex-start; min-height:110px; padding:15px 11px; border:1px solid transparent; border-radius:16px; background:linear-gradient(140deg,#f5f9fe,#f8fbfd); text-align:left; color:var(--text,#152236); cursor:pointer; }
 .workbench.workbench .srStrategyItem:hover { background:#eef5ff; }
 .workbench.workbench .srStrategyItem.selected { border-color:#72a3ff; background:linear-gradient(135deg,#eaf2ff,#f5fbff); box-shadow:0 0 0 1px #d9e7ff inset; }
@@ -270,4 +270,8 @@
   .workbench.workbench .srRecordTable th { font-size:10px; }
   .workbench.workbench .srRecordTable td { font-size:10px; }
   .workbench.workbench .srRecordTable td:first-child { font-size:10px; }
+}
+@media(max-width:760px) {
+  .workbench.workbench .srParamField input,
+  .workbench.workbench .srParamField select { font-size:16px; }
 }

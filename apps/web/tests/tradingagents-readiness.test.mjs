@@ -34,7 +34,14 @@ test('research boundary accepts real readiness, AUTO jobs and correlated paper r
  assert.equal(ResearchMarketEvidence.parse(market).detail,market.detail,'source provenance must survive JSON downloads');
  const config={instrument:'XAU/USD',quote_source:'swissquote',initial_cash:'10000',tick_size:'0.01',quantity_step:'0.001',max_quantity:'10',max_order_quote:'5000',fee_rate:'0.001',slippage:'0.05',news_pre_seconds:1800,news_post_seconds:1800};
  const snapshot={sha256:'a'.repeat(64),snapshot:{version:'fc666-research-snapshot-v1',account_id:uuid,revision:8,at,valid_until:at,config,quote:null,recent_quotes:[],sample_type:'OBSERVED_QUOTES_NOT_CANDLES',entry_gate:'NEWS_UNAVAILABLE',unavailable:['social_sentiment'],market_evidence:market,trading_enabled:false}};
- assert.equal(ResearchJob.parse({job_id:uuid,account_id:uuid,mode:'AUTO',state:'QUEUED',snapshot,result:null,created_at:at,finished_at:null,trading_enabled:false}).mode,'AUTO');
+ const job={job_id:uuid,account_id:uuid,mode:'AUTO',state:'QUEUED',snapshot,result:null,created_at:at,finished_at:null,trading_enabled:false};
+ assert.equal(ResearchJob.parse(job).mode,'AUTO');
+ const goldBar={open_time:1793613540000,close_time:1793613600000,open:'4000',high:'4001',low:'3999',close:'4000.5',volume:null};
+ const goldEvidence={...market,status:'READY',bars:[goldBar],reason:'CLOSED_CANDLES_READY',candle_source:'independent.spot.history'};
+ const goldJob=ResearchJob.parse({...job,snapshot:{...snapshot,snapshot:{...snapshot.snapshot,market_evidence:goldEvidence}}});
+ assert.equal(goldJob.snapshot.snapshot.market_evidence.bars[0].volume,null,'unknown gold volume stays unknown instead of rejecting the research record or inventing zero');
+ for(const volume of [0,'unknown',undefined])assert.equal(ResearchMarketEvidence.safeParse({...goldEvidence,bars:[{...goldBar,volume}]}).success,false,'malformed or missing volume still fails the boundary');
+ assert.equal(ResearchMarketEvidence.parse({...goldEvidence,bars:[{...goldBar,volume:'12.5'}]}).bars[0].volume,'12.5','real reported volume is preserved');
  assert.match(automationReason('HISTORICAL_CANDLES_UNAVAILABLE'),/黄金历史行情尚未接入，暂停新开仓/);
  assert.match(automationReason('HISTORY_UNAVAILABLE'),/历史行情尚未就绪/);
 });
