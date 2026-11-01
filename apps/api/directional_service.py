@@ -125,14 +125,18 @@ def file_news(path):
     return read
 
 
-def http_news(url, token=None):
+def http_news(url, token=None, *, public_only=False):
     """Operator endpoint must return original News timestamps, never a fabricated clear calendar."""
     parsed = urlsplit(url)
     if parsed.scheme != 'https' or not parsed.hostname or parsed.username or parsed.password or parsed.fragment:
         raise ValueError('HTTPS operator news URL required')
     def read(instrument, now):
         headers = {'Authorization': 'Bearer ' + token} if token else {}
-        with httpx.Client(timeout=5, follow_redirects=False, trust_env=False) as client:
+        options = {}
+        if public_only:
+            from core.security.public_http import PublicTransport
+            options['transport'] = PublicTransport()
+        with httpx.Client(timeout=5, follow_redirects=False, trust_env=False, **options) as client:
             with client.stream('GET', url, headers=headers, params={'instrument': instrument}) as response:
                 response.raise_for_status()
                 raw = bytearray()
@@ -145,17 +149,22 @@ def http_news(url, token=None):
 
 
 def create_app(path=None, *, provider=fetch_quote, news_provider=None, news_source=None,
-               background=True, secure=True, clock=None, interval=10, allowed_origins=None, research_runner=None):
+               background=True, secure=True, clock=None, interval=10, allowed_origins=None, research_runner=None,
+               operator_store=None):
     if os.environ.get('LIVE_TRADING', 'false').lower() not in ('false', '0'):
         raise ValueError('Directional service requires LIVE_TRADING=false')
     path = path or os.environ.get('DIRECTIONAL_DB_PATH', '/app/.runtime/directional/paper.sqlite3')
-    news_source = news_source or os.environ.get('DIRECTIONAL_NEWS_SOURCE')
-    if news_provider is None and os.environ.get('DIRECTIONAL_NEWS_FILE'):
-        news_provider = file_news(os.environ['DIRECTIONAL_NEWS_FILE'])
-    if news_provider is None and os.environ.get('DIRECTIONAL_NEWS_URL'):
-        news_provider = http_news(os.environ['DIRECTIONAL_NEWS_URL'], os.environ.get('DIRECTIONAL_NEWS_TOKEN'))
-    if news_provider is not None and not news_source:
-        raise ValueError('A server-authorized news source name is required')
+    if operator_store is None and os.environ.get('FC666_OPERATOR_DIR'):
+        from core.security.operator import OperatorStore
+        operator_store = OperatorStore(os.environ['FC666_OPERATOR_DIR'], secure=secure)
+    if operator_store is None:
+        news_source = news_source or os.environ.get('DIRECTIONAL_NEWS_SOURCE')
+        if news_provider is None and os.environ.get('DIRECTIONAL_NEWS_FILE'):
+            news_provider = file_news(os.environ['DIRECTIONAL_NEWS_FILE'])
+        if news_provider is None and os.environ.get('DIRECTIONAL_NEWS_URL'):
+            news_provider = http_news(os.environ['DIRECTIONAL_NEWS_URL'], os.environ.get('DIRECTIONAL_NEWS_TOKEN'))
+        if news_provider is not None and not news_source:
+            raise ValueError('A server-authorized news source name is required')
     if interval <= 0:
         raise ValueError('Positive quote polling interval required')
     origins = {value.strip() for value in (allowed_origins if allowed_origins is not None else
@@ -166,12 +175,31 @@ def create_app(path=None, *, provider=fetch_quote, news_provider=None, news_sour
     lock = Lock()
     feed = {name: {'state': 'WAITING', 'last_checked': None, 'last_quote': None} for name in INSTRUMENTS}
 
+    def news_configuration():
+        if operator_store is not None:
+            try:
+                value = operator_store.vault.read()['news']
+                return bool(value['source'] and value['url']), value['source']
+            except Exception:
+                return False, None
+        return news_provider is not None, news_source
+
     def snapshot(instrument, now):
-        if news_provider is None:
-            return None
         try:
-            value = news_provider(instrument, now)
-            return None if value is None else News.model_validate(value)
+            selected_provider = news_provider
+            authorized_source = None
+            if operator_store is not None:
+                value = operator_store.vault.read()['news']
+                authorized_source = value['source']
+                selected_provider = (http_news(value['url'], value['token'], public_only=True)
+                                     if value['source'] and value['url'] else None)
+            if selected_provider is None:
+                return None
+            value = selected_provider(instrument, now)
+            parsed = None if value is None else News.model_validate(value)
+            if parsed is not None and authorized_source is not None and parsed.source != authorized_source:
+                return None
+            return parsed
         except Exception:
             logger.warning('directional_news_unavailable')
             return None
@@ -180,6 +208,7 @@ def create_app(path=None, *, provider=fetch_quote, news_provider=None, news_sour
         at = at or clock()
         config = Config.model_validate(view['config'])
         news = snapshot(config.instrument, at) if news is UNSET else news
+        news_ready, current_news_source = news_configuration()
         with lock:
             state = dict(feed[config.instrument])
         quote = None if view['last_quote'] is None else Quote.model_validate(view['last_quote'])
@@ -191,7 +220,7 @@ def create_app(path=None, *, provider=fetch_quote, news_provider=None, news_sour
         if gate == 'CLEAR' and analysis is not None and analysis['state'] == 'READY' and view['position'] is None:
             gate = automatic_budget(view, analysis['target'])
         return {**view, 'entry_gate': gate, 'feed': state,
-                'news': {'configured': news_provider is not None, 'source': news_source,
+                'news': {'configured': news_ready, 'source': current_news_source,
                          'observed_at': news.observed_at.isoformat() if news else None},
                 'analysis': analysis}
 
@@ -303,7 +332,7 @@ def create_app(path=None, *, provider=fetch_quote, news_provider=None, news_sour
             body = bytearray()
             async for chunk in request.stream():
                 body.extend(chunk)
-                if len(body) > 8192:
+                if len(body) > (16384 if request.url.path.startswith('/api/v1/directional/admin/') else 8192):
                     return JSONResponse({'detail': 'Paper request too large'}, status_code=413,
                                         headers={'Cache-Control': 'no-store'})
             request._body = bytes(body)
@@ -329,6 +358,11 @@ def create_app(path=None, *, provider=fetch_quote, news_provider=None, news_sour
         return JSONResponse({'detail': 'Paper persistence temporarily unavailable'}, status_code=503)
 
     def owner(request, response, *, create=False):
+        if operator_store is not None:
+            from core.security.operator import COOKIE as ADMIN_COOKIE
+            identity = operator_store.authenticate(request.cookies.get(ADMIN_COOKIE))
+            if identity is not None:
+                return hashlib.sha256(('operator:' + identity['principal_id']).encode()).hexdigest()
         token = request.cookies.get(COOKIE)
         if not token or not re.fullmatch(r'[A-Za-z0-9_-]{43}', token):
             if not create:
@@ -338,10 +372,52 @@ def create_app(path=None, *, provider=fetch_quote, news_provider=None, news_sour
                                 secure=secure, samesite='strict', path='/api')
         return hashlib.sha256(token.encode()).hexdigest()
 
+    def require_operator(request):
+        if operator_store is None:
+            return
+        if request.headers.get('origin') not in origins or request.headers.get('sec-fetch-site') == 'cross-site':
+            raise HTTPException(403, 'Same-origin administrator commands required')
+        from core.security.operator import OperatorError
+        try:
+            operator_store.require_admin(request)
+        except OperatorError as error:
+            raise HTTPException(error.status, '请先在系统的 API 接入页面登录管理员，再运行模型或启用自动模拟。') from None
+
     from apps.api.tradingagents_research import Service as ResearchService, router_for as research_router
-    research = ResearchService(Path(path).with_name('tradingagents.research.sqlite3'), store, snapshot, clock, runner=research_runner)
+    research = ResearchService(Path(path).with_name('tradingagents.research.sqlite3'), store, snapshot, clock,
+        runner=research_runner, settings=operator_store.vault if operator_store is not None else None,
+        require_operator=require_operator if operator_store is not None else None)
     app.state.research = research
     app.include_router(research_router(research, owner))
+    if operator_store is not None:
+        from apps.api.operator_settings import router_for as operator_router
+        from core.security.operator import OperatorError
+
+        @app.exception_handler(OperatorError)
+        async def operator_error(request, error):
+            return JSONResponse({'detail': error.message}, status_code=error.status,
+                                headers={'Cache-Control': 'no-store'})
+
+        def owned_accounts(request):
+            verified = getattr(request.state, 'operator_configuration_identity', None)
+            identity = (hashlib.sha256(('operator:' + verified['principal_id']).encode()).hexdigest()
+                        if verified is not None else owner(request, Response()))
+            return [row for row in store.listing(identity) if row['metadata']['strategy'] == 'AI_RESEARCH']
+
+        def validate_accounts(request, ids):
+            allowed = {row['account_id'] for row in owned_accounts(request) if row['status'] != 'STOPPED'}
+            if any(value not in allowed for value in ids):
+                raise HTTPException(422, 'Authorize only active AI research accounts owned by this administrator')
+
+        def accounts_for_operator(request):
+            return {'accounts': [dict(account_id=row['account_id'], instrument=row['config']['instrument'],
+                strategy=row['metadata']['strategy'], status=row['status']) for row in owned_accounts(request)],
+                'trading_enabled': False}
+
+        app.state.operator = operator_store
+        app.include_router(operator_router(operator_store, origins,
+            on_change=research.automation.pause_for_configuration if research.automation else None,
+            validate_accounts=validate_accounts, accounts=accounts_for_operator))
 
     @app.get('/health/live')
     def live():
@@ -357,11 +433,12 @@ def create_app(path=None, *, provider=fetch_quote, news_provider=None, news_sour
 
     @app.get('/api/v1/directional/status')
     def status():
+        news_ready, current_news_source = news_configuration()
         with lock:
             current = {name: dict(value) for name, value in feed.items()}
         return {'service': 'directional-paper-v1', 'mode': 'RESEARCH_PAPER', 'trading_enabled': False,
-                'ai': {'configured': False}, 'news': {'configured': news_provider is not None,
-                'state': 'SERVER_CONFIGURED' if news_provider is not None else 'NEWS_UNAVAILABLE', 'source': news_source},
+                'ai': {'configured': False}, 'news': {'configured': news_ready,
+                'state': 'SERVER_CONFIGURED' if news_ready else 'NEWS_UNAVAILABLE', 'source': current_news_source},
                 'instruments': instruments(), 'feed': current,
                 'strategies': ['MANUAL', 'SMA20_QUOTES'], 'server_time': clock().isoformat()}
 
@@ -374,7 +451,7 @@ def create_app(path=None, *, provider=fetch_quote, news_provider=None, news_sour
     def create(body: Create, request: Request, response: Response):
         identity = owner(request, response, create=True)
         config = Config(mode='RESEARCH_PAPER', instrument=body.instrument, quote_source=source_for(body.instrument),
-                        news_sources=(news_source or 'operator.calendar.v1',),
+                        news_sources=(news_configuration()[1] or 'operator.calendar.v1',),
                         initial_cash=body.initial_cash, tick_size=body.tick_size, quantity_step=body.quantity_step,
                         max_quantity=body.max_quantity, max_order_quote=body.max_order_quote,
                         fee_rate=body.fee_rate, slippage=body.slippage, quote_max_age_seconds=60,

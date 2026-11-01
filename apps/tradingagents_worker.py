@@ -4,6 +4,7 @@ Runs pinned upstream decision-role factories over FC666 frozen evidence. Unlike
 the upstream default graph, it never fetches Yahoo data or normalizes symbols.
 """
 from datetime import datetime, timedelta, timezone
+from contextlib import contextmanager
 import importlib.metadata
 import json
 import os
@@ -140,8 +141,65 @@ def run(snapshot, llm, *, model):
                   candidate=candidate, model=model, model_calls=budget.calls)
 
 
+def model_configuration():
+    directory = os.environ.get('FC666_OPERATOR_VAULT_PATH')
+    if directory:
+        from core.security.operator import EncryptedVault
+        try:
+            return EncryptedVault(directory, read_only=True).read()['model']
+        except Exception:
+            return {}
+    return {name: os.environ.get(key, '') for name, key in (
+        ('provider', 'FC666_TA_PROVIDER'), ('model', 'FC666_TA_MODEL'),
+        ('api_key', 'FC666_TA_API_KEY'), ('base_url', 'FC666_TA_BASE_URL'))}
+
+
+@contextmanager
+def model_client(provider, model, api_key, base_url=None):
+    """Pinned synchronous provider clients; no async SDK path is used by run().
+
+    The locked Anthropic SDK uses httpx2, unlike OpenAI. ChatAnthropic does not
+    accept http_client as a model field, so bind its cached SDK client explicitly
+    after constructing the upstream role-compatible model.
+    """
+    if provider not in ('openai', 'anthropic', 'google') or (provider == 'google' and base_url):
+        raise ValueError('Unsupported bounded model provider')
+    from tradingagents.llm_clients.factory import create_llm_client
+    from tradingagents.llm_clients.api_key_env import get_api_key_env
+    from core.security.public_http import PublicTransport
+    credential_env = get_api_key_env(provider)
+    if credential_env:
+        os.environ[credential_env] = api_key
+    if provider == 'google':
+        llm = create_llm_client(provider, model, None, api_key=api_key,
+            timeout=15, max_retries=0, max_output_tokens=1200).get_llm()
+        try:
+            yield llm
+        finally:
+            llm.client.close()
+        return
+    if provider == 'anthropic':
+        import httpx2 as http
+    else:
+        import httpx as http
+    with http.Client(transport=PublicTransport(http_module=http), trust_env=False,
+                     follow_redirects=False, timeout=15) as client:
+        options = {'http_client': client} if provider == 'openai' else {}
+        llm = create_llm_client(provider, model, base_url, api_key=api_key,
+            timeout=15, max_retries=0, max_tokens=1200, **options).get_llm()
+        if provider == 'anthropic':
+            import anthropic
+            object.__setattr__(llm, '_client', anthropic.Client(**llm._client_params, http_client=client))
+            if llm._client._client is not client or 'http_client' in llm.model_kwargs:
+                raise ValueError('Pinned Anthropic transport was not installed')
+        elif llm.root_client._client is not client:
+            raise ValueError('Pinned OpenAI transport was not installed')
+        yield llm
+
+
 def configured():
-    return all(os.environ.get(k) for k in ('FC666_TA_PROVIDER', 'FC666_TA_MODEL', 'FC666_TA_API_KEY'))
+    value = model_configuration()
+    return all(value.get(key) for key in ('provider', 'model', 'api_key'))
 
 
 def create_app():
@@ -155,7 +213,8 @@ def create_app():
     async def analyze(request: Request):
         if len(token) < 32 or not secrets.compare_digest(request.headers.get('authorization', '').encode(), ('Bearer ' + token).encode()):
             raise HTTPException(401, 'Research authorization required')
-        if not configured():
+        configuration = model_configuration()
+        if not all(configuration.get(key) for key in ('provider', 'model', 'api_key')):
             raise HTTPException(503, 'Research model is not configured')
         raw = bytearray()
         async for chunk in request.stream():
@@ -167,9 +226,10 @@ def create_app():
         def execute():
             environment = {k: os.environ[k] for k in ('PATH', 'LANG', 'SSL_CERT_FILE') if k in os.environ}
             environment['PYTHONPATH'] = str(Path(__file__).resolve().parents[1])
-            for key in ('FC666_TA_PROVIDER', 'FC666_TA_MODEL', 'FC666_TA_API_KEY', 'FC666_TA_BASE_URL'):
-                if key in os.environ:
-                    environment[key] = os.environ[key]
+            for name, key in (('provider', 'FC666_TA_PROVIDER'), ('model', 'FC666_TA_MODEL'),
+                              ('api_key', 'FC666_TA_API_KEY'), ('base_url', 'FC666_TA_BASE_URL')):
+                if configuration.get(name):
+                    environment[key] = configuration[name]
             with tempfile.TemporaryDirectory(prefix='fc666-ta-') as temporary:
                 result = subprocess.run([sys.executable, '-m', 'apps.tradingagents_worker', '--child'], input=bytes(raw),
                                         capture_output=True, timeout=90, cwd=temporary, env=environment)
@@ -187,16 +247,12 @@ if __name__ == '__main__':
     if sys.argv[1:] != ['--child'] or not configured():
         raise SystemExit(2)
     try:
-        from tradingagents.llm_clients.factory import create_llm_client
-        from tradingagents.llm_clients.api_key_env import get_api_key_env
         # The upstream provider registry chooses the actual service. No default model is selected.
         model = os.environ['FC666_TA_MODEL']
-        credential_env = get_api_key_env(os.environ['FC666_TA_PROVIDER'])
-        if credential_env:
-            os.environ[credential_env] = os.environ['FC666_TA_API_KEY']
-        llm = create_llm_client(os.environ['FC666_TA_PROVIDER'], model, os.environ.get('FC666_TA_BASE_URL'),
-                                api_key=os.environ['FC666_TA_API_KEY'], timeout=15, max_retries=0, max_tokens=1200).get_llm()
-        value = run(json.loads(sys.stdin.buffer.read(65537)), llm, model=model)
+        provider = os.environ['FC666_TA_PROVIDER']
+        base_url = os.environ.get('FC666_TA_BASE_URL')
+        with model_client(provider, model, os.environ['FC666_TA_API_KEY'], base_url) as llm:
+            value = run(json.loads(sys.stdin.buffer.read(65537)), llm, model=model)
         sys.stdout.write(value.model_dump_json())
     except Exception:
         raise SystemExit(1)

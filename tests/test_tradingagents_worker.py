@@ -48,6 +48,7 @@ class FakeLLM:
 
 
 def test_real_upstream_eight_roles_and_strict_adapter_without_network(monkeypatch):
+    pytest.importorskip('tradingagents', reason='Real role factories run in the pinned SDK worker job')
     # Upstream package initialization must not search the user's .env in this test.
     import dotenv
     monkeypatch.setattr(dotenv, 'find_dotenv', lambda *args, **kwargs: '')

@@ -1,143 +1,129 @@
 'use client';
-
 import Link from 'next/link';
-import {useEffect,useState} from 'react';
-import type {z} from 'zod';
-import {DirectionalStatus,directionalRequest} from '../../../lib/directional';
-import {ResearchStatus,automationReason} from '../../../lib/tradingagents';
+import {useEffect,useRef,useState,type FormEvent} from 'react';
+import {z} from 'zod';
+import WorkspaceSelect from '../../../components/workspace-select';
+import {OperatorStatus,OperatorConfiguration,OperatorAccounts,OperatorError,operatorRequest,draftFromConfig,configurationPayload,type OperatorSession,type OperatorConfig,type ConfigurationDraft} from '../../../lib/operator';
+import ApiGuide from './api-guide';
 import styles from './page.module.css';
 
-type Check<T>={state:'checking'}|{state:'ready';data:T;checkedAt:string}|{state:'error'};
 type Frontend={hosted:boolean;apiConfigured:boolean;directionalConfigured:boolean;goldConfigured:boolean};
-
-const modelTemplate=`# 合并到服务器现有 research-worker.env，不覆盖原有 RUNNER_TOKEN。
-# 按供应商实际资料填写，空字段不会启用模型。
-FC666_TA_PROVIDER=
-FC666_TA_MODEL=
-FC666_TA_API_KEY=
-# 仅在服务商需要自定义接口时配置：
-# FC666_TA_BASE_URL=https://供应商接口地址
-LIVE_TRADING=false`;
-const accountTemplate=`# 合并到服务器现有 directional-ai.env。
-# 把空数组改为允许使用模型的真实 AI 账户 UUID 数组，最多 20 个。
-FC666_TA_ACCOUNT_IDS=[]
-LIVE_TRADING=false`;
-const newsTemplate=`# 合并到服务器现有 directional-ai.env。
-# URL 必须返回下方所示 FC666 新闻日历契约。
-DIRECTIONAL_NEWS_SOURCE=
-DIRECTIONAL_NEWS_URL=
-# 若服务需要 Bearer 认证，再配置：
-# DIRECTIONAL_NEWS_TOKEN=
-LIVE_TRADING=false`;
-const goldTemplate=`# 合并到服务器现有 directional-ai.env。
-# URL 必须返回独立 XAU/USD 现货历史契约。
-FC666_GOLD_HISTORY_SOURCE=
-FC666_GOLD_HISTORY_URL=
-# 若服务需要 Bearer 认证，再配置：
-# FC666_GOLD_HISTORY_TOKEN=
-LIVE_TRADING=false`;
-const frontendTemplate=`# Vercel 项目 Settings → Environment Variables
-# 以下只填写已经部署的后端 HTTPS 地址，不填写模型或交易所密钥。
-API_BASE_URL=
-DIRECTIONAL_API_BASE_URL=
-GOLD_API_BASE_URL=
-LIVE_TRADING=false
-# 公共实时行情连接按需配置，地址不得含密钥：
-# NEXT_PUBLIC_MARKET_WS_URL=wss://后端地址/ws/v1/market`;
-
-function Template({label,value,ready}:{label:string;value:string;ready:boolean}){
- const [copy,setCopy]=useState<'idle'|'copying'|'copied'|'error'>('idle');
- async function copyTemplate(){
-  if(copy==='copying')return;setCopy('copying');
-  try{await navigator.clipboard.writeText(value);setCopy('copied');}
-  catch{setCopy('error');}
- }
- return <details className={styles.details}>
-  <summary>{label}</summary>
-  <pre className={styles.code}>{value}</pre>
-  <button className={styles.secondary} type="button" disabled={!ready||copy==='copying'} onClick={()=>void copyTemplate()} aria-label={`复制${label}`}>{copy==='copying'?'正在复制…':'复制配置模板'}</button>
-  {copy==='copied'?<p role="status">已复制模板；模板不含密钥，仍需在服务器填写并生效。</p>:null}
-  {copy==='error'?<p role="alert">浏览器未允许复制。请长按上方模板手动复制。</p>:null}
- </details>;
-}
+type SessionState={state:'checking'}|{state:'failed'}|{state:'ready';value:OperatorSession};
+type Account=z.infer<typeof OperatorAccounts>['accounts'][number];
+const errorMessage=(error:unknown)=>error instanceof z.ZodError?'填写内容或服务器响应未通过校验，请检查字段后重试。':error instanceof Error?error.message:'请求未完成，请刷新核对。';
 
 export default function ApiConnections({frontend}:{frontend:Frontend}){
- const [ready,setReady]=useState(false),[revision,setRevision]=useState(0);
- const [model,setModel]=useState<Check<z.infer<typeof ResearchStatus>>>({state:'checking'});
- const [news,setNews]=useState<Check<z.infer<typeof DirectionalStatus>>>({state:'checking'});
+ const [session,setSession]=useState<SessionState>({state:'checking'}),[config,setConfig]=useState<OperatorConfig|null>(null),[draft,setDraft]=useState<ConfigurationDraft|null>(null);
+ const [ready,setReady]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
+ const [username,setUsername]=useState(''),[password,setPassword]=useState(''),[confirmation,setConfirmation]=useState(''),[setupToken,setSetupToken]=useState('');
+ const [passwordOpen,setPasswordOpen]=useState(false),[currentPassword,setCurrentPassword]=useState(''),[newPassword,setNewPassword]=useState(''),[newConfirmation,setNewConfirmation]=useState('');
+ const [accounts,setAccounts]=useState<Account[]>([]),[accountsError,setAccountsError]=useState('');
+ const locked=useRef(false),mounted=useRef(false),invitation=useRef(''),status=session.state==='ready'?session.value:null;
+ function clearSecrets(clearInvitation=true){if(clearInvitation)invitation.current='';setPassword('');setConfirmation('');setSetupToken('');setCurrentPassword('');setNewPassword('');setNewConfirmation('');setDraft(previous=>previous?{...previous,api_key:'',news_token:'',gold_token:''}:null);}
+ function adopt(next:OperatorConfig){setConfig(next);setDraft(draftFromConfig(next));}
+ function loseSession(){clearSecrets();setConfig(null);setDraft(null);setAccounts([]);setPasswordOpen(false);setSession(previous=>previous.state==='ready'?{state:'ready',value:{...previous.value,authenticated:false,username:null,csrf_token:null}}:{state:'failed'});}
+ async function readAccounts(signal?:AbortSignal){
+  try{const data=await operatorRequest('accounts',OperatorAccounts,undefined,undefined,signal);if(!signal?.aborted){setAccounts(data.accounts);setAccountsError('');}}
+  catch{if(!signal?.aborted){setAccounts([]);setAccountsError('账户列表未读取成功；不自动改变已有授权，请刷新重试。');}}
+ }
+ async function read(signal?:AbortSignal){
+  const next=await operatorRequest('status',OperatorStatus,undefined,undefined,signal);if(signal?.aborted)return;setSession({state:'ready',value:next});
+  if(next.authenticated){const value=await operatorRequest('configuration',OperatorConfiguration,undefined,undefined,signal);if(!signal?.aborted)adopt(value);await readAccounts(signal);}
+  else{setConfig(null);setDraft(null);setAccounts([]);}
+ }
  useEffect(()=>{
-  setReady(true);const controller=new AbortController();
-  async function check<T>(path:string,schema:z.ZodType<T>,update:(value:Check<T>)=>void){
-   try{const data=await directionalRequest(path,schema,undefined,controller.signal);if(!controller.signal.aborted)update({state:'ready',data,checkedAt:new Date().toISOString()});}
-   catch{if(!controller.signal.aborted)update({state:'error'});}
+  mounted.current=true;
+  const token=new URLSearchParams(window.location.hash.slice(1)).get('setup');
+  if(token){window.history.replaceState(null,'',window.location.pathname+window.location.search);if(/^[A-Za-z0-9_-]{43}$/.test(token))invitation.current=token;}
+  if(invitation.current)setSetupToken(invitation.current);
+  const controller=new AbortController();setReady(true);
+  void read(controller.signal).catch(error=>{if(!controller.signal.aborted){setSession({state:'failed'});setError(errorMessage(error));}});
+  const hide=()=>clearSecrets();window.addEventListener('pagehide',hide);
+  return()=>{mounted.current=false;clearSecrets(false);controller.abort();window.removeEventListener('pagehide',hide);queueMicrotask(()=>{if(!mounted.current)invitation.current='';});};
+ // Synchronize the initial session and erase the private bootstrap fragment.
+ // eslint-disable-next-line react-hooks/exhaustive-deps
+ },[]);
+ useEffect(()=>{
+  if(!status?.authenticated)return;
+  const controller=new AbortController();
+  async function verify(){
+   try{const next=await operatorRequest('status',OperatorStatus,undefined,undefined,controller.signal);if(controller.signal.aborted)return;if(!next.authenticated){loseSession();setNotice('管理员会话已过期，请重新登录。');}}
+   catch{/* Preserve the current form on a temporary connection failure; writes still require server authentication. */}
   }
-  void check('research/status',ResearchStatus,setModel);
-  void check('status',DirectionalStatus,setNews);
-  return()=>controller.abort();
- },[revision]);
- const checking=model.state==='checking'||news.state==='checking';
- function refresh(){if(checking)return;setModel({state:'checking'});setNews({state:'checking'});setRevision(value=>value+1);}
- const modelText=model.state==='checking'?'正在读取模型配置状态…':model.state==='error'?'暂时无法读取模型状态':model.data.model_configured?'模型字段已配置，真实调用待验证':model.data.runner_configured?'研究服务已连接，等待配置模型':'研究服务尚未连接';
- const newsText=news.state==='checking'?'正在读取新闻配置状态…':news.state==='error'?'暂时无法读取新闻状态':news.data.news.configured?'新闻接口已配置，事件时效与覆盖按账户校验':'新闻日历未接入，禁止新开仓';
+  const timer=setInterval(()=>void verify(),60000),focus=()=>{if(document.visibilityState==='visible')void verify();};
+  window.addEventListener('focus',focus);document.addEventListener('visibilitychange',focus);
+  return()=>{controller.abort();clearInterval(timer);window.removeEventListener('focus',focus);document.removeEventListener('visibilitychange',focus);};
+ // Check expiry when returning to the page without persisting credentials in the browser.
+ // eslint-disable-next-line react-hooks/exhaustive-deps
+ },[status?.authenticated]);
+ async function task(action:()=>Promise<void>){
+  if(locked.current)return;locked.current=true;setBusy(true);setError('');setNotice('');
+  try{await action();}catch(error){if(error instanceof OperatorError&&error.status===401)loseSession();setError(errorMessage(error));}
+  finally{locked.current=false;setBusy(false);}
+ }
+ async function authenticate(event:FormEvent){
+  event.preventDefault();if(!status)return;
+  if(!status.initialized&&(password.length<12||password!==confirmation)){setError('设置密码至少 12 个字符，两次输入需一致。');return;}
+  await task(async()=>{try{
+   const next=await operatorRequest(status.initialized?'login':'setup',OperatorStatus,status.initialized?{username:username.trim(),password}:{setup_token:setupToken,username:username.trim(),password});
+   setSession({state:'ready',value:next});clearSecrets();if(next.authenticated){adopt(await operatorRequest('configuration',OperatorConfiguration));await readAccounts();}
+   setNotice('管理员登录成功。密钥只保存到服务器，页面不会回显。');
+  }finally{setPassword('');setConfirmation('');}});
+ }
+ function change<K extends keyof ConfigurationDraft>(key:K,value:ConfigurationDraft[K]){
+  setDraft(previous=>{if(!previous)return null;const next={...previous,[key]:value};if(previous[key]!==value){if(key==='provider'||key==='base_url')next.api_key='';if(key==='news_url')next.news_token='';if(key==='gold_url')next.gold_token='';}return next;});setNotice('');
+ }
+ async function save(event:FormEvent){
+  event.preventDefault();if(!draft||!config||!status?.authenticated)return;
+  let body:ReturnType<typeof configurationPayload>;try{body=configurationPayload(draft,config.revision,config);}catch(error){setError(errorMessage(error));return;}
+  await task(async()=>{const next=await operatorRequest('configuration',OperatorConfiguration,body,status.csrf_token);adopt(next);setSession({state:'ready',value:{...status,config_revision:next.revision}});setNotice('配置已保存到服务器，密钥输入已清空。自动模型已暂停；请重新检查，再到 AI 研究页明确启用模拟。原有止盈止损继续运行。');});
+ }
+ async function logout(){await task(async()=>{try{const next=await operatorRequest('logout',OperatorStatus,{},status?.csrf_token);setSession({state:'ready',value:next});}finally{clearSecrets();setConfig(null);setDraft(null);setAccounts([]);setPasswordOpen(false);}setNotice('已退出管理员登录。');});}
+ async function changePassword(event:FormEvent){
+  event.preventDefault();if(newPassword.length<12||newPassword!==newConfirmation){setError('新密码至少 12 个字符，两次输入需一致。');return;}
+  await task(async()=>{const next=await operatorRequest('password',OperatorStatus,{current_password:currentPassword,new_password:newPassword},status?.csrf_token);clearSecrets();setPasswordOpen(false);setSession({state:'ready',value:next});if(!next.authenticated){setConfig(null);setDraft(null);setAccounts([]);}setNotice(next.authenticated?'密码已更新，其他管理员会话已撤销。':'密码已更新，旧会话已撤销，请重新登录。');});
+ }
+ function toggleAccount(id:string,checked:boolean){if(!draft)return;const selected=draft.accounts.split(/[\s,]+/).filter(Boolean);change('accounts',(checked?Array.from(new Set([...selected,id])):selected.filter(value=>value!==id)).join('\n'));}
 
- return <main className={styles.page}>
-  <header className={styles.heading}><div><p className={styles.eyebrow}>设置 / 接入与连接</p><h1>API 接入</h1><p>先连接 AI 与数据，再用独立模拟账户验证完整执行链路。</p></div><span className={styles.badge}>实盘关闭</span></header>
+ return <main className={styles.page} aria-busy={busy||session.state==='checking'}>
+  <header className={styles.heading}><div><p className={styles.eyebrow}>系统 / 安全接入</p><h1>API 接入</h1><p>手机配置，服务器保存。先验证模型与数据，再开启自动模拟。</p></div><span className={styles.badge}>实盘关闭</span></header>
   <nav className={styles.navigation} aria-label="API接入导航"><Link href="/system">连接状态</Link><Link href="/research/ai">AI 研究与自动模拟</Link><Link href="/paper/directional">模拟账户</Link></nav>
-  <section className={styles.intro} aria-labelledby="api-secret-location"><h2 id="api-secret-location">密钥填在哪里？</h2><p><strong>AI 模型密钥填在后端服务器的 <code>research-worker.env</code>，不是 Vercel。</strong>下方可查看每类接口的配置位置、复制模板和检查当前状态。</p><p>当前测试站未设置管理员登录，因此这里不提供公开的密钥保存表单。密钥只存服务器，不发到聊天、不写入网页或 Git；浏览器不能承担密钥保密和执行授权。</p><p>Bitget 公共行情不需要 API Key。本次不接入交易所私有交易密钥，实盘保持关闭。</p></section>
-  <div className={styles.checkbar}><p>检查只读取当前配置状态，不调用收费模型、不下单。</p><button className={styles.button} type="button" disabled={!ready||checking} onClick={refresh}>{checking?'正在检查…':'重新检查接入状态'}</button></div>
-  <div className={styles.grid}>
-   <section className={styles.card} aria-labelledby="api-model-heading"><div className={styles.cardHeading}><span className={styles.number}>01</span><div><p className={styles.eyebrow}>AI 决策</p><h2 id="api-model-heading">AI 模型 API</h2></div></div><p className={styles.status} role="status">{modelText}</p>
-    {model.state==='ready'?<p className={styles.meta}>{automationReason(model.data.state)} · 本次读取 {model.checkedAt.slice(11,19)} UTC</p>:null}
-    {model.state==='error'?<p className={styles.error}>配置状态未确认，请检查双向模拟服务连接后重试；未发送模型请求。</p>:null}
-    <p>需要服务商标识、真实模型名和 API Key；自定义兼容接口还需 Base URL。没有预设服务商，不能只填密钥就认为模型已接通。</p>
-    <dl className={styles.location}><dt>填写位置 · 后端服务器</dt><dd><code>/opt/fc666-directional-test/config/research-worker.env</code></dd></dl>
-    <Template label="AI 模型配置模板" value={modelTemplate} ready={ready}/>
-    <p>保留现有 <code>FC666_TA_RUNNER_TOKEN</code>，它必须与账户服务中的值一致；私有 worker 不对公网开放。</p>
-    <details className={styles.details}><summary>授权哪个模拟账户使用模型？</summary><p>在双向模拟页创建“AI 研究自动模拟”账户，复制其完整 UUID。在服务器的 <code>directional-ai.env</code> 中加入授权数组，公共创建账户不会自动获得模型开销权限。</p><Template label="AI 账户授权模板" value={accountTemplate} ready={ready}/><Link className={styles.inlineLink} href="/paper/directional">创建或查看模拟账户 →</Link></details>
-   </section>
-   <section className={styles.card} aria-labelledby="api-news-heading"><div className={styles.cardHeading}><span className={styles.number}>02</span><div><p className={styles.eyebrow}>事件过滤</p><h2 id="api-news-heading">新闻日历 API</h2></div></div><p className={styles.status} role="status">{newsText}</p>
-    {news.state==='ready'?<p className={styles.meta}>{news.data.news.configured?'已配置不代表当前事件覆盖通过':'保留已有持仓的止盈止损'} · 本次读取 {news.checkedAt.slice(11,19)} UTC</p>:null}
-    {news.state==='error'?<p className={styles.error}>配置状态未确认，不把请求失败视为“没有新闻”。</p>:null}
-    <p>高影响事件窗口禁止开仓和加仓，已有持仓仍可止盈止损。源缺失、过期或覆盖不完整时继续禁止新风险。</p>
-    <dl className={styles.location}><dt>填写位置 · 后端服务器</dt><dd><code>/opt/fc666-directional-test/config/directional-ai.env</code></dd></dl>
-    <Template label="新闻日历配置模板" value={newsTemplate} ready={ready}/>
-    <details className={styles.details}><summary>接口需要返回什么？</summary><p>GET 请求携带 <code>instrument</code> 参数；认证 Token 可选。接口必须适配以下字段，不能直接填任意新闻网页。</p><pre className={styles.code}>{`{
-  "source": "与配置来源一致",
-  "observed_at": "带时区的 ISO 时间",
-  "coverage_start": "真实覆盖起点",
-  "coverage_end": "真实覆盖终点",
-  "events": [{
-    "event_id": "稳定的事件 ID",
-    "instruments": ["XAU/USD"],
-    "impact": "HIGH",
-    "scheduled_at": "事件时间",
-    "known_at": "事件被获知时间"
-  }]
-}`}</pre><p>时间必须来自供应商。只有已确认覆盖内没有事件，才可返回空 events；服务故障不能伪造空日历。</p></details>
-   </section>
-   <section className={styles.card} aria-labelledby="api-gold-heading"><div className={styles.cardHeading}><span className={styles.number}>03</span><div><p className={styles.eyebrow}>黄金分析</p><h2 id="api-gold-heading">黄金历史行情 API</h2></div></div><p className={styles.status}>需通过黄金研究快照核验历史输入</p><p>这里接入 AI 使用的独立 XAU/USD 现货闭合 K 线。当前买卖报价不等于历史数据，AI 密钥也不能补齐黄金历史行情。</p>
-    <dl className={styles.location}><dt>填写位置 · 后端服务器</dt><dd><code>/opt/fc666-directional-test/config/directional-ai.env</code></dd></dl>
-    <Template label="黄金历史配置模板" value={goldTemplate} ready={ready}/>
-    <details className={styles.details}><summary>接口与历史核验要求</summary><p>GET 参数：<code>instrument=XAU/USD</code>、<code>interval=1m</code>、<code>limit=200</code>、<code>end_time</code> 为当前毫秒时间戳。Token 认证可选。</p><pre className={styles.code}>{`{
-  "instrument": "XAU/USD",
-  "product_type": "SPOT",
-  "currency": "USD",
-  "candle_source": "与配置来源一致",
-  "bars": [{
-    "open_time": 1793570400000,
-    "open": "4000", "high": "4001",
-    "low": "3999", "close": "4000.5",
-    "volume": null
-  }]
-}`}</pre><p>示例仅说明结构，不是真实行情。至少 100 根、最多 200 根连续已闭合 1 分钟柱；缺口、过期和未来柱会被拒绝。无成交量时保留 null，不能编成零。</p><p>当前没有独立的历史配置查询接口。配置后，请在 AI 研究页为黄金账户保存研究快照，核对来源、柱数和 EMA / RSI / ATR；这一步不调用模型。多年历史回测仍使用独立冻结数据集。</p></details>
-    <Link className={styles.inlineLink} href="/research/ai">查看研究快照与历史输入 →</Link>
-   </section>
-   <section className={styles.card} aria-labelledby="api-frontend-heading"><div className={styles.cardHeading}><span className={styles.number}>04</span><div><p className={styles.eyebrow}>站点连接</p><h2 id="api-frontend-heading">Vercel 后端地址</h2></div></div><p>这里只配置站点到现有后端的连接地址。模型、新闻和黄金供应商密钥放在上方服务器文件；填在 Vercel 不会自动传给私有研究 worker。</p>
-    <dl className={styles.configList}><div><dt>主数据服务</dt><dd>{frontend.apiConfigured?'已设置地址':'未设置专用地址'}</dd></div><div><dt>独立双向模拟</dt><dd>{frontend.directionalConfigured?'已设置地址':'未设置地址'}</dd></div><div><dt>黄金服务</dt><dd>{frontend.goldConfigured?'已设置地址或沿用主服务':'未设置专用地址'}</dd></div></dl><p className={styles.meta}>这里只确认变量是否存在，不代表后端请求成功。{frontend.hosted?'当前为 Vercel 部署。':'当前不是 Vercel 部署。'}</p>
-    <a className={styles.button} href="https://vercel.com/jng56/fc666-test/settings/environment-variables" target="_blank" rel="noreferrer">打开 Vercel 环境配置 ↗</a><p className={styles.meta}>需登录有权管理 fc666-test 的 Vercel 账号。</p>
-    <Template label="Vercel 后端连接模板" value={frontendTemplate} ready={ready}/><Link className={styles.inlineLink} href="/system">检查实际站点连接 →</Link>
-   </section>
-  </div>
-  <section className={styles.card} aria-labelledby="api-next-heading"><h2 id="api-next-heading">配置完成后怎么验证？</h2><ol className={styles.steps}><li>把模板字段合并进服务器现有配置，保留原有 Runner Token 和其他配置，不覆盖整份文件。</li><li>只重建需要加载新配置的服务容器，保留数据卷；Vercel 地址调整后重新部署前端。</li><li>回到本页刷新状态，为 AI 模拟账户配置服务器授权，再去研究页保存新鲜快照。</li><li>确认新闻、历史数据与风险校验通过后，运行一次模型研究，核对建议、费用和模拟成交回执，再启用自动模拟。</li></ol><p>状态显示已配置不证明密钥有效或策略盈利。当前页面不会测试收费模型，也不会启用实盘。</p><div className={styles.actions}><Link className={styles.button} href="/research/ai">进入 AI 研究与自动模拟</Link><Link className={styles.secondary} href="/paper/directional">查看模拟账户与账本</Link></div></section>
+  {error?<p className={styles.alert} role="alert">{error}</p>:null}{notice?<p className={styles.success} role="status">{notice}</p>:null}
+  {session.state==='checking'?<section className={styles.card}><h2>正在检查管理员会话</h2><p>未确认登录前不读取或显示配置。</p></section>:session.state==='failed'?<section className={styles.card}><h2>管理员连接未确认</h2><p>原有服务器配置没有被修改。</p><button className={styles.button} disabled={!ready||busy} onClick={()=>void task(()=>read())}>重新检查管理员会话</button></section>:!status?.authenticated?<section className={`${styles.card} ${styles.loginCard}`}>
+   <div className={styles.cardHeading}><span className={styles.number}>◈</span><div><p className={styles.eyebrow}>管理员专用</p><h2>{status?.initialized?'登录管理后台':'首次设置管理员'}</h2></div></div>
+   <p>{status?.initialized?'登录后可配置模型、新闻与黄金历史接口。':'首次设置需要运营者私有凭证，公开访问不能注册管理员。请从本次交付的私有设置文件获取凭证。'}</p>
+   <form onSubmit={event=>void authenticate(event)} className={styles.form}><fieldset disabled={!ready||busy}>
+    {!status?.initialized?<label>首次设置凭证<input type="password" name="setup-token" autoComplete="off" value={setupToken} onChange={event=>setSetupToken(event.target.value)} required maxLength={128} spellCheck={false}/></label>:null}
+    <label>管理员用户名<input name="username" autoComplete="username" value={username} onChange={event=>setUsername(event.target.value)} required minLength={3} maxLength={32} pattern={'[A-Za-z0-9][A-Za-z0-9_.\\-]{2,31}'} title="3–32 个字母、数字或 ._-，首位为字母或数字" autoCapitalize="none" spellCheck={false}/></label>
+    <label>{status?.initialized?'登录密码':'设置密码 · 至少 12 个字符'}<input name="password" type="password" autoComplete={status?.initialized?'current-password':'new-password'} value={password} onChange={event=>setPassword(event.target.value)} required minLength={status?.initialized?1:12} maxLength={128}/></label>
+    {!status?.initialized?<label>再次输入密码<input name="password-confirmation" type="password" autoComplete="new-password" value={confirmation} onChange={event=>setConfirmation(event.target.value)} required minLength={12} maxLength={128}/></label>:null}
+   </fieldset><button className={styles.button} type="submit" disabled={!ready||busy}>{busy?'正在验证…':status?.initialized?'登录管理员':'完成首次设置'}</button></form>
+  </section>:<>
+   <section className={styles.sessionBar}><div><strong>已登录 · {status.username}</strong><p>密钥不回显，浏览器不保存 API Key。</p></div><div className={styles.actions}><button type="button" className={styles.secondary} disabled={busy} onClick={()=>{setPasswordOpen(value=>!value);setCurrentPassword('');setNewPassword('');setNewConfirmation('');}}>更改密码</button><button type="button" className={styles.secondary} disabled={busy} onClick={()=>void logout()}>退出登录</button></div></section>
+   {passwordOpen?<section className={styles.card} aria-labelledby="change-password-heading"><h2 id="change-password-heading">更改管理员密码</h2><form className={styles.form} onSubmit={event=>void changePassword(event)}><fieldset disabled={busy}><label>当前密码<input type="password" autoComplete="current-password" required value={currentPassword} maxLength={128} onChange={event=>setCurrentPassword(event.target.value)}/></label><label>新密码<input type="password" autoComplete="new-password" required minLength={12} maxLength={128} value={newPassword} onChange={event=>setNewPassword(event.target.value)}/></label><label>再次输入新密码<input type="password" autoComplete="new-password" required minLength={12} maxLength={128} value={newConfirmation} onChange={event=>setNewConfirmation(event.target.value)}/></label></fieldset><p>更新后撤销旧管理员会话；若当前会话失效，请重新登录。</p><button className={styles.button} disabled={busy}>更新密码</button></form></section>:null}
+   {!config||!draft?<section className={styles.card}><h2>正在读取受保护配置</h2><p>尚未收到服务器配置，不能保存。</p><button type="button" className={styles.secondary} disabled={busy} onClick={()=>void task(()=>read())}>重新读取配置</button></section>:<form onSubmit={event=>void save(event)} className={styles.configForm}>
+    <fieldset disabled={busy} className={styles.grid}>
+     <section className={styles.card} aria-labelledby="model-heading"><div className={styles.cardHeading}><span className={styles.number}>01</span><div><p className={styles.eyebrow}>模型决策</p><h2 id="model-heading">AI 模型 API</h2></div></div>
+      <label>服务商<WorkspaceSelect label="模型服务商" value={draft.provider} disabled={busy} onValueChange={value=>{change('provider',value);if(value==='google'){change('base_url','');setNotice('Google 仅使用官方接口，已清空 Base URL。更换服务商需重填密钥或勾选清除旧密钥。');}}} options={[{value:'',label:'尚未选择'},{value:'openai',label:'OpenAI / OpenAI 兼容接口'},{value:'anthropic',label:'Anthropic'},{value:'google',label:'Google'}]}/></label>
+      <label>真实模型名<input autoComplete="off" value={draft.model} maxLength={200} placeholder="按服务商提供的模型 ID 填写" onChange={event=>change('model',event.target.value)}/></label>
+      {draft.provider!=='google'?<label>自定义 Base URL · 可选<input inputMode="url" autoComplete="off" autoCapitalize="none" spellCheck={false} value={draft.base_url} maxLength={2048} placeholder="https://服务商地址/v1" onChange={event=>change('base_url',event.target.value)}/></label>:<p>Google 使用官方默认接口。自定义兼容网关请选择 OpenAI。</p>}
+      <label>API Key<input type="password" autoComplete="off" value={draft.api_key} maxLength={4096} placeholder={config.model.api_key_configured?'服务器已保存，留空保留':'尚未配置，填写后仅存服务器'} disabled={draft.clear_api_key||busy} onChange={event=>change('api_key',event.target.value)}/></label>
+      <label className={styles.check}><input type="checkbox" checked={draft.clear_api_key} onChange={event=>{change('clear_api_key',event.target.checked);change('api_key','');}}/>清除服务器保存的模型密钥</label><p className={styles.status}>{config.model.api_key_configured?'模型密钥已保存 · 真实调用仍需验证':'服务器未保存模型密钥'}</p><p>更换服务商或 Base URL 时需重新填写密钥，或明确清除原密钥，不能把旧凭据发给新接口。</p>
+     </section>
+     <section className={styles.card} aria-labelledby="news-heading"><div className={styles.cardHeading}><span className={styles.number}>02</span><div><p className={styles.eyebrow}>事件过滤</p><h2 id="news-heading">新闻日历 API</h2></div></div>
+      <label>新闻来源名称<input autoComplete="off" value={draft.news_source} maxLength={120} onChange={event=>change('news_source',event.target.value)}/></label><label>新闻 HTTPS 接口<input inputMode="url" autoComplete="off" autoCapitalize="none" spellCheck={false} value={draft.news_url} maxLength={2048} onChange={event=>change('news_url',event.target.value)}/></label><label>新闻 Bearer Token · 可选<input type="password" autoComplete="off" value={draft.news_token} maxLength={4096} placeholder={config.news.token_configured?'已保存，留空保留':'接口不需要认证可留空'} disabled={draft.clear_news_token||busy} onChange={event=>change('news_token',event.target.value)}/></label><label className={styles.check}><input type="checkbox" checked={draft.clear_news_token} onChange={event=>{change('clear_news_token',event.target.checked);change('news_token','');}}/>清除新闻接口 Token</label><p>更换接口需重填或清除 Token。高影响事件窗口、缺失、过期或覆盖不足时禁止开仓与加仓，已有止盈止损继续。</p>
+     </section>
+     <section className={styles.card} aria-labelledby="gold-heading"><div className={styles.cardHeading}><span className={styles.number}>03</span><div><p className={styles.eyebrow}>原市场历史</p><h2 id="gold-heading">黄金历史行情 API</h2></div></div>
+      <label>黄金来源名称<input autoComplete="off" value={draft.gold_source} maxLength={120} onChange={event=>change('gold_source',event.target.value)}/></label><label>黄金 HTTPS 接口<input inputMode="url" autoComplete="off" autoCapitalize="none" spellCheck={false} value={draft.gold_url} maxLength={2048} onChange={event=>change('gold_url',event.target.value)}/></label><label>黄金 Bearer Token · 可选<input type="password" autoComplete="off" value={draft.gold_token} maxLength={4096} placeholder={config.gold.token_configured?'已保存，留空保留':'接口不需要认证可留空'} disabled={draft.clear_gold_token||busy} onChange={event=>change('gold_token',event.target.value)}/></label><label className={styles.check}><input type="checkbox" checked={draft.clear_gold_token} onChange={event=>{change('clear_gold_token',event.target.checked);change('gold_token','');}}/>清除黄金接口 Token</label><p>更换接口需重填或清除 Token。接入独立 XAU/USD 现货闭合历史，不用期货或当前报价替代。Bitget 公共现货行情无需密钥。</p>
+     </section>
+     <section className={styles.card} aria-labelledby="accounts-heading"><div className={styles.cardHeading}><span className={styles.number}>04</span><div><p className={styles.eyebrow}>模拟运行授权</p><h2 id="accounts-heading">AI 模拟账户</h2></div></div>
+      {accountsError?<p role="alert" className={styles.error}>{accountsError}</p>:accounts.length===0?<p>当前管理员还没有可授权的 AI 研究账户。</p>:<div className={styles.accountChoices}>{accounts.map(account=><label className={styles.accountChoice} key={account.account_id}><input type="checkbox" checked={draft.accounts.split(/[\s,]+/).includes(account.account_id)} disabled={!draft.accounts.split(/[\s,]+/).includes(account.account_id)&&(account.strategy!=='AI_RESEARCH'||account.status==='STOPPED')} onChange={event=>toggleAccount(account.account_id,event.target.checked)}/><span><strong>{account.instrument}</strong><small>{account.account_id}</small><small>{account.status==='STOPPED'?'已停止新风险':account.strategy==='AI_RESEARCH'?'AI 研究账户':'非 AI 账户，不能授权'}</small></span></label>)}</div>}
+      <details className={styles.details}><summary>手动输入账户 UUID</summary><label>每行一个 UUID，最多 20 个<textarea value={draft.accounts} rows={6} autoComplete="off" autoCapitalize="none" spellCheck={false} onChange={event=>change('accounts',event.target.value)}/></label></details><p>请先保存新闻来源，再创建并授权 AI 研究账户。账户的新闻来源在创建时冻结；更换来源后需新建账户，旧账本不变。</p><p>只授权当前管理员的 AI 账户。登录后新建账户可跨设备访问；旧浏览器账户仍保留，退出管理员后可回到原浏览器账户。授权不等于启动；保存后在 AI 研究页单独启用自动模拟。</p><Link href="/paper/directional" className={styles.inlineLink}>创建或查看 AI 模拟账户 →</Link>
+     </section>
+    </fieldset>
+    <section className={styles.saveBar}><div><strong>保存配置 · 当前版本 {config.revision}</strong><p>保存会暂停自动模型，保留持仓保护。密钥留空保留，勾选“清除”才会删除。保存不代表供应商验证通过，也不会启用实盘。</p></div><div className={styles.actions}><button type="button" className={styles.secondary} disabled={busy} onClick={()=>void task(async()=>{clearSecrets();await read();setNotice('已重新读取服务器配置，未保存的输入已丢弃。');})}>放弃输入并刷新</button><button className={styles.button} disabled={busy} type="submit">{busy?'正在核对并保存…':'保存到服务器'}</button></div></section>
+   </form>}
+  </>}
+  <ApiGuide frontend={frontend} ready={ready}/>
  </main>;
 }

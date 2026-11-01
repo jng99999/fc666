@@ -23,9 +23,9 @@ async function proxy(request:Request,context:{params:Promise<{segments:string[]}
  }
  const body=read?undefined:await request.text();
  if(body&&new TextEncoder().encode(body).length>8192)return Response.json({detail:'Request too large'},{status:413,headers});
- const cookie=request.headers.get('cookie')?.split(';').map(value=>value.trim()).find(value=>/^fc666_directional_session=[A-Za-z0-9_-]{43}$/.test(value));
+ const cookie=request.headers.get('cookie')?.split(';').map(value=>value.trim()).filter(value=>/^(?:fc666_directional_session|fc666_admin_session)=[A-Za-z0-9_-]{43}$/.test(value)).join('; ');
  try{
-  const response=await fetch(new URL('/api/v1/directional/'+segments.join('/'),configured),{method:request.method,headers:{'Content-Type':'application/json',...(cookie?{Cookie:cookie}:{})},body,cache:'no-store',signal:AbortSignal.timeout(12000)});
+  const response=await fetch(new URL('/api/v1/directional/'+segments.join('/'),configured),{method:request.method,headers:{'Content-Type':'application/json',...(cookie?{Cookie:cookie}:{}),...(!read?{Origin:request.headers.get('origin')??''}:{})},body,cache:'no-store',redirect:'error',signal:AbortSignal.timeout(12000)});
   const forwarded=new Headers(headers),session=response.headers.get('set-cookie');
   if(session)forwarded.set('Set-Cookie',session);
   return Response.json(await response.json(),{status:response.status,headers:forwarded});

@@ -133,9 +133,13 @@ def _fetch_payload(instrument: str, now_ms: int) -> Any:
                                 'endTime': str(now_ms // INTERVAL_MS * INTERVAL_MS - 1)})
 
 
-def _get_json(url: str, params: dict[str, str], token: str = '') -> Any:
+def _get_json(url: str, params: dict[str, str], token: str = '', *, public_only: bool = False) -> Any:
     # Only caller-selected server configuration; no URL or token from research input.
-    with httpx.Client(timeout=HTTP_TIMEOUT, follow_redirects=False, trust_env=False) as client:
+    options = {}
+    if public_only:
+        from core.security.public_http import PublicTransport
+        options['transport'] = PublicTransport()
+    with httpx.Client(timeout=HTTP_TIMEOUT, follow_redirects=False, trust_env=False, **options) as client:
         with client.stream('GET', url, params=params,
                            headers={'Authorization': 'Bearer ' + token} if token else {}) as response:
             response.raise_for_status()
@@ -147,10 +151,10 @@ def _get_json(url: str, params: dict[str, str], token: str = '') -> Any:
             return json.loads(content)
 
 
-def _gold_configuration() -> tuple[str, str, str] | None:
-    url = os.getenv('FC666_GOLD_HISTORY_URL', '')
-    source = os.getenv('FC666_GOLD_HISTORY_SOURCE', '')
-    token = os.getenv('FC666_GOLD_HISTORY_TOKEN', '')
+def _gold_configuration(settings=None) -> tuple[str, str, str] | None:
+    url = settings.get('url', '') if settings is not None else os.getenv('FC666_GOLD_HISTORY_URL', '')
+    source = settings.get('source', '') if settings is not None else os.getenv('FC666_GOLD_HISTORY_SOURCE', '')
+    token = settings.get('token', '') if settings is not None else os.getenv('FC666_GOLD_HISTORY_TOKEN', '')
     if not url and not source and not token:
         return None
     parts = urlsplit(url)
@@ -188,7 +192,7 @@ def parse_gold_candles(payload: Any, now: datetime | int, source: str) -> list[d
     return parse_candles({'code': '00000', 'data': rows}, now, allow_null_volume=True)
 
 
-def evidence(instrument: str, now: datetime | int) -> dict[str, Any]:
+def evidence(instrument: str, now: datetime | int, *, gold_settings=None) -> dict[str, Any]:
     """Return JSON-safe evidence or an explicit unavailable state, never fake bars."""
     now_ms = _milliseconds(now)
     supported = instrument in BITGET_SYMBOLS
@@ -212,7 +216,7 @@ def evidence(instrument: str, now: datetime | int) -> dict[str, Any]:
                           methodology='Independent XAU/USD spot price history; current quote is Swissquote '
                                       'AT/AT standard. Cross-source basis is unverified; no same-source claim.',
                           cross_source_basis_verified=False)
-            configuration = _gold_configuration()
+            configuration = _gold_configuration(gold_settings)
             if configuration is None:
                 result['reason'] = 'HISTORICAL_CANDLES_UNAVAILABLE'
                 return result
@@ -221,7 +225,7 @@ def evidence(instrument: str, now: datetime | int) -> dict[str, Any]:
                           candle_type='INDEPENDENT_SPOT_PRICE_HISTORY')
             bars = parse_gold_candles(_get_json(url, {
                 'instrument': 'XAU/USD', 'interval': '1m', 'limit': str(MAX_BARS),
-                'end_time': str(now_ms)}, token), now_ms, source)
+                'end_time': str(now_ms)}, token, public_only=gold_settings is not None), now_ms, source)
         else:
             bars = parse_candles(_fetch_payload(instrument, now_ms), now_ms)
         result['bars'] = bars

@@ -45,13 +45,14 @@ def unique(pairs):
 
 
 class Runner:
-    def __init__(self):
+    def __init__(self, settings=None):
+        self.settings = settings
         self.url = os.environ.get('FC666_TA_RUNNER_URL')
         self.token = os.environ.get('FC666_TA_RUNNER_TOKEN')
-        values = json.loads(os.environ.get('FC666_TA_ACCOUNT_IDS', '[]'))
+        values = json.loads(os.environ.get('FC666_TA_ACCOUNT_IDS', '[]')) if settings is None else []
         if not isinstance(values, list) or len(values) > 20 or len(set(values)) != len(values):
             raise ValueError('At most twenty explicit research account IDs')
-        self.accounts = {str(UUID(value)) for value in values}
+        self._accounts = {str(UUID(value)) for value in values}
         if bool(self.url) != bool(self.token):
             raise ValueError('Research runner URL and token must be configured together')
         if self.url:
@@ -62,10 +63,21 @@ class Runner:
                 raise ValueError('Research runner token must contain at least 32 characters')
         self.configured = bool(self.url and self.token)
         self.cached_ready = (0.0, False, 'WAIT_MODEL_CONFIG')
+        self.cached_revision = None
+
+    @property
+    def accounts(self):
+        if self.settings is not None:
+            return set(self.settings.read()['authorized_accounts'])
+        return self._accounts
 
     def availability(self):
         if not self.configured:
             return False, 'WAIT_MODEL_CONFIG'
+        revision = self.settings.revision() if self.settings is not None else None
+        if revision != self.cached_revision:
+            self.cached_ready = (0.0, False, 'WAIT_MODEL_CONFIG')
+            self.cached_revision = revision
         if time.monotonic() - self.cached_ready[0] < 15:
             return self.cached_ready[1:]
         try:
@@ -95,7 +107,7 @@ class Runner:
 
 
 class Service:
-    def __init__(self, path, accounts, news, clock, runner=None):
+    def __init__(self, path, accounts, news, clock, runner=None, settings=None, require_operator=None):
         self.error = None
         try:
             self.jobs = ResearchStore(path)
@@ -104,8 +116,9 @@ class Service:
             self.error = 'RESEARCH_STORAGE_UNAVAILABLE'
             logger.warning('research_storage_unavailable')
         self.accounts, self.news, self.clock = accounts, news, clock
+        self.settings, self.require_operator = settings, require_operator
         try:
-            self.runner = runner if runner is not None else Runner()
+            self.runner = runner if runner is not None else Runner(settings=settings)
         except (ValueError, TypeError):
             self.runner = type('UnavailableRunner', (), {'configured': False, 'accounts': frozenset()})()
             self.error = self.error or 'RESEARCH_CONFIG_INVALID'
@@ -138,10 +151,12 @@ class Service:
     def freeze(self, view, now, news):
         from core.research.market_evidence import evidence
         instrument = view['config']['instrument']
-        key = (instrument, int(now.timestamp()) // 60)
+        key = (instrument, int(now.timestamp()) // 60,
+               self.settings.revision() if self.settings is not None else None)
         if key not in self.evidence_cache:
             self.evidence_cache = {k: v for k, v in self.evidence_cache.items() if k[1] == key[1]}
-            self.evidence_cache[key] = evidence(instrument, now)
+            self.evidence_cache[key] = (evidence(instrument, now,
+                gold_settings=self.settings.read()['gold']) if self.settings is not None else evidence(instrument, now))
         return freeze(view, now=now, news=news, evidence=self.evidence_cache[key])
 
     def start(self):
@@ -216,6 +231,8 @@ def router_for(service, owner):
     def automation_control(account_id: UUID, body: Control, request: Request, response: Response):
         if service.automation is None:
             raise HTTPException(503, 'AI paper controls unavailable')
+        if body.action == 'START' and service.require_operator is not None:
+            service.require_operator(request)
         return service.automation.control(owner(request, response), str(account_id), body.model_dump(mode='json'))
 
     @router.get('/jobs')
@@ -230,6 +247,8 @@ def router_for(service, owner):
 
     @router.post('/accounts/{account_id}', status_code=201)
     def create(account_id: UUID, body: Create, request: Request, response: Response):
+        if body.mode == 'ANALYZE' and service.require_operator is not None:
+            service.require_operator(request)
         identity = owner(request, response)
         account = str(account_id)
         # Authenticate even idempotent reads; never trust account IDs from another session.

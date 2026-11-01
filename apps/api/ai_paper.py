@@ -134,6 +134,29 @@ class Automation:
             db.commit()
             return value
 
+    def pause_for_configuration(self):
+        """Invalidate every enabled model epoch before changing server credentials."""
+        with self.connect() as db:
+            db.execute('BEGIN IMMEDIATE')
+            rows = db.execute('SELECT owner,value FROM controls ORDER BY account').fetchall()
+            for row in rows:
+                owner, value = row['owner'], json.loads(row['value'])
+                if not value['enabled']:
+                    continue
+                for attempt in range(3):
+                    account = self.service.accounts.read(owner, value['account_id'])
+                    try:
+                        self.service.accounts.pause_ai(owner, value['account_id'], str(uuid4()),
+                            account['revision'], self.service.clock(), True)
+                        break
+                    except Conflict:
+                        if attempt == 2:
+                            raise
+                value.update(enabled=False, epoch=value['epoch'] + 1, next_due=None,
+                             state='PAUSED', last_job=None, receipt=None)
+                self.save(db, owner, value)
+            db.commit()
+
     def schedule(self):
         with self.connect() as db:
             rows = db.execute('SELECT owner,value FROM controls ORDER BY account').fetchall()

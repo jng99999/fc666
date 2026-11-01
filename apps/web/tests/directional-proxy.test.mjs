@@ -75,10 +75,12 @@ test('automation proxy forwards only explicit account control routes and never r
  const segments=['research','automation',uuid],url='https://app.example/api/directional/'+segments.join('/');
  assert.equal((await GET(new Request(url),params(segments))).status,200);
  const body=JSON.stringify({request_id:uuid,expected_epoch:3,expected_revision:7,action:'START',interval_seconds:300});
- const headers={origin:'https://app.example','content-type':'application/json',cookie:'secret=hidden; fc666_directional_session='+'C'.repeat(43)};
+ const headers={origin:'https://app.example','content-type':'application/json',cookie:'secret=hidden; fc666_directional_session='+'C'.repeat(43)+'; fc666_admin_session='+'D'.repeat(43)};
  assert.equal((await POST(new Request(url,{method:'POST',headers,body}),params(segments))).status,200);
  assert.equal(calls[1].options.body,body);
- assert.equal(calls[1].options.headers.Cookie,'fc666_directional_session='+'C'.repeat(43));
+ assert.equal(calls[1].options.headers.Cookie,'fc666_directional_session='+'C'.repeat(43)+'; fc666_admin_session='+'D'.repeat(43));
+ assert.equal(calls[1].options.headers.Origin,'https://app.example');
+ assert.equal(calls[1].options.redirect,'error');
  assert.equal(calls[1].url,'https://backend.example/api/v1/directional/research/automation/'+uuid);
  assert.equal((await POST(new Request(url,{method:'POST',headers:{...headers,origin:'https://evil.example'},body}),params(segments))).status,403);
  for(const invalid of [['research','automation'],['research','automation','bad'],['research','automation',uuid,'execute']])assert.equal((await GET(new Request(url),params(invalid))).status,404);

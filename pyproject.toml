@@ -12,6 +12,7 @@ dependencies = [
     "redis>=5,<7",
     "httpx>=0.28,<1",
     "websockets>=15,<17",
+    "cryptography==50.0.2",
 ]
 
 [dependency-groups]
