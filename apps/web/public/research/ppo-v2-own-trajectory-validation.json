@@ -1,0 +1,1536 @@
+{
+  "validation_passed": true,
+  "results_bytes": 36447642,
+  "results_sha256": "4f7bd44e2c5d0560112394867d670fe57775b6a03a9855decc5ce98dbd643f13",
+  "records": 28,
+  "unique_cases": 26,
+  "step_totals": {
+    "policy": 106506,
+    "fixed": 35502,
+    "hold": 11834
+  },
+  "actual_refusals": 0,
+  "nonzero_inventory_refusals_verified": 0,
+  "cases": [
+    {
+      "id": "A-7-configured_costs",
+      "kind": "policy",
+      "decision_count": 5917,
+      "equity_mark_count": 5917,
+      "refusal_count": 0,
+      "refusal_codes": {},
+      "financial_checks": {
+        "receipt_and_mark_conservation": true,
+        "marks_verified": 5917,
+        "refusals_verified": 0,
+        "nonzero_inventory_refusals_verified": 0,
+        "no_observed_refusal_branch": true
+      },
+      "actual_hashes": {
+        "metrics": "68c8df4b84328dc7cc1ab34718ffc52c9a3e60694ee64b37e81eef6e749c2a3a",
+        "fills": "e07276fac3b07ec328cc8574c1daf2af2333d571d86af00cb2f2d99f6cd393cf",
+        "equity": "d262c42dbbcf37daa21a3231ff24ac738f0853833fb7db7ebf13853dd5a33e98"
+      },
+      "result_sha256": "6e6482754bff6ba3dfee4927028901cc9ad900db5ac4456c4a898dd4a594a792",
+      "references": {
+        "native": {
+          "hash_equal": {
+            "metrics": true,
+            "fills": true,
+            "equity": true
+          },
+          "metric_differences": {},
+          "missing_metric_keys": [],
+          "extra_metric_keys": []
+        },
+        "f64": {
+          "hash_equal": {
+            "metrics": true,
+            "fills": true,
+            "equity": true
+          },
+          "metric_differences": {},
+          "missing_metric_keys": [],
+          "extra_metric_keys": []
+        }
+      }
+    },
+    {
+      "id": "A-7-double_cost_stress",
+      "kind": "policy",
+      "decision_count": 5917,
+      "equity_mark_count": 5917,
+      "refusal_count": 0,
+      "refusal_codes": {},
+      "financial_checks": {
+        "receipt_and_mark_conservation": true,
+        "marks_verified": 5917,
+        "refusals_verified": 0,
+        "nonzero_inventory_refusals_verified": 0,
+        "no_observed_refusal_branch": true
+      },
+      "actual_hashes": {
+        "metrics": "5030268ea230edff3c987eaac5029e28da9c4184907c8f91cc34da169f3aa577",
+        "fills": "fce59048224e2352a1f29b0127691be808692c76fd54bf68d0cc674957cd06df",
+        "equity": "a0750fde6a3c3ef4df371fb222560fbee221c9ac17f7928ca22c86e36f21cadb"
+      },
+      "result_sha256": "7ae44ea6d7623f5d596421a3603a4d74d775a3452f581f46e81e9b77b6c0d613",
+      "references": {
+        "native": {
+          "hash_equal": {
+            "metrics": true,
+            "fills": true,
+            "equity": true
+          },
+          "metric_differences": {},
+          "missing_metric_keys": [],
+          "extra_metric_keys": []
+        },
+        "f64": {
+          "hash_equal": {
+            "metrics": true,
+            "fills": true,
+            "equity": true
+          },
+          "metric_differences": {},
+          "missing_metric_keys": [],
+          "extra_metric_keys": []
+        }
+      }
+    },
+    {
+      "id": "A-19-configured_costs",
+      "kind": "policy",
+      "decision_count": 5917,
+      "equity_mark_count": 5917,
+      "refusal_count": 0,
+      "refusal_codes": {},
+      "financial_checks": {
+        "receipt_and_mark_conservation": true,
+        "marks_verified": 5917,
+        "refusals_verified": 0,
+        "nonzero_inventory_refusals_verified": 0,
+        "no_observed_refusal_branch": true
+      },
+      "actual_hashes": {
+        "metrics": "68c8df4b84328dc7cc1ab34718ffc52c9a3e60694ee64b37e81eef6e749c2a3a",
+        "fills": "e07276fac3b07ec328cc8574c1daf2af2333d571d86af00cb2f2d99f6cd393cf",
+        "equity": "d262c42dbbcf37daa21a3231ff24ac738f0853833fb7db7ebf13853dd5a33e98"
+      },
+      "result_sha256": "6e6482754bff6ba3dfee4927028901cc9ad900db5ac4456c4a898dd4a594a792",
+      "references": {
+        "native": {
+          "hash_equal": {
+            "metrics": true,
+            "fills": true,
+            "equity": true
+          },
+          "metric_differences": {},
+          "missing_metric_keys": [],
+          "extra_metric_keys": []
+        },
+        "f64": {
+          "hash_equal": {
+            "metrics": true,
+            "fills": true,
+            "equity": true
+          },
+          "metric_differences": {},
+          "missing_metric_keys": [],
+          "extra_metric_keys": []
+        }
+      }
+    },
+    {
+      "id": "A-19-double_cost_stress",
+      "kind": "policy",
+      "decision_count": 5917,
+      "equity_mark_count": 5917,
+      "refusal_count": 0,
+      "refusal_codes": {},
+      "financial_checks": {
+        "receipt_and_mark_conservation": true,
+        "marks_verified": 5917,
+        "refusals_verified": 0,
+        "nonzero_inventory_refusals_verified": 0,
+        "no_observed_refusal_branch": true
+      },
+      "actual_hashes": {
+        "metrics": "5030268ea230edff3c987eaac5029e28da9c4184907c8f91cc34da169f3aa577",
+        "fills": "fce59048224e2352a1f29b0127691be808692c76fd54bf68d0cc674957cd06df",
+        "equity": "a0750fde6a3c3ef4df371fb222560fbee221c9ac17f7928ca22c86e36f21cadb"
+      },
+      "result_sha256": "7ae44ea6d7623f5d596421a3603a4d74d775a3452f581f46e81e9b77b6c0d613",
+      "references": {
+        "native": {
+          "hash_equal": {
+            "metrics": true,
+            "fills": true,
+            "equity": true
+          },
+          "metric_differences": {},
+          "missing_metric_keys": [],
+          "extra_metric_keys": []
+        },
+        "f64": {
+          "hash_equal": {
+            "metrics": true,
+            "fills": true,
+            "equity": true
+          },
+          "metric_differences": {},
+          "missing_metric_keys": [],
+          "extra_metric_keys": []
+        }
+      }
+    },
+    {
+      "id": "A-42-configured_costs",
+      "kind": "policy",
+      "decision_count": 5917,
+      "equity_mark_count": 5917,
+      "refusal_count": 0,
+      "refusal_codes": {},
+      "financial_checks": {
+        "receipt_and_mark_conservation": true,
+        "marks_verified": 5917,
+        "refusals_verified": 0,
+        "nonzero_inventory_refusals_verified": 0,
+        "no_observed_refusal_branch": true
+      },
+      "actual_hashes": {
+        "metrics": "8a6780ecafd991ae32f2e923c518910b0c76390c64a05e47f703eac9e0e8a7dd",
+        "fills": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "equity": "35ac9d3bcfee3fc077ce3c9a3eae3c2ab7b27a4ed5931de7fb3fcb7053d48db0"
+      },
+      "result_sha256": "2ac0b4d34ef5b7992a315cc28b7de85812aa9bc1882e6a5f3d1c3ae21aeac947",
+      "references": {
+        "native": {
+          "hash_equal": {
+            "metrics": true,
+            "fills": true,
+            "equity": true
+          },
+          "metric_differences": {},
+          "missing_metric_keys": [],
+          "extra_metric_keys": []
+        },
+        "f64": {
+          "hash_equal": {
+            "metrics": true,
+            "fills": true,
+            "equity": true
+          },
+          "metric_differences": {},
+          "missing_metric_keys": [],
+          "extra_metric_keys": []
+        }
+      }
+    },
+    {
+      "id": "A-42-double_cost_stress",
+      "kind": "policy",
+      "decision_count": 5917,
+      "equity_mark_count": 5917,
+      "refusal_count": 0,
+      "refusal_codes": {},
+      "financial_checks": {
+        "receipt_and_mark_conservation": true,
+        "marks_verified": 5917,
+        "refusals_verified": 0,
+        "nonzero_inventory_refusals_verified": 0,
+        "no_observed_refusal_branch": true
+      },
+      "actual_hashes": {
+        "metrics": "8a6780ecafd991ae32f2e923c518910b0c76390c64a05e47f703eac9e0e8a7dd",
+        "fills": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "equity": "35ac9d3bcfee3fc077ce3c9a3eae3c2ab7b27a4ed5931de7fb3fcb7053d48db0"
+      },
+      "result_sha256": "2ac0b4d34ef5b7992a315cc28b7de85812aa9bc1882e6a5f3d1c3ae21aeac947",
+      "references": {
+        "native": {
+          "hash_equal": {
+            "metrics": true,
+            "fills": true,
+            "equity": true
+          },
+          "metric_differences": {},
+          "missing_metric_keys": [],
+          "extra_metric_keys": []
+        },
+        "f64": {
+          "hash_equal": {
+            "metrics": true,
+            "fills": true,
+            "equity": true
+          },
+          "metric_differences": {},
+          "missing_metric_keys": [],
+          "extra_metric_keys": []
+        }
+      }
+    },
+    {
+      "id": "B-7-configured_costs",
+      "kind": "policy",
+      "decision_count": 5917,
+      "equity_mark_count": 5917,
+      "refusal_count": 0,
+      "refusal_codes": {},
+      "financial_checks": {
+        "receipt_and_mark_conservation": true,
+        "marks_verified": 5917,
+        "refusals_verified": 0,
+        "nonzero_inventory_refusals_verified": 0,
+        "no_observed_refusal_branch": true
+      },
+      "actual_hashes": {
+        "metrics": "30d20e519cdc02d70301e958d03c78f9900bc9f5a4104bb7cfc3b6ed173db868",
+        "fills": "7939bd8b1b0d85acf56eacae384796b482a4ad4249fb36583e0dd0d656c2f853",
+        "equity": "2b39c5b0a90fc4508a33f0e23acb2d6c29a6931852e158f6b47b512c93615261"
+      },
+      "result_sha256": "dc7542ba3c042137a2325c23adb07b8e7b4b9008c6bd2705bd670133ab62750e",
+      "references": {
+        "native": {
+          "hash_equal": {
+            "metrics": true,
+            "fills": true,
+            "equity": true
+          },
+          "metric_differences": {},
+          "missing_metric_keys": [],
+          "extra_metric_keys": []
+        },
+        "f64": {
+          "hash_equal": {
+            "metrics": true,
+            "fills": true,
+            "equity": true
+          },
+          "metric_differences": {},
+          "missing_metric_keys": [],
+          "extra_metric_keys": []
+        }
+      }
+    },
+    {
+      "id": "B-7-double_cost_stress",
+      "kind": "policy",
+      "decision_count": 5917,
+      "equity_mark_count": 5917,
+      "refusal_count": 0,
+      "refusal_codes": {},
+      "financial_checks": {
+        "receipt_and_mark_conservation": true,
+        "marks_verified": 5917,
+        "refusals_verified": 0,
+        "nonzero_inventory_refusals_verified": 0,
+        "no_observed_refusal_branch": true
+      },
+      "actual_hashes": {
+        "metrics": "54174c07a8d28d446fec370d3bfc9864a7ae28561e4c857be9171d66522a40b9",
+        "fills": "ed3c6a8bb1857d24d5e726c1c433e9fd3f13be9d82f5657e35c46af225c87f92",
+        "equity": "1c1358e61fc972d618336c75511b32114f8d45632845cb366f6360409e45986c"
+      },
+      "result_sha256": "ed900ad2c9996c9ae6e2c29d7df7fd52fda9401b37ca2f41c08aff1122e0558e",
+      "references": {
+        "native": {
+          "hash_equal": {
+            "metrics": true,
+            "fills": true,
+            "equity": true
+          },
+          "metric_differences": {},
+          "missing_metric_keys": [],
+          "extra_metric_keys": []
+        },
+        "f64": {
+          "hash_equal": {
+            "metrics": true,
+            "fills": true,
+            "equity": true
+          },
+          "metric_differences": {},
+          "missing_metric_keys": [],
+          "extra_metric_keys": []
+        }
+      }
+    },
+    {
+      "id": "B-19-configured_costs",
+      "kind": "policy",
+      "decision_count": 5917,
+      "equity_mark_count": 5917,
+      "refusal_count": 0,
+      "refusal_codes": {},
+      "financial_checks": {
+        "receipt_and_mark_conservation": true,
+        "marks_verified": 5917,
+        "refusals_verified": 0,
+        "nonzero_inventory_refusals_verified": 0,
+        "no_observed_refusal_branch": true
+      },
+      "actual_hashes": {
+        "metrics": "2d9fc566c5e6544e444d21f8d9c633625de95b50ba6eef62acd4a7152ebe3e73",
+        "fills": "e797b33b0a7ff75e9fa37058880592bfd23e99d66fdde11369c67a5343523cdf",
+        "equity": "65c15fc488cdf84dea6086d9b35cdfbfd42040089b545bc73d564283b7382ef7"
+      },
+      "result_sha256": "172d1350ae53e2d205db850f8fbcee590a8d5a173541a68b24b28e4f39ae5be0",
+      "references": {
+        "native": {
+          "hash_equal": {
+            "metrics": true,
+            "fills": true,
+            "equity": true
+          },
+          "metric_differences": {},
+          "missing_metric_keys": [],
+          "extra_metric_keys": []
+        },
+        "f64": {
+          "hash_equal": {
+            "metrics": true,
+            "fills": true,
+            "equity": true
+          },
+          "metric_differences": {},
+          "missing_metric_keys": [],
+          "extra_metric_keys": []
+        }
+      }
+    },
+    {
+      "id": "B-19-double_cost_stress",
+      "kind": "policy",
+      "decision_count": 5917,
+      "equity_mark_count": 5917,
+      "refusal_count": 0,
+      "refusal_codes": {},
+      "financial_checks": {
+        "receipt_and_mark_conservation": true,
+        "marks_verified": 5917,
+        "refusals_verified": 0,
+        "nonzero_inventory_refusals_verified": 0,
+        "no_observed_refusal_branch": true
+      },
+      "actual_hashes": {
+        "metrics": "de57defea61b7782a6e1c4dad816d1a36c1619ac4a513c54474ca1ab1ea6b00a",
+        "fills": "d75a3b541d5f98e7821b84c89d3520c0fa1bed6414c2d2cfc781931b9375f2cf",
+        "equity": "7f8db546613cd3c760ca197e4f39a7b858b5461d490d1b80b4be11f079cba0da"
+      },
+      "result_sha256": "5bb49baac57977aea4abfb6bb531c90c6ca368953a8bcbb331b78a9ebeb8cb86",
+      "references": {
+        "native": {
+          "hash_equal": {
+            "metrics": true,
+            "fills": true,
+            "equity": true
+          },
+          "metric_differences": {},
+          "missing_metric_keys": [],
+          "extra_metric_keys": []
+        },
+        "f64": {
+          "hash_equal": {
+            "metrics": true,
+            "fills": true,
+            "equity": true
+          },
+          "metric_differences": {},
+          "missing_metric_keys": [],
+          "extra_metric_keys": []
+        }
+      }
+    },
+    {
+      "id": "B-42-configured_costs",
+      "kind": "policy",
+      "decision_count": 5917,
+      "equity_mark_count": 5917,
+      "refusal_count": 0,
+      "refusal_codes": {},
+      "financial_checks": {
+        "receipt_and_mark_conservation": true,
+        "marks_verified": 5917,
+        "refusals_verified": 0,
+        "nonzero_inventory_refusals_verified": 0,
+        "no_observed_refusal_branch": true
+      },
+      "actual_hashes": {
+        "metrics": "25002511cbe678ab2d0dc004361bcaea93f26d0d89a6c38e036b15696cacf888",
+        "fills": "94f83140145c16aacc3f7a964e767877a2d0d9d8e13f502f10b73a44225a4584",
+        "equity": "9dcccf7e55429512cab0b7add050ad54715f31d6cb5733c105ee94811a932e9f"
+      },
+      "result_sha256": "263c7df91735da05a2348ee1aa8e766ea84274a5f7e514a56f3ef4cda66476d7",
+      "references": {
+        "native": {
+          "hash_equal": {
+            "metrics": true,
+            "fills": true,
+            "equity": true
+          },
+          "metric_differences": {},
+          "missing_metric_keys": [],
+          "extra_metric_keys": []
+        },
+        "f64": {
+          "hash_equal": {
+            "metrics": true,
+            "fills": true,
+            "equity": true
+          },
+          "metric_differences": {},
+          "missing_metric_keys": [],
+          "extra_metric_keys": []
+        }
+      }
+    },
+    {
+      "id": "B-42-double_cost_stress",
+      "kind": "policy",
+      "decision_count": 5917,
+      "equity_mark_count": 5917,
+      "refusal_count": 0,
+      "refusal_codes": {},
+      "financial_checks": {
+        "receipt_and_mark_conservation": true,
+        "marks_verified": 5917,
+        "refusals_verified": 0,
+        "nonzero_inventory_refusals_verified": 0,
+        "no_observed_refusal_branch": true
+      },
+      "actual_hashes": {
+        "metrics": "12b51a82efde136f2b0deccbae298c315b8a81a21531f6b57593ca56da399ae9",
+        "fills": "12652f5517ba860ad38b0daf55b36d8ef7dbff780c1460d957557e8842467a90",
+        "equity": "26739732c0594208f9c6070be056f1c3029c6d192af3d671b47869ff753fb1a1"
+      },
+      "result_sha256": "edc98acc24506d390bdcc230a504a852d459fa6f428b66a7b3e99c0c2bd9da7a",
+      "references": {
+        "native": {
+          "hash_equal": {
+            "metrics": true,
+            "fills": true,
+            "equity": true
+          },
+          "metric_differences": {},
+          "missing_metric_keys": [],
+          "extra_metric_keys": []
+        },
+        "f64": {
+          "hash_equal": {
+            "metrics": true,
+            "fills": true,
+            "equity": true
+          },
+          "metric_differences": {},
+          "missing_metric_keys": [],
+          "extra_metric_keys": []
+        }
+      }
+    },
+    {
+      "id": "C-7-configured_costs",
+      "kind": "policy",
+      "decision_count": 5917,
+      "equity_mark_count": 5917,
+      "refusal_count": 0,
+      "refusal_codes": {},
+      "financial_checks": {
+        "receipt_and_mark_conservation": true,
+        "marks_verified": 5917,
+        "refusals_verified": 0,
+        "nonzero_inventory_refusals_verified": 0,
+        "no_observed_refusal_branch": true
+      },
+      "actual_hashes": {
+        "metrics": "68c8df4b84328dc7cc1ab34718ffc52c9a3e60694ee64b37e81eef6e749c2a3a",
+        "fills": "e07276fac3b07ec328cc8574c1daf2af2333d571d86af00cb2f2d99f6cd393cf",
+        "equity": "d262c42dbbcf37daa21a3231ff24ac738f0853833fb7db7ebf13853dd5a33e98"
+      },
+      "result_sha256": "6e6482754bff6ba3dfee4927028901cc9ad900db5ac4456c4a898dd4a594a792",
+      "references": {
+        "native": {
+          "hash_equal": {
+            "metrics": true,
+            "fills": true,
+            "equity": true
+          },
+          "metric_differences": {},
+          "missing_metric_keys": [],
+          "extra_metric_keys": []
+        },
+        "f64": {
+          "hash_equal": {
+            "metrics": true,
+            "fills": true,
+            "equity": true
+          },
+          "metric_differences": {},
+          "missing_metric_keys": [],
+          "extra_metric_keys": []
+        }
+      }
+    },
+    {
+      "id": "C-7-double_cost_stress",
+      "kind": "policy",
+      "decision_count": 5917,
+      "equity_mark_count": 5917,
+      "refusal_count": 0,
+      "refusal_codes": {},
+      "financial_checks": {
+        "receipt_and_mark_conservation": true,
+        "marks_verified": 5917,
+        "refusals_verified": 0,
+        "nonzero_inventory_refusals_verified": 0,
+        "no_observed_refusal_branch": true
+      },
+      "actual_hashes": {
+        "metrics": "5030268ea230edff3c987eaac5029e28da9c4184907c8f91cc34da169f3aa577",
+        "fills": "fce59048224e2352a1f29b0127691be808692c76fd54bf68d0cc674957cd06df",
+        "equity": "a0750fde6a3c3ef4df371fb222560fbee221c9ac17f7928ca22c86e36f21cadb"
+      },
+      "result_sha256": "7ae44ea6d7623f5d596421a3603a4d74d775a3452f581f46e81e9b77b6c0d613",
+      "references": {
+        "native": {
+          "hash_equal": {
+            "metrics": true,
+            "fills": true,
+            "equity": true
+          },
+          "metric_differences": {},
+          "missing_metric_keys": [],
+          "extra_metric_keys": []
+        },
+        "f64": {
+          "hash_equal": {
+            "metrics": true,
+            "fills": true,
+            "equity": true
+          },
+          "metric_differences": {},
+          "missing_metric_keys": [],
+          "extra_metric_keys": []
+        }
+      }
+    },
+    {
+      "id": "C-19-configured_costs",
+      "kind": "policy",
+      "decision_count": 5917,
+      "equity_mark_count": 5917,
+      "refusal_count": 0,
+      "refusal_codes": {},
+      "financial_checks": {
+        "receipt_and_mark_conservation": true,
+        "marks_verified": 5917,
+        "refusals_verified": 0,
+        "nonzero_inventory_refusals_verified": 0,
+        "no_observed_refusal_branch": true
+      },
+      "actual_hashes": {
+        "metrics": "68c8df4b84328dc7cc1ab34718ffc52c9a3e60694ee64b37e81eef6e749c2a3a",
+        "fills": "e07276fac3b07ec328cc8574c1daf2af2333d571d86af00cb2f2d99f6cd393cf",
+        "equity": "d262c42dbbcf37daa21a3231ff24ac738f0853833fb7db7ebf13853dd5a33e98"
+      },
+      "result_sha256": "6e6482754bff6ba3dfee4927028901cc9ad900db5ac4456c4a898dd4a594a792",
+      "references": {
+        "native": {
+          "hash_equal": {
+            "metrics": true,
+            "fills": true,
+            "equity": true
+          },
+          "metric_differences": {},
+          "missing_metric_keys": [],
+          "extra_metric_keys": []
+        },
+        "f64": {
+          "hash_equal": {
+            "metrics": true,
+            "fills": true,
+            "equity": true
+          },
+          "metric_differences": {},
+          "missing_metric_keys": [],
+          "extra_metric_keys": []
+        }
+      }
+    },
+    {
+      "id": "C-19-double_cost_stress",
+      "kind": "policy",
+      "decision_count": 5917,
+      "equity_mark_count": 5917,
+      "refusal_count": 0,
+      "refusal_codes": {},
+      "financial_checks": {
+        "receipt_and_mark_conservation": true,
+        "marks_verified": 5917,
+        "refusals_verified": 0,
+        "nonzero_inventory_refusals_verified": 0,
+        "no_observed_refusal_branch": true
+      },
+      "actual_hashes": {
+        "metrics": "5030268ea230edff3c987eaac5029e28da9c4184907c8f91cc34da169f3aa577",
+        "fills": "fce59048224e2352a1f29b0127691be808692c76fd54bf68d0cc674957cd06df",
+        "equity": "a0750fde6a3c3ef4df371fb222560fbee221c9ac17f7928ca22c86e36f21cadb"
+      },
+      "result_sha256": "7ae44ea6d7623f5d596421a3603a4d74d775a3452f581f46e81e9b77b6c0d613",
+      "references": {
+        "native": {
+          "hash_equal": {
+            "metrics": true,
+            "fills": true,
+            "equity": true
+          },
+          "metric_differences": {},
+          "missing_metric_keys": [],
+          "extra_metric_keys": []
+        },
+        "f64": {
+          "hash_equal": {
+            "metrics": true,
+            "fills": true,
+            "equity": true
+          },
+          "metric_differences": {},
+          "missing_metric_keys": [],
+          "extra_metric_keys": []
+        }
+      }
+    },
+    {
+      "id": "C-42-configured_costs",
+      "kind": "policy",
+      "decision_count": 5917,
+      "equity_mark_count": 5917,
+      "refusal_count": 0,
+      "refusal_codes": {},
+      "financial_checks": {
+        "receipt_and_mark_conservation": true,
+        "marks_verified": 5917,
+        "refusals_verified": 0,
+        "nonzero_inventory_refusals_verified": 0,
+        "no_observed_refusal_branch": true
+      },
+      "actual_hashes": {
+        "metrics": "8a6780ecafd991ae32f2e923c518910b0c76390c64a05e47f703eac9e0e8a7dd",
+        "fills": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "equity": "35ac9d3bcfee3fc077ce3c9a3eae3c2ab7b27a4ed5931de7fb3fcb7053d48db0"
+      },
+      "result_sha256": "2ac0b4d34ef5b7992a315cc28b7de85812aa9bc1882e6a5f3d1c3ae21aeac947",
+      "references": {
+        "native": {
+          "hash_equal": {
+            "metrics": true,
+            "fills": true,
+            "equity": true
+          },
+          "metric_differences": {},
+          "missing_metric_keys": [],
+          "extra_metric_keys": []
+        },
+        "f64": {
+          "hash_equal": {
+            "metrics": true,
+            "fills": true,
+            "equity": true
+          },
+          "metric_differences": {},
+          "missing_metric_keys": [],
+          "extra_metric_keys": []
+        }
+      }
+    },
+    {
+      "id": "C-42-double_cost_stress",
+      "kind": "policy",
+      "decision_count": 5917,
+      "equity_mark_count": 5917,
+      "refusal_count": 0,
+      "refusal_codes": {},
+      "financial_checks": {
+        "receipt_and_mark_conservation": true,
+        "marks_verified": 5917,
+        "refusals_verified": 0,
+        "nonzero_inventory_refusals_verified": 0,
+        "no_observed_refusal_branch": true
+      },
+      "actual_hashes": {
+        "metrics": "8a6780ecafd991ae32f2e923c518910b0c76390c64a05e47f703eac9e0e8a7dd",
+        "fills": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "equity": "35ac9d3bcfee3fc077ce3c9a3eae3c2ab7b27a4ed5931de7fb3fcb7053d48db0"
+      },
+      "result_sha256": "2ac0b4d34ef5b7992a315cc28b7de85812aa9bc1882e6a5f3d1c3ae21aeac947",
+      "references": {
+        "native": {
+          "hash_equal": {
+            "metrics": true,
+            "fills": true,
+            "equity": true
+          },
+          "metric_differences": {},
+          "missing_metric_keys": [],
+          "extra_metric_keys": []
+        },
+        "f64": {
+          "hash_equal": {
+            "metrics": true,
+            "fills": true,
+            "equity": true
+          },
+          "metric_differences": {},
+          "missing_metric_keys": [],
+          "extra_metric_keys": []
+        }
+      }
+    },
+    {
+      "id": "fixed-0-configured_costs",
+      "kind": "fixed",
+      "decision_count": 5917,
+      "equity_mark_count": 5917,
+      "refusal_count": 0,
+      "refusal_codes": {},
+      "financial_checks": {
+        "receipt_and_mark_conservation": true,
+        "marks_verified": 5917,
+        "refusals_verified": 0,
+        "nonzero_inventory_refusals_verified": 0,
+        "no_observed_refusal_branch": true
+      },
+      "actual_hashes": {
+        "metrics": "8a6780ecafd991ae32f2e923c518910b0c76390c64a05e47f703eac9e0e8a7dd",
+        "fills": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "equity": "35ac9d3bcfee3fc077ce3c9a3eae3c2ab7b27a4ed5931de7fb3fcb7053d48db0"
+      },
+      "result_sha256": "2ac0b4d34ef5b7992a315cc28b7de85812aa9bc1882e6a5f3d1c3ae21aeac947",
+      "references": {
+        "native": {
+          "hash_equal": {
+            "metrics": true,
+            "fills": true,
+            "equity": true
+          },
+          "metric_differences": {},
+          "missing_metric_keys": [],
+          "extra_metric_keys": []
+        },
+        "f64": {
+          "hash_equal": {
+            "metrics": true,
+            "fills": true,
+            "equity": true
+          },
+          "metric_differences": {},
+          "missing_metric_keys": [],
+          "extra_metric_keys": []
+        }
+      }
+    },
+    {
+      "id": "fixed-1-configured_costs",
+      "kind": "fixed",
+      "decision_count": 5917,
+      "equity_mark_count": 5917,
+      "refusal_count": 0,
+      "refusal_codes": {},
+      "financial_checks": {
+        "receipt_and_mark_conservation": true,
+        "marks_verified": 5917,
+        "refusals_verified": 0,
+        "nonzero_inventory_refusals_verified": 0,
+        "no_observed_refusal_branch": true
+      },
+      "actual_hashes": {
+        "metrics": "68c8df4b84328dc7cc1ab34718ffc52c9a3e60694ee64b37e81eef6e749c2a3a",
+        "fills": "e07276fac3b07ec328cc8574c1daf2af2333d571d86af00cb2f2d99f6cd393cf",
+        "equity": "d262c42dbbcf37daa21a3231ff24ac738f0853833fb7db7ebf13853dd5a33e98"
+      },
+      "result_sha256": "6e6482754bff6ba3dfee4927028901cc9ad900db5ac4456c4a898dd4a594a792",
+      "references": {
+        "native": {
+          "hash_equal": {
+            "metrics": true,
+            "fills": true,
+            "equity": true
+          },
+          "metric_differences": {},
+          "missing_metric_keys": [],
+          "extra_metric_keys": []
+        },
+        "f64": {
+          "hash_equal": {
+            "metrics": true,
+            "fills": true,
+            "equity": true
+          },
+          "metric_differences": {},
+          "missing_metric_keys": [],
+          "extra_metric_keys": []
+        }
+      }
+    },
+    {
+      "id": "fixed-2-configured_costs",
+      "kind": "fixed",
+      "decision_count": 5917,
+      "equity_mark_count": 5917,
+      "refusal_count": 0,
+      "refusal_codes": {},
+      "financial_checks": {
+        "receipt_and_mark_conservation": true,
+        "marks_verified": 5917,
+        "refusals_verified": 0,
+        "nonzero_inventory_refusals_verified": 0,
+        "no_observed_refusal_branch": true
+      },
+      "actual_hashes": {
+        "metrics": "350be48e50d92a30c394d32f7ba3faaf65eed5deddc236eb703164a5b95b9782",
+        "fills": "3f9ab52519a7f4702ad77c34485d9738b76b987813ec21bdc3ba97b9ca7109c7",
+        "equity": "839be91a7c93deedb04f2417e18a6fc48839d5bd398d262d5cc617a2a36c8167"
+      },
+      "result_sha256": "dee3069733d2a1c5519d1b5ca932afe61a5d3fa32f39b057da22962f4ed998b2",
+      "references": {
+        "native": {
+          "hash_equal": {
+            "metrics": true,
+            "fills": true,
+            "equity": true
+          },
+          "metric_differences": {},
+          "missing_metric_keys": [],
+          "extra_metric_keys": []
+        },
+        "f64": {
+          "hash_equal": {
+            "metrics": true,
+            "fills": true,
+            "equity": true
+          },
+          "metric_differences": {},
+          "missing_metric_keys": [],
+          "extra_metric_keys": []
+        }
+      }
+    },
+    {
+      "id": "hold-configured_costs",
+      "kind": "hold",
+      "decision_count": 5917,
+      "equity_mark_count": 248,
+      "refusal_count": 0,
+      "refusal_codes": {},
+      "financial_checks": {
+        "receipt_and_mark_conservation": true,
+        "marks_verified": 248,
+        "refusals_verified": 0,
+        "nonzero_inventory_refusals_verified": 0,
+        "no_observed_refusal_branch": true
+      },
+      "actual_hashes": {
+        "metrics": "3e2fd980d0e575b748265d2ee22ed01285d6963f35780051f76f3db90e2b07e6",
+        "fills": "5ba0a3f32db220c24e9ed73445e4b3874ddb84746088ad92310027a4dcb08df2",
+        "equity": "2781ad1069fa3ddd715a9781144bff3474eaf16d12bd58ae6306acdc8385b501"
+      },
+      "result_sha256": "f9ed2aab3ee90ea6d841b7c0b0950029e19c05f58b7d5b6e686afd83a7004261",
+      "references": {
+        "native": {
+          "hash_equal": {
+            "metrics": true,
+            "fills": true,
+            "equity": true
+          },
+          "metric_differences": {},
+          "missing_metric_keys": [],
+          "extra_metric_keys": []
+        },
+        "f64": {
+          "hash_equal": {
+            "metrics": true,
+            "fills": true,
+            "equity": true
+          },
+          "metric_differences": {},
+          "missing_metric_keys": [],
+          "extra_metric_keys": []
+        }
+      }
+    },
+    {
+      "id": "fixed-0-double_cost_stress",
+      "kind": "fixed",
+      "decision_count": 5917,
+      "equity_mark_count": 5917,
+      "refusal_count": 0,
+      "refusal_codes": {},
+      "financial_checks": {
+        "receipt_and_mark_conservation": true,
+        "marks_verified": 5917,
+        "refusals_verified": 0,
+        "nonzero_inventory_refusals_verified": 0,
+        "no_observed_refusal_branch": true
+      },
+      "actual_hashes": {
+        "metrics": "8a6780ecafd991ae32f2e923c518910b0c76390c64a05e47f703eac9e0e8a7dd",
+        "fills": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "equity": "35ac9d3bcfee3fc077ce3c9a3eae3c2ab7b27a4ed5931de7fb3fcb7053d48db0"
+      },
+      "result_sha256": "2ac0b4d34ef5b7992a315cc28b7de85812aa9bc1882e6a5f3d1c3ae21aeac947",
+      "references": {
+        "native": {
+          "hash_equal": {
+            "metrics": true,
+            "fills": true,
+            "equity": true
+          },
+          "metric_differences": {},
+          "missing_metric_keys": [],
+          "extra_metric_keys": []
+        },
+        "f64": {
+          "hash_equal": {
+            "metrics": true,
+            "fills": true,
+            "equity": true
+          },
+          "metric_differences": {},
+          "missing_metric_keys": [],
+          "extra_metric_keys": []
+        }
+      }
+    },
+    {
+      "id": "fixed-1-double_cost_stress",
+      "kind": "fixed",
+      "decision_count": 5917,
+      "equity_mark_count": 5917,
+      "refusal_count": 0,
+      "refusal_codes": {},
+      "financial_checks": {
+        "receipt_and_mark_conservation": true,
+        "marks_verified": 5917,
+        "refusals_verified": 0,
+        "nonzero_inventory_refusals_verified": 0,
+        "no_observed_refusal_branch": true
+      },
+      "actual_hashes": {
+        "metrics": "5030268ea230edff3c987eaac5029e28da9c4184907c8f91cc34da169f3aa577",
+        "fills": "fce59048224e2352a1f29b0127691be808692c76fd54bf68d0cc674957cd06df",
+        "equity": "a0750fde6a3c3ef4df371fb222560fbee221c9ac17f7928ca22c86e36f21cadb"
+      },
+      "result_sha256": "7ae44ea6d7623f5d596421a3603a4d74d775a3452f581f46e81e9b77b6c0d613",
+      "references": {
+        "native": {
+          "hash_equal": {
+            "metrics": true,
+            "fills": true,
+            "equity": true
+          },
+          "metric_differences": {},
+          "missing_metric_keys": [],
+          "extra_metric_keys": []
+        },
+        "f64": {
+          "hash_equal": {
+            "metrics": true,
+            "fills": true,
+            "equity": true
+          },
+          "metric_differences": {},
+          "missing_metric_keys": [],
+          "extra_metric_keys": []
+        }
+      }
+    },
+    {
+      "id": "fixed-2-double_cost_stress",
+      "kind": "fixed",
+      "decision_count": 5917,
+      "equity_mark_count": 5917,
+      "refusal_count": 0,
+      "refusal_codes": {},
+      "financial_checks": {
+        "receipt_and_mark_conservation": true,
+        "marks_verified": 5917,
+        "refusals_verified": 0,
+        "nonzero_inventory_refusals_verified": 0,
+        "no_observed_refusal_branch": true
+      },
+      "actual_hashes": {
+        "metrics": "283339c28b4f4505916d83f723da560f5421f1669074cfe797ece6ad044d49f1",
+        "fills": "46838c61aa791b924d0143a1feae4398556d541e08b5fc29f5c5dca7c71b473c",
+        "equity": "84630e629510cbbab4fdd8d9c8919de6c4db9c531d1683ce07e8893a108d5106"
+      },
+      "result_sha256": "e9560bcd4219f7c9bbbbcf53cdb226663ef75c9037c19f21b3888bb94afb4864",
+      "references": {
+        "native": {
+          "hash_equal": {
+            "metrics": true,
+            "fills": true,
+            "equity": true
+          },
+          "metric_differences": {},
+          "missing_metric_keys": [],
+          "extra_metric_keys": []
+        },
+        "f64": {
+          "hash_equal": {
+            "metrics": true,
+            "fills": true,
+            "equity": true
+          },
+          "metric_differences": {},
+          "missing_metric_keys": [],
+          "extra_metric_keys": []
+        }
+      }
+    },
+    {
+      "id": "hold-double_cost_stress",
+      "kind": "hold",
+      "decision_count": 5917,
+      "equity_mark_count": 248,
+      "refusal_count": 0,
+      "refusal_codes": {},
+      "financial_checks": {
+        "receipt_and_mark_conservation": true,
+        "marks_verified": 248,
+        "refusals_verified": 0,
+        "nonzero_inventory_refusals_verified": 0,
+        "no_observed_refusal_branch": true
+      },
+      "actual_hashes": {
+        "metrics": "9befeae38df98f5b3fbbb8dad9874ddd0f1ab927ca5afcc85e7c76f6da32d04b",
+        "fills": "0bb2fbb71f5f60488dab68b49315e208a4ac37a741f3e7ea4d76b6757fe3093c",
+        "equity": "5f27f555e3a3771d0945decb3f3ce16be0cc9af0492789e44593469fcae131e3"
+      },
+      "result_sha256": "de9eb274e4cf7f94d92c8504c91e6865b4f95e33cbf59ad7a515fcc9feb4d363",
+      "references": {
+        "native": {
+          "hash_equal": {
+            "metrics": true,
+            "fills": true,
+            "equity": true
+          },
+          "metric_differences": {},
+          "missing_metric_keys": [],
+          "extra_metric_keys": []
+        },
+        "f64": {
+          "hash_equal": {
+            "metrics": true,
+            "fills": true,
+            "equity": true
+          },
+          "metric_differences": {},
+          "missing_metric_keys": [],
+          "extra_metric_keys": []
+        }
+      }
+    }
+  ],
+  "header": {
+    "actor_canonical_sha256": {
+      "A-19": "a750ade5ef4e781b8f19e1172586d9dfbca129a6289a08461c91799af8e2614b",
+      "A-42": "8822ea466fef935dd62bb7919b748bfca1fb0bedd8dd8d0e03bc66627e69d39d",
+      "A-7": "0fe6975f724aaa1c164f7fc993996029b25b324c35fdb95e102ec2df27f0d282",
+      "B-19": "a0210bc92934df9a02b3baf527a3644422ab4a6147dfa2fa7823a1704090a39e",
+      "B-42": "9d0d3c62e26990d5fca4e85a0a1af5d8432cb48f4ab639b42f601619ba07fc23",
+      "B-7": "f2ad864063d3a0a19bbc0dda0d982a6577f7e8fd28de58c9e5c648f42163526a",
+      "C-19": "9d63978378e35f554b292e5537baf4b7ca97a2066edfc2c105b5117964c26684",
+      "C-42": "71f013a9b67689b86491789c32bff6273e7f7ab8d784514ad64832bbff29beca",
+      "C-7": "ff6a258d2fd95935c9d4a00202c95b33fb29fe6ad3e206695dce504d5db5b970"
+    },
+    "audit_class_ast_sha256": "77da586f9df802254dfb2c06e0b72cf6cf50abfa97c094029b61796f1a5259e0",
+    "candidate_eligible": false,
+    "dataset": "ee9afe981db266959ebcc1557e6120ae6e60012f761265ed46d57ab57878276c",
+    "dataset_gzip_sha256": "91d3c11dd7ae3e2dbb7a6964c4796ab80cb4f27c30612fc66477aff1dac22ef4",
+    "dataset_source": "HistData.com ASCII paired XAUUSD ticks; fixed EST UTC-05:00",
+    "deadline_ms": 100,
+    "decisions_per_policy_or_fixed": 5917,
+    "dependencies": {
+      "Farama-Notifications": "0.0.6",
+      "cloudpickle": "3.1.2",
+      "gymnasium": "1.2.0",
+      "numpy": "2.2.6",
+      "pydantic": "2.13.5",
+      "pydantic_core": "2.46.5",
+      "typing_extensions": "4.16.0"
+    },
+    "dependency_scope": "Bound overlay versions; existing image Pydantic/Pydantic-core recorded without replacement. Platform/base-version differences are not assigned causal significance.",
+    "expected_full_cases": 26,
+    "frozen_research_source_sha256": {
+      "scripts/study_gold_ppo.py": "9cec025b95232d3510bfee9cee5522ad7bf65fc79136912b73df48185ed7d4ee",
+      "scripts/study_gold_ppo_v2.py": "df3501b77fd7bd57037fea811d571aade8bc1539a4972c88a83d83a18d133f29"
+    },
+    "hold_scope": "Original actual backtest.simulate reference retained, including sparse equity marks and expired-intent semantics; no synthetic per-step hold trace claimed",
+    "image_preflight": {
+      "files": {
+        "core/gold/history.py": "0e6d536b9c202bfc4e49916d6455116247605aea0b1e9941157c5d52359073bc",
+        "core/gold/policy_runtime.py": "30dd4ed492ef4b7f3eca8a17c9df369358bf915c5f25eae309c838ae6738084c",
+        "core/gold/rl.py": "2c6356681096d645693e2a992f813e74839049996a22ee1b75e0b6bdf6e734ab",
+        "core/gold/rl_experiments/f64_audit.py": "a8e490824696b9d6b1ca051b798407a7c9588018b36f6914242a089d590b9481"
+      },
+      "python": "3.12.15 (main, Oct  6 2026, 02:02:31) [GCC 12.2.0]",
+      "versions": {
+        "cloudpickle": null,
+        "farama-notifications": null,
+        "gymnasium": null,
+        "numpy": null,
+        "pydantic": "2.13.5",
+        "typing_extensions": "4.16.0"
+      }
+    },
+    "image_preflight_sha256": "e2118661a0336cc041d50b0072d996fa1b69a7341649ac8893c0037e3f8bc7ff",
+    "input_pack_sha256": "6becff0e4f3d4dd59a08008261a27f624254d0335f8318b582639f5a66a573be",
+    "local_frozen_dependencies": {
+      "Farama-Notifications": "0.0.6",
+      "annotated-types": "0.8.0",
+      "cloudpickle": "3.1.2",
+      "gymnasium": "1.2.0",
+      "numpy": "2.2.6",
+      "pydantic": "2.12.3",
+      "pydantic_core": "2.41.4",
+      "typing-inspection": "0.4.4",
+      "typing_extensions": "4.16.0"
+    },
+    "no_sealed_blind_or_forward_or_source_transfer_claim": true,
+    "partial_sanity_only": false,
+    "platform": "Linux-3.10.0-1160.el7.x86_64-x86_64-with-glibc2.36",
+    "post_return_deadline_check": true,
+    "promotion_authorized": false,
+    "provenance": {
+      "f64_manifest_entries_verified": 32,
+      "f64_manifest_sha256": "8ec27cc8363b2fe293b63bfbe69f67b99bb1c64992b3842590f42a6f730be59e",
+      "f64_protocol_sha256": "adef4805a8ef8e37ac716c87dc84892e938ffcf3def3f70f5396ad3e264d1222",
+      "f64_study_sha256": "799bba18353d8f4c29ed76c5c155a4379decd5eed18cf1735174904d281006d3",
+      "historical_f64_helpers_ast_sha256": "6ab31cb1b78a8057a621ecb3d67b5f153b87ac982e1674168a687dd205abe5dd",
+      "historical_f64_runtime_source_sha256": "51ce97127b6c283f9b95fb170c0542572ffcbdb6b77ae51b075a841e4506b866",
+      "input_preparer_sha256": "8098a04445d310aad5f5a02c0a5a8ae9dc3fe6e76ca3b93afe75f129cbb50302",
+      "local_pip_freeze_sha256": "7849050d054806d56cef63365786028e9b1f140bb6d175dc31fe04ff819ff203",
+      "native_actor_file_sha256": {
+        "A-19": "1fce8ce88622f04f64fcef19e7c2a0ee91a5e6b367fc9c0a2dba60e26595d957",
+        "A-42": "528df99d1f6c0b5aa3cd38df1d0dc64c26b091a06840ef0a891b8fe34f0127d1",
+        "A-7": "74ca43c3679ce078f254c553fc5f8e0d5c39da9cc1f34b5c8aeb7765f66b441b",
+        "B-19": "a62db5745a0a9ff4d0d727c565b4b55a2a9c89449cac5e2f907404a7a72c54d3",
+        "B-42": "a84be85932c1ebb86f8dc48bae04553bcb1a8221de6c83ce40db47c3a35cda16",
+        "B-7": "c68ab1ead91b94858112c594b10c49f436748dff226553e1de74008bb2f31fb3",
+        "C-19": "0bf21786d8b02af5f92b8127fbdcd65513e0f5cc7098ea3ae727d3b7897b5092",
+        "C-42": "df7461ea2449c667f6e53023486356f63700c2949361a66d98c05e03a087bba4",
+        "C-7": "a20a3ba2efb7caeb7a118208131d5543cb8059aa3e09da88e1d3894f15674770"
+      },
+      "native_manifest_entries_verified": 41,
+      "native_manifest_sha256": "895dd774a30f6526b5219e8a43adff4f47779b92040ae60350573340173300fe",
+      "native_protocol_sha256": "92b5ff93dc15f040b47cf41f602bd208b709f27483f832e7db0273e86bb02137",
+      "native_study_sha256": "37858771b0b7922a9bc9233179bd969789ffd47794a38baf748a9b4a9988dcf2",
+      "native_training_source_sha256": {
+        "core/gold/backtest.py": "d79b91fdb670b3c37c32ad93cdc73ced3a66627bd565be6f435a51838a03e6be",
+        "core/gold/history.py": "0e6d536b9c202bfc4e49916d6455116247605aea0b1e9941157c5d52359073bc",
+        "core/gold/rl.py": "2c6356681096d645693e2a992f813e74839049996a22ee1b75e0b6bdf6e734ab",
+        "core/gold/rl_experiments/__init__.py": "6628c818c4fbee08ac7e2a279e5e7b8461dd1f4d6dd00e777f38d07ef31bd311",
+        "scripts/study_gold_ppo.py": "9cec025b95232d3510bfee9cee5522ad7bf65fc79136912b73df48185ed7d4ee",
+        "scripts/study_gold_ppo_v2.py": "df3501b77fd7bd57037fea811d571aade8bc1539a4972c88a83d83a18d133f29"
+      },
+      "prepared_at": "2026-10-22T13:44:19.192856+00:00",
+      "source_commit": "8ca035e5c8ca2be39b3e129b1282d70122eea893",
+      "training_timesteps_per_model_unchanged": 131072
+    },
+    "python": "3.12.15",
+    "requested_cases": [
+      "A-7-configured_costs",
+      "A-7-double_cost_stress",
+      "A-19-configured_costs",
+      "A-19-double_cost_stress",
+      "A-42-configured_costs",
+      "A-42-double_cost_stress",
+      "B-7-configured_costs",
+      "B-7-double_cost_stress",
+      "B-19-configured_costs",
+      "B-19-double_cost_stress",
+      "B-42-configured_costs",
+      "B-42-double_cost_stress",
+      "C-7-configured_costs",
+      "C-7-double_cost_stress",
+      "C-19-configured_costs",
+      "C-19-double_cost_stress",
+      "C-42-configured_costs",
+      "C-42-double_cost_stress",
+      "fixed-0-configured_costs",
+      "fixed-1-configured_costs",
+      "fixed-2-configured_costs",
+      "hold-configured_costs",
+      "fixed-0-double_cost_stress",
+      "fixed-1-double_cost_stress",
+      "fixed-2-double_cost_stress",
+      "hold-double_cost_stress"
+    ],
+    "scope": "offline own cash/inventory/peak trajectory in actual source image; no Store/app/database/network/registration/account/broker integration",
+    "script_sha256": "fd42dc51b0d9629a528cfe9688dab7dca681afd0d27a21780fced0ef23599b4e",
+    "shared_bars": 11055,
+    "source_sha256": {
+      "core/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "core/gold/__init__.py": "78732cff6c72ca29933e490eab9d737f2ca9233d8549fdc820001ada2f63ceae",
+      "core/gold/backtest.py": "d79b91fdb670b3c37c32ad93cdc73ced3a66627bd565be6f435a51838a03e6be",
+      "core/gold/history.py": "0e6d536b9c202bfc4e49916d6455116247605aea0b1e9941157c5d52359073bc",
+      "core/gold/ledger.py": "3f4fee827dda26b70079d75d49d25fed315b63d66b80f47983731f37bc999f9c",
+      "core/gold/market.py": "8045263fd73b6710d9d9ee37ffb43158bd84d9cfa3481601c7821f879e3bab85",
+      "core/gold/policy_runtime.py": "30dd4ed492ef4b7f3eca8a17c9df369358bf915c5f25eae309c838ae6738084c",
+      "core/gold/rl.py": "2c6356681096d645693e2a992f813e74839049996a22ee1b75e0b6bdf6e734ab",
+      "core/gold/rl_experiments/__init__.py": "6628c818c4fbee08ac7e2a279e5e7b8461dd1f4d6dd00e777f38d07ef31bd311",
+      "core/gold/rl_experiments/f64_audit.py": "a8e490824696b9d6b1ca051b798407a7c9588018b36f6914242a089d590b9481",
+      "core/strategy/contracts.py": "f585ea0f2b80e176d31fe215c8ce2742c6f6c9aad05f11b09e62147e757ce946",
+      "core/strategy/registry.py": "036662b4b3783991f4bda3fdc625792bb63a8e22e75498b91449d807cb8a2526",
+      "core/strategy/research.py": "2eb8af10a7e64f04f326b4a7408f4555e4ddb1bae9044bfaebeb578aaf72c103"
+    },
+    "stress_scope": "runtime uses own raw-bid input peak; native scenario accounting uses widened spread mark; these differ deliberately in stress and are not pure floating-point differences",
+    "trading_enabled": false,
+    "type": "header",
+    "version": "gold-own-deployment-trajectories-v1",
+    "window_end": 1735689600000,
+    "window_start": 1704067200000
+  },
+  "end": {
+    "acceptance": "completeness/conservation/actual-refusals-included only; no zero-timeout, bitwise identity, profitability or eligibility requirement",
+    "candidate_eligible": false,
+    "complete_requested_cases": true,
+    "completed_cases": [
+      {
+        "decision_count": 5917,
+        "equity_mark_count": 5917,
+        "id": "A-7-configured_costs",
+        "refusal_codes": {},
+        "refusal_count": 0,
+        "result_sha256": "6e6482754bff6ba3dfee4927028901cc9ad900db5ac4456c4a898dd4a594a792"
+      },
+      {
+        "decision_count": 5917,
+        "equity_mark_count": 5917,
+        "id": "A-7-double_cost_stress",
+        "refusal_codes": {},
+        "refusal_count": 0,
+        "result_sha256": "7ae44ea6d7623f5d596421a3603a4d74d775a3452f581f46e81e9b77b6c0d613"
+      },
+      {
+        "decision_count": 5917,
+        "equity_mark_count": 5917,
+        "id": "A-19-configured_costs",
+        "refusal_codes": {},
+        "refusal_count": 0,
+        "result_sha256": "6e6482754bff6ba3dfee4927028901cc9ad900db5ac4456c4a898dd4a594a792"
+      },
+      {
+        "decision_count": 5917,
+        "equity_mark_count": 5917,
+        "id": "A-19-double_cost_stress",
+        "refusal_codes": {},
+        "refusal_count": 0,
+        "result_sha256": "7ae44ea6d7623f5d596421a3603a4d74d775a3452f581f46e81e9b77b6c0d613"
+      },
+      {
+        "decision_count": 5917,
+        "equity_mark_count": 5917,
+        "id": "A-42-configured_costs",
+        "refusal_codes": {},
+        "refusal_count": 0,
+        "result_sha256": "2ac0b4d34ef5b7992a315cc28b7de85812aa9bc1882e6a5f3d1c3ae21aeac947"
+      },
+      {
+        "decision_count": 5917,
+        "equity_mark_count": 5917,
+        "id": "A-42-double_cost_stress",
+        "refusal_codes": {},
+        "refusal_count": 0,
+        "result_sha256": "2ac0b4d34ef5b7992a315cc28b7de85812aa9bc1882e6a5f3d1c3ae21aeac947"
+      },
+      {
+        "decision_count": 5917,
+        "equity_mark_count": 5917,
+        "id": "B-7-configured_costs",
+        "refusal_codes": {},
+        "refusal_count": 0,
+        "result_sha256": "dc7542ba3c042137a2325c23adb07b8e7b4b9008c6bd2705bd670133ab62750e"
+      },
+      {
+        "decision_count": 5917,
+        "equity_mark_count": 5917,
+        "id": "B-7-double_cost_stress",
+        "refusal_codes": {},
+        "refusal_count": 0,
+        "result_sha256": "ed900ad2c9996c9ae6e2c29d7df7fd52fda9401b37ca2f41c08aff1122e0558e"
+      },
+      {
+        "decision_count": 5917,
+        "equity_mark_count": 5917,
+        "id": "B-19-configured_costs",
+        "refusal_codes": {},
+        "refusal_count": 0,
+        "result_sha256": "172d1350ae53e2d205db850f8fbcee590a8d5a173541a68b24b28e4f39ae5be0"
+      },
+      {
+        "decision_count": 5917,
+        "equity_mark_count": 5917,
+        "id": "B-19-double_cost_stress",
+        "refusal_codes": {},
+        "refusal_count": 0,
+        "result_sha256": "5bb49baac57977aea4abfb6bb531c90c6ca368953a8bcbb331b78a9ebeb8cb86"
+      },
+      {
+        "decision_count": 5917,
+        "equity_mark_count": 5917,
+        "id": "B-42-configured_costs",
+        "refusal_codes": {},
+        "refusal_count": 0,
+        "result_sha256": "263c7df91735da05a2348ee1aa8e766ea84274a5f7e514a56f3ef4cda66476d7"
+      },
+      {
+        "decision_count": 5917,
+        "equity_mark_count": 5917,
+        "id": "B-42-double_cost_stress",
+        "refusal_codes": {},
+        "refusal_count": 0,
+        "result_sha256": "edc98acc24506d390bdcc230a504a852d459fa6f428b66a7b3e99c0c2bd9da7a"
+      },
+      {
+        "decision_count": 5917,
+        "equity_mark_count": 5917,
+        "id": "C-7-configured_costs",
+        "refusal_codes": {},
+        "refusal_count": 0,
+        "result_sha256": "6e6482754bff6ba3dfee4927028901cc9ad900db5ac4456c4a898dd4a594a792"
+      },
+      {
+        "decision_count": 5917,
+        "equity_mark_count": 5917,
+        "id": "C-7-double_cost_stress",
+        "refusal_codes": {},
+        "refusal_count": 0,
+        "result_sha256": "7ae44ea6d7623f5d596421a3603a4d74d775a3452f581f46e81e9b77b6c0d613"
+      },
+      {
+        "decision_count": 5917,
+        "equity_mark_count": 5917,
+        "id": "C-19-configured_costs",
+        "refusal_codes": {},
+        "refusal_count": 0,
+        "result_sha256": "6e6482754bff6ba3dfee4927028901cc9ad900db5ac4456c4a898dd4a594a792"
+      },
+      {
+        "decision_count": 5917,
+        "equity_mark_count": 5917,
+        "id": "C-19-double_cost_stress",
+        "refusal_codes": {},
+        "refusal_count": 0,
+        "result_sha256": "7ae44ea6d7623f5d596421a3603a4d74d775a3452f581f46e81e9b77b6c0d613"
+      },
+      {
+        "decision_count": 5917,
+        "equity_mark_count": 5917,
+        "id": "C-42-configured_costs",
+        "refusal_codes": {},
+        "refusal_count": 0,
+        "result_sha256": "2ac0b4d34ef5b7992a315cc28b7de85812aa9bc1882e6a5f3d1c3ae21aeac947"
+      },
+      {
+        "decision_count": 5917,
+        "equity_mark_count": 5917,
+        "id": "C-42-double_cost_stress",
+        "refusal_codes": {},
+        "refusal_count": 0,
+        "result_sha256": "2ac0b4d34ef5b7992a315cc28b7de85812aa9bc1882e6a5f3d1c3ae21aeac947"
+      },
+      {
+        "decision_count": 5917,
+        "equity_mark_count": 5917,
+        "id": "fixed-0-configured_costs",
+        "refusal_codes": {},
+        "refusal_count": 0,
+        "result_sha256": "2ac0b4d34ef5b7992a315cc28b7de85812aa9bc1882e6a5f3d1c3ae21aeac947"
+      },
+      {
+        "decision_count": 5917,
+        "equity_mark_count": 5917,
+        "id": "fixed-1-configured_costs",
+        "refusal_codes": {},
+        "refusal_count": 0,
+        "result_sha256": "6e6482754bff6ba3dfee4927028901cc9ad900db5ac4456c4a898dd4a594a792"
+      },
+      {
+        "decision_count": 5917,
+        "equity_mark_count": 5917,
+        "id": "fixed-2-configured_costs",
+        "refusal_codes": {},
+        "refusal_count": 0,
+        "result_sha256": "dee3069733d2a1c5519d1b5ca932afe61a5d3fa32f39b057da22962f4ed998b2"
+      },
+      {
+        "decision_count": 5917,
+        "equity_mark_count": 248,
+        "id": "hold-configured_costs",
+        "refusal_codes": {},
+        "refusal_count": 0,
+        "result_sha256": "f9ed2aab3ee90ea6d841b7c0b0950029e19c05f58b7d5b6e686afd83a7004261"
+      },
+      {
+        "decision_count": 5917,
+        "equity_mark_count": 5917,
+        "id": "fixed-0-double_cost_stress",
+        "refusal_codes": {},
+        "refusal_count": 0,
+        "result_sha256": "2ac0b4d34ef5b7992a315cc28b7de85812aa9bc1882e6a5f3d1c3ae21aeac947"
+      },
+      {
+        "decision_count": 5917,
+        "equity_mark_count": 5917,
+        "id": "fixed-1-double_cost_stress",
+        "refusal_codes": {},
+        "refusal_count": 0,
+        "result_sha256": "7ae44ea6d7623f5d596421a3603a4d74d775a3452f581f46e81e9b77b6c0d613"
+      },
+      {
+        "decision_count": 5917,
+        "equity_mark_count": 5917,
+        "id": "fixed-2-double_cost_stress",
+        "refusal_codes": {},
+        "refusal_count": 0,
+        "result_sha256": "e9560bcd4219f7c9bbbbcf53cdb226663ef75c9037c19f21b3888bb94afb4864"
+      },
+      {
+        "decision_count": 5917,
+        "equity_mark_count": 248,
+        "id": "hold-double_cost_stress",
+        "refusal_codes": {},
+        "refusal_count": 0,
+        "result_sha256": "de9eb274e4cf7f94d92c8504c91e6865b4f95e33cbf59ad7a515fcc9feb4d363"
+      }
+    ],
+    "elapsed_seconds": 105.86501351837069,
+    "full_protocol_complete": true,
+    "jsonl_prior_records": 27,
+    "jsonl_prior_sha256": "4cd4e815ab1672662347e09079a57bf01175a4c3891bd8f547297325455a7feb",
+    "max_rss_platform_units": 110436,
+    "promotion_authorized": false,
+    "trading_enabled": false,
+    "training_framework_imported": false,
+    "type": "end",
+    "version": "gold-own-deployment-trajectories-v1"
+  },
+  "process_receipt": {
+    "exit_code": 0,
+    "automatic_retry": false,
+    "launch_manifest_sha256": "35992066073c1dfe68d15106b772fc743aa284e7c435a1937c15e7e2d431e6b4",
+    "actual_command_sha256": "4c62b99ea8f8331454a25762580b802569fcf99e7783ae3fe2dfd1f4411a8a29",
+    "actual_archive_sha256": "98f79ee752dc123133b149750f672ecc8f86d0727315e460f72e7305aa1955f1",
+    "actual_launcher_sha256": "034c9ad17058aeebc9cc9364d8c44988003eca319088f43c1e0627997bb63a56",
+    "results_bytes": 36447642,
+    "results_sha256": "4f7bd44e2c5d0560112394867d670fe57775b6a03a9855decc5ce98dbd643f13"
+  },
+  "scope": "Read-only reconstruction and full result comparison; no inference/env/policy/training rerun, SSH, Store, registration or ledger write.",
+  "qualification": "Equality/differences are diagnostic only. This does not change frozen profit gates, activate models or prove source transfer/online execution.",
+  "timing_limit": "Recorded successful wall_ms may exceed the post-check instant after preemption; do not infer missing timeout solely from later elapsed logging.",
+  "no_refusal_limit": "If actual_refusals=0, Linux refusal preservation has no observed event evidence; prior synthetic rejection tests remain separate.",
+  "trading_enabled": false,
+  "candidate_eligible": false,
+  "promotion_authorized": false
+}

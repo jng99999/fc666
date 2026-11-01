@@ -1,6 +1,6 @@
 """Fixed-parameter chronological comparison; no fitting, carry-over or trading."""
 from core.backtest.spot import simulate as spot_simulate, digest
-from core.strategy.registry import resolve
+from core.strategy.registry import resolve, lookback as strategy_lookback
 
 VERSION='spot-holdout-v1'
 
@@ -9,11 +9,11 @@ def validate_split(bars,train_bars,strategy_id,parameters,config):
     if isinstance(train_bars,bool) or not isinstance(train_bars,int):raise ValueError('Integer training size required')
     if not 2<=train_bars<=len(bars)-2:raise ValueError('Require at least two bars in each segment')
     _,validated=resolve(strategy_id).create(parameters)
-    lookback=validated.period if strategy_id=='ema_long_flat_v1' else validated.slow
+    lookback=strategy_lookback(strategy_id,parameters)
     if min(train_bars,len(bars)-train_bars)<lookback+1:
         raise ValueError('Each segment needs strategy lookback plus one bar for next-open execution')
     if strategy_id=='ema_long_flat_v1' and validated.period!=config.period:raise ValueError('EMA period must match config.period')
-    if not 4<=len(bars)<=1000:raise ValueError('Require 4..1000 bars')
+    if not 4<=len(bars)<=5000:raise ValueError('Require 4..5000 bars')
     for index,bar in enumerate(bars):
         if not bar.is_closed:raise ValueError('Finalized bars required')
         if index and (bar.timeframe!=bars[index-1].timeframe or bar.open_time!=bars[index-1].close_time):

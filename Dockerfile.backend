@@ -1,0 +1,16 @@
+FROM python:3.12-slim-bookworm
+WORKDIR /app
+RUN pip install --no-cache-dir uv==0.13.1
+COPY pyproject.toml uv.lock ./
+RUN uv sync --frozen --no-dev --no-install-project
+COPY apps/api ./apps/api
+COPY apps/worker ./apps/worker
+COPY core ./core
+COPY migrations ./migrations
+COPY alembic.ini ./
+COPY scripts/import_market.py ./scripts/import_market.py
+COPY scripts/import_research_history.py ./scripts/import_research_history.py
+RUN mkdir .runtime && chown -R 10001:10001 /app
+ENV PATH="/app/.venv/bin:$PATH" PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1
+USER 10001:10001
+CMD ["uvicorn","apps.api.main:create_app","--factory","--host","0.0.0.0","--port","8000","--proxy-headers","--forwarded-allow-ips=*"]

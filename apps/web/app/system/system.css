@@ -1,0 +1,63 @@
+/* Approved source base/account card language; status remains API-backed. */
+.approved-system-page{min-width:0;color:var(--text);font-variant-numeric:tabular-nums}
+.approved-system-page .system-page-heading{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:0 0 18px}
+.approved-system-page .system-page-heading span:first-child{font-size:11px;color:var(--muted)}
+.approved-system-page .system-page-heading h1{font-size:25px;line-height:1.3;font-weight:750;margin:4px 0}
+.approved-system-page .system-page-heading p{font-size:12px;color:var(--muted)}
+.approved-system-page .system-paper-badge,.approved-system-page .system-small-badge{font-size:11px;font-weight:500;color:#ae7b27;background:#fff7e8;border-radius:7px;padding:4px 8px;white-space:nowrap}
+.approved-system-page .system-small-badge{color:#71839e;background:#f0f5fc}
+.approved-system-page .system-status-grid{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(280px,1fr);gap:18px;margin-bottom:18px;align-items:start}
+.approved-system-page .health{background:#fff;border:1px solid #ffffffed;border-radius:24px;padding:22px;box-shadow:var(--shadow);min-width:0;overflow-wrap:anywhere;margin:0}
+.approved-system-page .health h2{font-size:18px;line-height:1.3;font-weight:700;margin:0 0 12px}
+.approved-system-page .health p{font-size:12px;line-height:1.7;color:var(--muted);margin:8px 0 14px}
+.approved-system-page .system-panel-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+.approved-system-page .system-panel-heading h2{margin:0}
+.approved-system-page .health dl{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:18px 0}
+.approved-system-page .health dl>div{display:block;background:#f7faff;border:1px solid #edf2f8;border-radius:12px;padding:13px;min-width:0}
+.approved-system-page .health dt{font-size:11px;color:var(--muted);line-height:1.5}
+.approved-system-page .health dd{margin:8px 0 0;font-size:13px;font-weight:600;line-height:1.5}
+.approved-system-page .health .ok{color:#079f62}
+.approved-system-page .health .muted{color:#8292a9}
+.approved-system-page .health [role=alert]{background:#fff0f3;color:#bf3450;padding:10px 12px;border-radius:10px}
+.approved-system-page .health button{display:inline-flex;align-items:center;justify-content:center;min-height:38px;padding:8px 16px;border:1px solid #e6edf7;border-radius:11px;background:#176bff;color:#fff;font-size:13px;font-weight:600;box-shadow:0 4px 10px #176bff13;line-height:1.5;cursor:pointer}
+.approved-system-page .health button:disabled{background:#f1f5fb;color:#7e91ab;border-color:#edf2f8;box-shadow:none}
+.approved-system-page .system-check-footer{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.approved-system-page .system-check-footer small{color:var(--muted);font-size:10px}
+.approved-system-page .market-monitor>p{margin-bottom:18px}
+.approved-system-page .market-monitor table{width:100%;border-collapse:collapse;text-align:left;font-size:13px;table-layout:fixed}
+.approved-system-page .market-monitor th,.approved-system-page .market-monitor td{padding:15px 12px;border-bottom:1px solid #edf1f7;vertical-align:middle;overflow-wrap:anywhere}
+.approved-system-page .market-monitor thead th{font-size:11px;color:var(--muted);font-weight:500;background:#f8faff}
+.approved-system-page .market-monitor th:first-child{padding-left:0}
+.approved-system-page .market-monitor tbody th{font-weight:650}
+.approved-system-page .market-monitor tbody tr:last-child>*{border-bottom:0}
+.approved-system-page .market-monitor time{display:block;font-size:10px;color:#8a9cb4;margin-top:4px}
+.approved-system-page .system-up{color:#08b970}.approved-system-page .system-down{color:#f24061}
+.approved-system-page .system-feed-ok{color:#079f62;font-size:11px}.approved-system-page .system-feed-wait{color:var(--muted);font-size:11px}
+.approved-system-page .system-boundary{margin:18px 0 0;padding:14px 18px;border:1px solid #e6eef9;border-radius:12px;background:#f1f6fd;color:#637e9d}
+.approved-system-page .system-boundary strong{font-size:12px}.approved-system-page .system-boundary p{font-size:11px;line-height:1.7;margin-top:4px}
+@media(max-width:1100px) and (min-width:761px){.approved-system-page .system-status-grid{grid-template-columns:1fr}.approved-system-page .health{padding:18px}}
+@media(max-width:760px){
+ .approved-system-page .system-page-heading{display:none}
+ .approved-system-page .system-status-grid{display:flex;flex-direction:column;gap:12px;margin-bottom:12px}
+ .approved-system-page .system-status-grid>.health{width:100%}
+ .approved-system-page .health{padding:16px;border-radius:21px}
+ .approved-system-page .health h2{font-size:17px}
+ .approved-system-page .health p{font-size:11px;margin:8px 0 12px}
+ .approved-system-page .health dl{gap:7px;margin:14px 0}
+ .approved-system-page .health dl>div{padding:10px 8px;border-radius:10px}
+ .approved-system-page .health dt{font-size:10px}
+ .approved-system-page .health dd{font-size:11px;margin-top:7px}
+ .approved-system-page .health button{min-height:40px;border-radius:10px}
+ .approved-system-page .system-panel-heading{align-items:flex-start}
+ .approved-system-page .system-small-badge{font-size:9px;padding:4px 6px}
+ .approved-system-page .market-monitor table,.approved-system-page .market-monitor tbody{display:block}
+ .approved-system-page .market-monitor thead{display:none}
+ .approved-system-page .market-monitor tbody tr{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;padding:14px 0;border-bottom:1px solid #edf1f7}
+ .approved-system-page .market-monitor tbody th,.approved-system-page .market-monitor tbody td{display:block;border:0;padding:0}
+ .approved-system-page .market-monitor tbody th{grid-column:1;font-size:14px}
+ .approved-system-page .market-monitor td[data-label="价格 · USDT"]{grid-column:2;grid-row:1;text-align:right;font-size:15px;font-weight:650}
+ .approved-system-page .market-monitor td[data-label="24h 涨跌"]{grid-column:2;grid-row:2;text-align:right;font-size:12px}
+ .approved-system-page .market-monitor td[data-label="数据状态"]{grid-column:1;grid-row:2;font-size:10px}
+ .approved-system-page .market-monitor tbody tr:last-child{border:0;padding-bottom:0}
+ .approved-system-page .system-boundary{margin-top:12px;padding:12px 14px}
+}

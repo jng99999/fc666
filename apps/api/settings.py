@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     redis_url: str = "redis://127.0.0.1:6379/0"
     trading_mode: Literal["BACKTEST", "REPLAY", "PAPER"] = "PAPER"
     live_trading: bool = False
+    market_provider: Literal['binance', 'bitget'] = 'binance'
     paper_operator_token: SecretStr | None = None
     paper_operator_accounts: list[str] = Field(default_factory=list)
     paper_operator_pool_ids: list[str] = Field(default_factory=list)

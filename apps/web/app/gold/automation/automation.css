@@ -1,0 +1,14 @@
+.gold-automation-links{display:flex;flex-wrap:wrap;gap:12px 20px;margin:8px 0 20px}
+.gold-automation .gold-card{min-width:0}
+.gold-automation progress{width:100%;height:8px;accent-color:var(--accent,#006bdf)}
+.gold-automation-digest{overflow-wrap:anywhere;font-size:12px;line-height:1.6}
+.gold-automation .gold-events pre{max-width:100%;overflow:auto;font-size:12px;line-height:1.6;max-height:360px}
+.gold-automation-ack{display:flex!important;align-items:flex-start;gap:10px;line-height:1.6}
+.gold-automation-ack input{width:18px!important;min-width:18px;min-height:18px!important;margin-top:4px}
+.gold-automation-dialog{border:1px solid #d8dce3;border-radius:20px;background:rgba(255,255,255,.96);color:#1d1d1f;padding:24px;width:min(460px,calc(100vw - 32px));max-height:calc(100dvh - 48px);overflow:auto;box-sizing:border-box;box-shadow:0 20px 80px #172c4a33}
+.gold-automation-dialog::backdrop{background:#17213455;backdrop-filter:blur(6px)}
+.gold-automation-dialog{margin:auto}
+.gold-automation-dialog button{min-height:44px;padding:8px 18px;border-radius:10px;border:1px solid #d4d9e1;background:#f4f6f9;color:inherit;font:inherit}
+.gold-automation-dialog button:disabled{opacity:.5}
+.gold-automation-dialog .gold-actions{flex-wrap:wrap}
+@media(max-width:760px){.gold-automation .gold-values dd{overflow-wrap:anywhere}.gold-automation .gold-actions{display:flex;flex-wrap:wrap}.gold-automation .gold-actions button{flex:1 1 140px;min-height:44px}}

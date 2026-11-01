@@ -6,6 +6,7 @@ from sqlalchemy import select,text
 from core.models import Candle,Instrument
 from core.storage.models import InstrumentRecord,CandleRecord
 from core.market_data.quality import SYMBOLS
+from core.exchange.public import PROVIDER, SOURCE
 from core.paper import requested_journal as journal,requested_inspection as inspection,requested_execution as execution
 from core.paper.fault_adapter import sha,encoded
 
@@ -24,9 +25,9 @@ def evaluate(journals,quotes,observed_at):
         if not isinstance(item,dict) or set(item)!={'instrument','candle'}:raise ValueError('Invalid quote evidence')
         instrument=Instrument.model_validate(item['instrument']);bar=Candle.model_validate(item['candle'])
         if (instrument.instrument_id not in SYMBOLS.values() or instrument.market_type!='SPOT' or instrument.quote!='USDT'
-            or instrument.exchange!='binance' or instrument.instrument_id!=f'binance:spot:{instrument.base}-USDT'
+            or instrument.exchange!=PROVIDER or instrument.instrument_id!=f'{PROVIDER}:spot:{instrument.base}-USDT'
             or instrument.native_symbol!=instrument.base+'USDT' or instrument.base not in ['BTC','ETH']
-            or bar.instrument_id!=instrument.instrument_id or bar.timeframe!='1m' or not bar.is_closed or bar.source!='binance.public'
+            or bar.instrument_id!=instrument.instrument_id or bar.timeframe!='1m' or not bar.is_closed or bar.source!=SOURCE
             or instrument.instrument_id in prices or not timedelta(0)<=now-bar.close_time<=timedelta(seconds=75)):
             raise ValueError('Unsupported/stale/noncanonical quote evidence')
         prices[instrument.instrument_id]=(instrument,bar.close);times.add(bar.close_time)

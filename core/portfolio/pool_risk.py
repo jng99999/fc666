@@ -15,7 +15,8 @@ def validate(value):
     if not isinstance(value,dict) or set(value)!=KEYS or value['version']!=VERSION:raise ValueError('Exact pool risk policy required')
     if type(value['pool_id']) is not str or not 1<=len(value['pool_id'])<=128:raise ValueError('Bounded pool identity required')
     caps=value['max_quantity_by_instrument']
-    if not isinstance(caps,dict) or not 1<=len(caps)<=2 or any(key not in ['binance:spot:BTC-USDT','binance:spot:ETH-USDT'] for key in caps):raise ValueError('Supported instrument quantity caps required')
+    from core.exchange.public import SYMBOLS
+    if not isinstance(caps,dict) or not 1<=len(caps)<=2 or any(key not in SYMBOLS.values() for key in caps):raise ValueError('Supported instrument quantity caps required')
     for number in caps.values():execution.decimal(number,asset=True)
     execution.decimal(value['min_available_quote'])
     if type(value['max_active_requests']) is not int or not 1<=value['max_active_requests']<=100:raise ValueError('Bounded active request cap required')

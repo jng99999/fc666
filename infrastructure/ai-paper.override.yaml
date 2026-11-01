@@ -1,0 +1,32 @@
+services:
+  directional:
+    image: fc666-directional-test:ai-paper-20261102
+    env_file:
+      - /opt/fc666-directional-test/config/directional-ai.env
+    depends_on:
+      research-worker:
+        condition: service_healthy
+  research-worker:
+    image: fc666-research-worker:20261102
+    env_file:
+      - /opt/fc666-directional-test/config/research-worker.env
+    environment:
+      LIVE_TRADING: "false"
+    expose: ["8000"]
+    read_only: true
+    tmpfs: ["/tmp:rw,nosuid,nodev,size=128m"]
+    restart: unless-stopped
+    init: true
+    mem_limit: 1g
+    cpus: 0.5
+    pids_limit: 64
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: ["ALL"]
+    logging:
+      driver: json-file
+      options: {max-size: "10m", max-file: "3"}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/ready',timeout=5)"]
+      interval: 20s
+      timeout: 6s
+      retries: 3

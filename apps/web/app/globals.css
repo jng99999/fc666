@@ -28,4 +28,5 @@
 
 @media(max-width:600px){.research-page header{height:auto;min-height:64px;flex-wrap:wrap;padding:10px 0}.research-page header strong{font-size:16px}}
 .paper-page .research-metrics strong{overflow-wrap:anywhere;font-variant-numeric:tabular-nums}.paper-page time{overflow-wrap:anywhere}
+.matrix-options{display:flex;flex-wrap:wrap;gap:12px}.matrix-options label,.matrix-variant>label{display:flex;align-items:center;gap:8px}.matrix-options input,.matrix-variant>label input{width:auto}.matrix-variant{padding:12px 0;border-bottom:1px solid var(--border)}.matrix-variant .research-fields{margin-top:8px}.research-workbench fieldset{min-width:0}
 @media(max-width:600px){.terminal-top nav{gap:5px}.terminal-top .mode-pill{display:none}}
