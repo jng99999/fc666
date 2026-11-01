@@ -65,10 +65,10 @@ body.approved-ui .workspace-profile { display:flex; align-items:center; gap:8px;
 body.approved-ui .workspace-profile>.workspace-icon { width:14px; }
 body.approved-ui .workspace-avatar { display:grid; place-items:center; width:34px; height:34px; border:2px solid #fff; border-radius:50%; color:#216df1; font-weight:700; background:linear-gradient(140deg,#d4e7ff,#edf5ff); }
 body.approved-ui .approved-workspace-navigation {
-  grid-column:1; grid-row:2; align-self:start; position:sticky; top:22px;
+  grid-column:1; grid-row:2; align-self:start; position:fixed; top:86px;
   display:flex; flex-direction:column; align-items:center; gap:22px;
   width:64px; min-width:0; min-height:0; height:auto;
-  inset-inline:auto; bottom:auto; padding:0; margin:0; border:0; border-radius:0;
+  inset-inline:auto; left:max(26px,calc((100% - 1880px)/2 + 26px)); bottom:auto; padding:0; margin:0; border:0; border-radius:0;
   background:none; box-shadow:none; backdrop-filter:none; transform:none; z-index:40;
 }
 body.approved-ui .workspace-primary-nav {
@@ -129,16 +129,18 @@ body.approved-ui :where(.gold-card,.health,.watch-panel,.depth-panel,.chart-pane
 @media(min-width:1680px) {
   body.apple-ui.approved-ui { padding-top:28px; row-gap:24px; }
   body.approved-ui .approved-workspace-header { height:54px; }
+  body.approved-ui .approved-workspace-navigation { top:106px; }
 }
 @media(min-width:761px) and (max-width:1100px) {
   body.apple-ui.approved-ui { padding:16px; column-gap:16px; }
+  body.approved-ui .approved-workspace-navigation { top:84px; left:16px; }
   body.approved-ui .workspace-search-trigger { min-width:230px; }
   body.approved-ui .approved-workspace-header-tools { gap:12px; }
   body.approved-ui .workspace-profile>span:not(.workspace-avatar) { display:none; }
 }
-@media(min-width:761px) and (max-height:600px) {
-  body.approved-ui .approved-workspace-navigation { top:12px; gap:8px; }
-  body.approved-ui .workspace-primary-nav { gap:4px; padding:6px; }
+@media(min-width:761px) and (max-height:640px) {
+  body.approved-ui .approved-workspace-navigation { max-height:calc(100dvh - 120px); gap:8px; overflow-y:auto; scrollbar-width:thin; }
+  body.approved-ui .workspace-primary-nav { flex-shrink:0; gap:4px; padding:6px; }
   body.approved-ui .workspace-primary-nav>a { min-height:42px; gap:2px; font-size:10px; }
   body.approved-ui .workspace-primary-nav>a .workspace-icon { width:18px; height:18px; }
   body.approved-ui .workspace-settings { width:32px; height:32px; }
