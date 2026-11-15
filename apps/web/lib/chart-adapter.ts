@@ -1,7 +1,8 @@
 import {createChart,CandlestickSeries,HistogramSeries,LineSeries,ColorType,CrosshairMode,createSeriesMarkers,type ISeriesApi,type UTCTimestamp} from "lightweight-charts";
 import type {Candle,IndicatorRow} from "./market";
+import {chartCoordinates,type ChartCoordinates} from './chart-coordinates';
 export type ChartBar = Pick<Candle,"open_time"|"open"|"high"|"low"|"close"|"volume">;
-export interface ChartAdapter {setMode?:(mode:'candles'|'line')=>void;setIndicators:(rows:IndicatorRow[],visible:boolean)=>void;setHistory:(bars:ChartBar[])=>void;update:(bar:ChartBar)=>void;dispose:()=>void;fit:()=>void;}
+export interface ChartAdapter {coordinates:ChartCoordinates;setMode?:(mode:'candles'|'line')=>void;setIndicators:(rows:IndicatorRow[],visible:boolean)=>void;setHistory:(bars:ChartBar[])=>void;update:(bar:ChartBar)=>void;dispose:()=>void;fit:()=>void;}
 const WINDOW=5000;
 // Float conversion is confined to rendering; financial data keeps decimal strings.
 const point=(bar:ChartBar)=>({time:(Date.parse(bar.open_time)/1000) as UTCTimestamp,open:Number(bar.open),high:Number(bar.high),low:Number(bar.low),close:Number(bar.close)});
@@ -45,7 +46,9 @@ export function createChartAdapter(container:HTMLElement,options?:{theme?:'appro
     if(range.from<100&&start>0){const first=Math.max(0,start-WINDOW/2);render(first,Math.min(history.length,first+WINDOW));}
     else if(range.to>end-start-100&&end<history.length){const until=Math.min(history.length,end+WINDOW/2);render(Math.max(0,until-WINDOW),until);}
   });
+  const coordinates=chartCoordinates(chart,prices,container,()=>history.slice(start,end).map(b=>Date.parse(b.open_time)));
   return {
+    coordinates,
     setMode:mode=>{prices.applyOptions({visible:mode==='candles'});trend.applyOptions({visible:mode==='line'});},
     setIndicators:(rows,visible)=>{indicators=rows;overlayVisible=visible;configurePanes(visible);renderIndicators();},
     setHistory:bars=>{
@@ -64,6 +67,6 @@ export function createChartAdapter(container:HTMLElement,options?:{theme?:'appro
       if(history.length-start>WINDOW)render(history.length-WINDOW,history.length);
       else {prices.update(value);trend.update({time:value.time,value:Number(bar.close)});volumes.update(volume(bar));end=history.length;}
     },
-    fit:()=>chart.timeScale().fitContent(),dispose:()=>chart.remove(),
+    fit:()=>chart.timeScale().fitContent(),dispose:()=>{coordinates.dispose();chart.remove();},
   };
 }

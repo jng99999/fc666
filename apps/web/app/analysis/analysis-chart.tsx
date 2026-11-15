@@ -1,14 +1,18 @@
 'use client';
-import {useEffect,useRef} from 'react';
+import {useEffect,useMemo,useRef,useState} from 'react';
 import {createChart,CandlestickSeries,HistogramSeries,LineSeries,AreaSeries,ColorType,CrosshairMode,type UTCTimestamp,type LineWidth} from 'lightweight-charts';
 import type {Candle} from '../../lib/market';
 import type {IndicatorLine} from './analysis-indicators';
+import {chartCoordinates,type ChartCoordinates} from '../../lib/chart-coordinates';
+import ChartWorkbench from '../../components/chart-workbench';
 
 type ChartData={bars:Candle[];lines:IndicatorLine[]};
 export default function AnalysisChart({bars,lines,mode,resetKey=0,onInspect,showVolume=false,onPaneLayout,pricePrecision}:ChartData&{mode:'candles'|'line';resetKey?:number;onInspect?:(index:number|null)=>void;showVolume?:boolean;onPaneLayout?:(top:number)=>void;pricePrecision?:number}){
  const host=useRef<HTMLDivElement>(null),renderer=useRef<{update:(data:ChartData)=>void;reset:()=>void}|null>(null),inspect=useRef(onInspect),paneLayout=useRef(onPaneLayout);
  inspect.current=onInspect;
  paneLayout.current=onPaneLayout;
+ const [coordinates,setCoordinates]=useState<ChartCoordinates|null>(null);
+ const priceBars=useMemo(()=>bars.filter(b=>b.is_closed).map(b=>({time:Date.parse(b.open_time),closedAt:Date.parse(b.close_time),open:Number(b.open),high:Number(b.high),low:Number(b.low),close:Number(b.close),volume:Number(b.volume)})),[bars]);
  const configuration=lines.map(line=>`${line.key}:${line.label}:${line.pane}`).join('|');
  useEffect(()=>{
   if(!host.current)return;
@@ -24,9 +28,10 @@ export default function AnalysisChart({bars,lines,mode,resetKey=0,onInspect,show
   for(const line of series)for(const value of line.guides??[])line.series.createPriceLine({price:value,color:line.key==='rsi'?'#d8c9f2':'#acb8ca',lineWidth:1,lineStyle:2,axisLabelVisible:true,axisLabelColor:'#f3eefa',axisLabelTextColor:'#9273bc',title:''});
   if(lines.some(line=>line.key==='rsi'))chart.priceScale('right',subPane).applyOptions({scaleMargins:{top:.02,bottom:.02}});
   let layoutFrame=0;
-  const resize=()=>{const width=element.clientWidth,height=element.clientHeight;if(!width||!height)return;chart.resize(width,height);if(volume)chart.panes()[1]?.setHeight(43);if(lines.some(line=>line.pane==='sub'))chart.panes()[subPane]?.setHeight(window.innerWidth<=760?68:102);cancelAnimationFrame(layoutFrame);layoutFrame=requestAnimationFrame(()=>paneLayout.current?.(chart.panes()[0].getHeight()+6));};
+  const resize=()=>{const width=element.clientWidth,height=element.clientHeight;if(!width||!height)return;chart.resize(width,height);if(volume)chart.panes()[1]?.setHeight(43);if(lines.some(line=>line.pane==='sub'))chart.panes()[subPane]?.setHeight(window.innerWidth<=760?68:102);cancelAnimationFrame(layoutFrame);layoutFrame=requestAnimationFrame(()=>paneLayout.current?.(element.getBoundingClientRect().top-(element.closest('.quote-chart-wrap')?.getBoundingClientRect().top??element.getBoundingClientRect().top)+chart.panes()[0].getHeight()+6));};
   const observer=new ResizeObserver(resize);observer.observe(element);resize();
   let initial=true,currentBars:Candle[]=[];
+  const bridge=chartCoordinates(chart,(candles??trend)!,element,()=>currentBars.map(b=>Date.parse(b.open_time)));setCoordinates(bridge);
   const reset=()=>{const count=window.innerWidth<=760?65:105;chart.timeScale().setVisibleLogicalRange({from:Math.max(0,currentBars.length-count),to:currentBars.length+3});};
   chart.subscribeCrosshairMove(event=>{
    if(typeof event.time!=='number'){inspect.current?.(null);return;}
@@ -49,11 +54,11 @@ export default function AnalysisChart({bars,lines,mode,resetKey=0,onInspect,show
    }
    if(initial){reset();initial=false;}
   }};
-  return()=>{renderer.current=null;cancelAnimationFrame(layoutFrame);observer.disconnect();chart.remove();};
+  return()=>{renderer.current=null;bridge.dispose();cancelAnimationFrame(layoutFrame);observer.disconnect();chart.remove();};
  // Indicator configuration rebuilds the panes; a market-data update preserves the viewport.
  // eslint-disable-next-line react-hooks/exhaustive-deps
  },[configuration,mode,showVolume,pricePrecision]);
  useEffect(()=>{renderer.current?.update({bars,lines});},[bars,lines,configuration,mode,showVolume,pricePrecision]);
  useEffect(()=>{renderer.current?.reset();},[resetKey]);
- return <div ref={host} className="analysis-chart quote-chart-host" data-testid="analysis-chart" aria-label={`闭合${mode==='candles'?'K线':'收盘走势'}${showVolume?'、成交量':''}${lines.some(line=>line.pane==='sub')?'与技术副图':''}`}/>;
+ return <ChartWorkbench bars={priceBars} context={{instrumentId:bars[0]?.instrument_id??'UNAVAILABLE',source:bars[0]?.source??'unavailable',timeframe:bars[0]?.timeframe??'1h',volumeKind:'trade'}} coordinates={coordinates}><div ref={host} className="analysis-chart quote-chart-host" data-testid="analysis-chart" aria-label={`闭合${mode==='candles'?'K线':'收盘走势'}${showVolume?'、成交量':''}${lines.some(line=>line.pane==='sub')?'与技术副图':''}`}/></ChartWorkbench>;
 }
