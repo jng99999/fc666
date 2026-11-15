@@ -2,7 +2,7 @@
 from datetime import datetime, timezone
 from decimal import Decimal
 from pathlib import Path
-from threading import Lock
+from threading import RLock
 import sqlite3
 import time
 
@@ -14,6 +14,17 @@ from core.gold.market import Quote as GoldQuote, sampled_bars
 from core.paper.directional import Quote, aware
 from core.paper.directional_market import source_for, INSTRUMENTS
 from core.paper.price_action_rules import RuleBar, INTERVALS
+from core.backtest.spot import digest
+
+
+def _empty_state():
+    return {'bars': (), 'error': False, 'checked_at': None, 'error_reason': None,
+            'revision_detected_at': None, 'resynchronized_at': None,
+            'resume_after': None, 'old_sha256': None, 'new_sha256': None}
+
+
+def _snapshot_sha(bars):
+    return digest([bar.model_dump(mode='json') for bar in bars])
 
 
 def bar_source(instrument):
@@ -28,8 +39,9 @@ class RuleMarket:
     def __init__(self, path):
         self.path = Path(path)
         self.path.parent.mkdir(parents=True, exist_ok=True)
-        self.lock = Lock()
+        self.lock = RLock()
         self.cache = {}
+        self.candidates = {}
         self.attempts = {}
         self.client = httpx.Client(base_url='https://api.bitget.com', timeout=3, follow_redirects=False)
         self.public = BitgetPublic(self.client)
@@ -91,12 +103,17 @@ class RuleMarket:
                        open_time=row.open_time, close_time=row.close_time, open=row.open,
                        high=row.high, low=row.low, close=row.close, volume=row.volume, is_closed=row.is_closed) for row in candles]
 
-    def refresh(self, instrument, timeframe, now, provider=None):
+    def refresh(self, instrument, timeframe, now, provider=None, *, recovery_after=None, on_state=None):
         key = (instrument, timeframe)
         now = aware(now)
+        recovery_after = None if recovery_after is None else aware(recovery_after)
+        if recovery_after is not None and recovery_after > now:
+            raise ValueError('Recovery watermark cannot be in the future')
         with self.lock:
             previous = self.cache.get(key)
-            if provider is None:
+            forced = recovery_after is not None and (previous is None or previous['resynchronized_at'] is None
+                                                       or previous['resynchronized_at'] <= recovery_after)
+            if provider is None and not forced:
                 if time.monotonic() - self.attempts.get(key, -100) < 5:
                     return
                 if previous and not previous['error'] and previous['bars']:
@@ -114,16 +131,76 @@ class RuleMarket:
                 raise ValueError('Closed history product/source/clock mismatch')
             if any(a.open_time >= b.open_time or a.close_time > b.open_time for a, b in zip(bars, bars[1:])):
                 raise ValueError('Closed history must be strictly ordered')
-            if previous and previous['bars']:
-                old = {b.open_time: b for b in previous['bars']}
-                if any(b.open_time in old and old[b.open_time] != b for b in bars):
-                    raise ValueError('A previously observed closed candle was revised')
-            value = {'bars': bars, 'error': False, 'checked_at': now}
         except Exception:
-            value = {'bars': previous['bars'] if previous else (), 'error': True, 'checked_at': now}
+            bars = None
         with self.lock:
+            # A slower concurrent fetch cannot overwrite a newer published state.
+            if self.cache.get(key) is not previous:
+                return
+            value = {**_empty_state(), **(previous or {}), 'checked_at': now}
+            baseline = value['bars']
+            candidate = self.candidates.get(key)
+            changed = set()
+            if bars is None or (not bars and baseline):
+                value.update(error=True, error_reason='HISTORY_UNAVAILABLE')
+                if candidate is not None:
+                    # A failed/invalid intervening response breaks consecutive confirmation.
+                    candidate = {**candidate, 'bars': None, 'sha256': None, 'checked_at': now}
+            else:
+                old = {row.open_time: row for row in baseline}
+                fresh = {row.open_time: row for row in bars}
+                changed = {stamp for stamp in old.keys() & fresh.keys() if old[stamp] != fresh[stamp]}
+                sha = _snapshot_sha(bars)
+                if changed or candidate is not None or forced:
+                    revised_times = changed | (candidate['revised_times'] if candidate is not None else set())
+                    original_returned = bool(candidate is not None and candidate['revised_times']
+                        and candidate['revised_times'] <= fresh.keys() and not changed
+                        and (recovery_after is None or now > recovery_after))
+                    confirmed = bool(candidate is not None and candidate['bars'] is not None and bars
+                        and candidate['sha256'] == sha and now > candidate['checked_at']
+                        and (recovery_after is None or now > recovery_after))
+                    if original_returned:
+                        # Previously verified original data needs no new adopted baseline.
+                        value.update(bars=bars, error=False, error_reason=None, resynchronized_at=now,
+                                     resume_after=bars[-1].close_time)
+                        candidate = None
+                    elif confirmed:
+                        value.update(bars=bars, error=False, error_reason=None, resynchronized_at=now,
+                                     resume_after=bars[-1].close_time, new_sha256=sha)
+                        candidate = None
+                    else:
+                        first_revision = bool(changed and candidate is None)
+                        if first_revision:
+                            value.update(revision_detected_at=now, old_sha256=_snapshot_sha(baseline))
+                        elif forced and value['revision_detected_at'] is None:
+                            value['revision_detected_at'] = now
+                        value.update(error=True, error_reason='HISTORY_REVISED' if first_revision else 'HISTORY_RESYNC_PENDING')
+                        if bars:
+                            value['new_sha256'] = sha
+                        candidate = {'bars': bars or None, 'sha256': sha if bars else None,
+                                     'checked_at': now, 'revised_times': revised_times}
+                else:
+                    value.update(bars=bars, error=False, error_reason=None)
             self.cache[key] = value
+            if candidate is None:
+                self.candidates.pop(key, None)
+            else:
+                self.candidates[key] = candidate
+            if on_state is not None:
+                try:
+                    # Keep publication and durable guard callback under the same
+                    # reentrant lock held by the quote-admission guard.
+                    on_state(value.copy())
+                except BaseException:
+                    # A failed durable write must never expose a tradable state.
+                    self.cache[key] = {**value, 'bars': baseline, 'error': True,
+                        'resynchronized_at': previous['resynchronized_at'] if previous else None,
+                        'error_reason': value['error_reason'] or ('HISTORY_RESYNC_PENDING' if bars else 'HISTORY_UNAVAILABLE')}
+                    if bars:
+                        self.candidates[key] = {'bars': bars, 'sha256': _snapshot_sha(bars),
+                            'checked_at': now, 'revised_times': changed}
+                    raise
 
     def read(self, instrument, timeframe):
         with self.lock:
-            return self.cache.get((instrument, timeframe), {'bars': (), 'error': False, 'checked_at': None}).copy()
+            return self.cache.get((instrument, timeframe), _empty_state()).copy()

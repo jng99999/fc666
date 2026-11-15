@@ -301,3 +301,206 @@ def test_public_clock_mismatch_and_transport_errors_are_error_states_not_empty_s
     instance.refresh('BTCUSDT', '1m', now)
     assert public.server_calls == 2
     assert instance.read('BTCUSDT', '1m')['error'] is True
+
+
+def revision_scene(instance):
+    original = [rule_bar(i) for i in range(3)]
+    revised = original[:-1] + [rule_bar(2, close=D('100.2'))]
+    now = START + 3 * MINUTE
+    instance.refresh('BTCUSDT', '1m', now, provider=lambda *args: original)
+    instance.refresh('BTCUSDT', '1m', now + timedelta(seconds=1), provider=lambda *args: revised)
+    return now, original, revised
+
+
+def test_revised_baseline_requires_later_identical_complete_snapshot_and_preserves_metadata(market):
+    instance, _, _, _ = market
+    now, original, revised = revision_scene(instance)
+    first = instance.read('BTCUSDT', '1m')
+    assert first['error_reason'] == 'HISTORY_REVISED'
+    assert first['bars'] == tuple(original)
+    assert first['old_sha256'] == rule_market._snapshot_sha(original)
+    assert first['new_sha256'] == rule_market._snapshot_sha(revised)
+    assert len(first['old_sha256']) == len(first['new_sha256']) == 64
+    assert first['revision_detected_at'] == now + timedelta(seconds=1)
+    assert first['resume_after'] is None and first['resynchronized_at'] is None
+    instance.refresh('BTCUSDT', '1m', now + timedelta(seconds=2), provider=lambda *args: revised)
+    restored = instance.read('BTCUSDT', '1m')
+    assert restored['error'] is False and restored['error_reason'] is None
+    assert restored['bars'] == tuple(revised)
+    assert restored['resume_after'] == revised[-1].close_time
+    assert restored['resynchronized_at'] == now + timedelta(seconds=2)
+    instance.refresh('BTCUSDT', '1m', now + MINUTE, provider=lambda *args: revised + [rule_bar(3)])
+    later = instance.read('BTCUSDT', '1m')
+    for key in ['old_sha256', 'new_sha256', 'revision_detected_at', 'resynchronized_at', 'resume_after']:
+        assert later[key] == restored[key], 'normal data advancement retains revision diagnostics'
+
+
+def test_same_checked_time_cannot_confirm_a_revised_snapshot(market):
+    instance, _, _, _ = market
+    now, _, revised = revision_scene(instance)
+    same = now + timedelta(seconds=1)
+    instance.refresh('BTCUSDT', '1m', same, provider=lambda *args: revised)
+    assert instance.read('BTCUSDT', '1m')['error'] is True
+    assert instance.read('BTCUSDT', '1m')['error_reason'] == 'HISTORY_RESYNC_PENDING'
+    instance.refresh('BTCUSDT', '1m', same + timedelta(microseconds=1), provider=lambda *args: revised)
+    assert instance.read('BTCUSDT', '1m')['error'] is False
+
+
+def test_candidate_changes_never_confirm_until_two_consecutive_valid_snapshots_agree(market):
+    instance, _, _, _ = market
+    now, original, revised = revision_scene(instance)
+    changed = original[:-1] + [rule_bar(2, close=D('100.3'))]
+    for seconds, rows in [(2, changed), (3, revised)]:
+        instance.refresh('BTCUSDT', '1m', now + timedelta(seconds=seconds), provider=lambda *args: rows)
+        state = instance.read('BTCUSDT', '1m')
+        assert state['error'] and state['error_reason'] == 'HISTORY_RESYNC_PENDING'
+        assert state['bars'] == tuple(original)
+        assert state['new_sha256'] == rule_market._snapshot_sha(rows)
+    instance.refresh('BTCUSDT', '1m', now + timedelta(seconds=4), provider=lambda *args: revised)
+    assert instance.read('BTCUSDT', '1m')['error'] is False
+
+
+@pytest.mark.parametrize('invalid', ['wrong_source', 'future', 'empty', 'transport'])
+def test_invalid_intervening_fetch_breaks_candidate_confirmation(market, invalid):
+    instance, _, _, _ = market
+    now, original, revised = revision_scene(instance)
+    def failure(*args):
+        if invalid == 'transport':
+            raise RuntimeError('synthetic unavailable HTTP')
+        if invalid == 'empty':
+            return []
+        if invalid == 'future':
+            return revised + [rule_bar(3)]
+        return revised[:-1] + [rule_bar(2, source='SYNTHETIC_WRONG_SOURCE')]
+    instance.refresh('BTCUSDT', '1m', now + timedelta(seconds=2), provider=failure)
+    failed = instance.read('BTCUSDT', '1m')
+    assert failed['error'] and failed['bars'] == tuple(original)
+    assert failed['error_reason'] == 'HISTORY_UNAVAILABLE'
+    instance.refresh('BTCUSDT', '1m', now + timedelta(seconds=3), provider=lambda *args: revised)
+    assert instance.read('BTCUSDT', '1m')['error'] is True
+    instance.refresh('BTCUSDT', '1m', now + timedelta(seconds=4), provider=lambda *args: revised)
+    assert instance.read('BTCUSDT', '1m')['error'] is False
+
+
+def test_window_boundary_change_requires_a_second_whole_window_not_overlap_stitching(market):
+    instance, _, _, _ = market
+    now, original, revised = revision_scene(instance)
+    next_window = revised[1:] + [rule_bar(3)]
+    instance.refresh('BTCUSDT', '1m', now + MINUTE, provider=lambda *args: next_window)
+    assert instance.read('BTCUSDT', '1m')['error'] is True
+    assert instance.read('BTCUSDT', '1m')['bars'] == tuple(original)
+    instance.refresh('BTCUSDT', '1m', now + MINUTE + timedelta(seconds=1), provider=lambda *args: next_window)
+    restored = instance.read('BTCUSDT', '1m')
+    assert restored['bars'] == tuple(next_window)
+    assert restored['resume_after'] == now + MINUTE
+
+
+def test_return_to_original_verified_baseline_restores_without_adopting_revised_data(market):
+    instance, _, _, _ = market
+    now, original, _ = revision_scene(instance)
+    rejected = instance.read('BTCUSDT', '1m')
+    instance.refresh('BTCUSDT', '1m', now + timedelta(seconds=2), provider=lambda *args: original)
+    restored = instance.read('BTCUSDT', '1m')
+    assert restored['error'] is False and restored['bars'] == tuple(original)
+    assert restored['resume_after'] == original[-1].close_time
+    assert restored['resynchronized_at'] == now + timedelta(seconds=2)
+    assert restored['old_sha256'] == rejected['old_sha256'] and restored['new_sha256'] == rejected['new_sha256']
+
+
+def test_missing_revised_row_does_not_masquerade_as_return_to_original_baseline(market):
+    instance, _, _, _ = market
+    now, original, _ = revision_scene(instance)
+    truncated = original[:2]
+    instance.refresh('BTCUSDT', '1m', now + timedelta(seconds=2), provider=lambda *args: truncated)
+    assert instance.read('BTCUSDT', '1m')['error'] is True
+
+
+def test_durable_recovery_watermark_forces_two_complete_snapshots_after_process_restart(market):
+    instance, _, _, reopen = market
+    now, _, revised = revision_scene(instance)
+    restarted = reopen()
+    for seconds in [2, 3]:
+        restarted.refresh('BTCUSDT', '1m', now + timedelta(seconds=seconds),
+            provider=lambda *args: revised, recovery_after=now)
+        state = restarted.read('BTCUSDT', '1m')
+        assert state['error'] is (seconds == 2)
+    assert state['resume_after'] == revised[-1].close_time
+    assert state['resynchronized_at'] == now + timedelta(seconds=3)
+    restarted.refresh('BTCUSDT', '1m', now + MINUTE,
+        provider=lambda *args: revised + [rule_bar(3)], recovery_after=now)
+    assert restarted.read('BTCUSDT', '1m')['error'] is False, 'same persisted watermark does not repeatedly quarantine'
+
+
+def test_non_aligned_detection_time_requires_confirmation_not_a_later_candle(market):
+    instance, _, _, _ = market
+    now = START + 3 * MINUTE
+    watermark = now + timedelta(seconds=20)
+    rows = [rule_bar(i) for i in range(3)]
+    for seconds in [30, 31]:
+        instance.refresh('BTCUSDT', '1m', now + timedelta(seconds=seconds),
+            provider=lambda *args: rows, recovery_after=watermark)
+        assert instance.read('BTCUSDT', '1m')['error'] is (seconds == 30)
+    restored = instance.read('BTCUSDT', '1m')
+    assert restored['error'] is False and restored['resume_after'] == now
+    assert restored['resynchronized_at'] == now + timedelta(seconds=31)
+    instance.refresh('BTCUSDT', '1m', now + timedelta(seconds=32),
+        provider=lambda *args: rows, recovery_after=watermark)
+    assert instance.read('BTCUSDT', '1m')['error'] is False
+    assert instance.read('BTCUSDT', '1m')['resynchronized_at'] == restored['resynchronized_at']
+
+
+def test_original_baseline_return_clears_wall_clock_recovery_without_repeated_quarantine(market):
+    instance, _, _, _ = market
+    now, original, _ = revision_scene(instance)
+    detected = now + timedelta(seconds=1)
+    instance.refresh('BTCUSDT', '1m', now + timedelta(seconds=2),
+        provider=lambda *args: original, recovery_after=detected)
+    restored = instance.read('BTCUSDT', '1m')
+    assert restored['error'] is False and restored['resume_after'] == now
+    assert restored['resynchronized_at'] > detected
+    instance.refresh('BTCUSDT', '1m', now + timedelta(seconds=3),
+        provider=lambda *args: original, recovery_after=detected)
+    assert instance.read('BTCUSDT', '1m')['error'] is False
+    assert instance.read('BTCUSDT', '1m')['resynchronized_at'] == restored['resynchronized_at']
+
+
+@pytest.mark.parametrize('exception', [RuntimeError('synthetic durable guard failure'), SystemExit('synthetic stop')])
+def test_state_callback_failure_is_rethrown_and_never_publishes_tradable_recovery(market, exception):
+    instance, _, _, _ = market
+    now, original, revised = revision_scene(instance)
+    seen = []
+    def callback(value):
+        assert instance.read('BTCUSDT', '1m') == value  # Reentrant lock; visible state is staged atomically.
+        seen.append(value)
+        raise exception
+    with pytest.raises(type(exception)):
+        instance.refresh('BTCUSDT', '1m', now + timedelta(seconds=2),
+                         provider=lambda *args: revised, on_state=callback)
+    isolated = instance.read('BTCUSDT', '1m')
+    assert seen[0]['error'] is False
+    assert isolated['error'] is True and isolated['bars'] == tuple(original)
+    assert isolated['error_reason'] == 'HISTORY_RESYNC_PENDING'
+    assert isolated['resynchronized_at'] is None
+    published = []
+    instance.refresh('BTCUSDT', '1m', now + timedelta(seconds=3),
+                     provider=lambda *args: revised, on_state=published.append)
+    assert published[-1]['error'] is False and instance.read('BTCUSDT', '1m')['error'] is False
+
+
+def test_first_snapshot_callback_failure_does_not_leave_any_executable_bars(market):
+    instance, _, _, _ = market
+    now = START + 3 * MINUTE
+    rows = [rule_bar(i) for i in range(3)]
+    def failed(value):
+        raise RuntimeError('synthetic initial durable-write error')
+    with pytest.raises(RuntimeError):
+        instance.refresh('BTCUSDT', '1m', now, provider=lambda *args: rows, on_state=failed)
+    assert instance.read('BTCUSDT', '1m')['error'] is True
+    assert instance.read('BTCUSDT', '1m')['bars'] == ()
+
+
+def test_initial_read_exposes_all_recovery_metadata_with_neutral_defaults(market):
+    instance, _, _, _ = market
+    initial = instance.read('BTCUSDT', '1m')
+    for key in ['error_reason', 'revision_detected_at', 'resynchronized_at', 'resume_after', 'old_sha256', 'new_sha256']:
+        assert key in initial and initial[key] is None

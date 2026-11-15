@@ -1,5 +1,5 @@
 services:
   directional:
-    image: fc666-directional-test:closed-rules-20261115
+    image: fc666-directional-test:closed-rules-recovery-20261116
     environment:
       LIVE_TRADING: "false"

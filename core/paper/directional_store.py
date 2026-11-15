@@ -177,12 +177,14 @@ class Store:
         try:
             checkpoint = self._rule_state(db, state['account_id'])
             result['rule_analysis'] = checkpoint.get('analysis')
+            result['rule_history'] = checkpoint.get('history_barrier')
         except (ValueError, KeyError, TypeError):
             # A corrupt indicator checkpoint blocks new rule decisions, never
             # the existing financial ledger's protective quote transition.
             result['rule_analysis'] = {'rule_version': RULE_VERSION, 'state': 'UNAVAILABLE', 'samples': 0,
                 'required': RULE_REQUIRED, 'target': None, 'available_at': None,
                 'reason': 'RULE_CHECKPOINT_INVALID', 'evidence': {}}
+            result['rule_history'] = None
         return result
 
     def _rule_state(self, db, account_id):
@@ -205,10 +207,118 @@ class Store:
         for stamp in (value.get('cursor'), analysis.get('available_at')):
             if stamp is not None:
                 aware_stamp(stamp)
+        barrier = value.get('history_barrier')
+        if barrier is not None:
+            if not isinstance(barrier, dict) or type(barrier.get('blocked')) is not bool:
+                raise ValueError('Rule history barrier shape failed')
+            for key in ('detected_at', 'resynchronized_at', 'resume_after'):
+                if barrier.get(key) is not None:
+                    aware_stamp(barrier[key])
         if value.get('cursor') is not None and (not isinstance(value.get('bar_sha256'), str)
                 or len(value['bar_sha256']) != 64 or any(c not in '0123456789abcdef' for c in value['bar_sha256'])):
             raise ValueError('Rule checkpoint cursor hash failed')
         return value
+
+    def rule_history_guard(self, account_id, history, *, now, restart_pending=frozenset()):
+        """Persist revision fences and cancel only unfilled rule entry risk.
+
+        The collector and quote worker call this while holding the history lock.
+        Indicator persistence faults halt new risk; existing protections survive.
+        """
+        now = aware(now)
+        with self.transaction() as db:
+            state, engine = self._load(db, account_id)
+            if state['metadata'].get('strategy') != 'PRICE_ACTION':
+                return self._view(db, state, engine)
+            invalid = False
+            try:
+                checkpoint = self._rule_state(db, account_id)
+            except (ValueError, KeyError, TypeError):
+                invalid, checkpoint = True, {}
+            barrier = dict(checkpoint.get('history_barrier') or {})
+            previous_barrier = dict(barrier)
+            detected = history.get('revision_detected_at')
+            synced = history.get('resynchronized_at')
+            if detected is not None:
+                detected = aware(detected)
+                old = aware_stamp(barrier['detected_at']) if barrier.get('detected_at') else None
+                if old is None or detected > old:
+                    barrier.update(blocked=True, detected_at=detected.isoformat(),
+                                   old_sha256=history.get('old_sha256') or barrier.get('old_sha256'),
+                                   new_sha256=history.get('new_sha256') or barrier.get('new_sha256'))
+                elif detected == old and history.get('new_sha256'):
+                    barrier['new_sha256'] = history['new_sha256']
+                if synced is not None:
+                    synced, resume = aware(synced), aware(history['resume_after'])
+                    old_sync = aware_stamp(barrier['resynchronized_at']) if barrier.get('resynchronized_at') else None
+                    if synced >= detected and (old_sync is None or synced > old_sync):
+                        old_resume = aware_stamp(barrier['resume_after']) if barrier.get('resume_after') else None
+                        barrier.update(blocked=False, resynchronized_at=synced.isoformat(),
+                                       resume_after=max(resume, old_resume).isoformat() if old_resume else resume.isoformat())
+            reason = None
+            if invalid:
+                reason = 'RULE_CHECKPOINT_INVALID'
+            elif history.get('error'):
+                reason = history.get('error_reason') or 'HISTORY_UNAVAILABLE'
+            elif barrier.get('blocked'):
+                reason = 'HISTORY_RESYNC_PENDING'
+            elif history.get('checked_at') is None:
+                reason = 'HISTORY_UNAVAILABLE'
+            pending = engine.pending
+            if pending is not None and pending.target != 'FLAT':
+                if (account_id, pending.request_id) in restart_pending:
+                    reason = reason or 'HISTORY_RESTART_RECHECK'
+                if detected is not None and engine.pending_accepted_at <= detected:
+                    reason = reason or 'HISTORY_REVISED'
+                if reason:
+                    if engine.observed_at is not None and now < engine.observed_at:
+                        raise ValueError('Observation clock cannot move backwards')
+                    engine.pending, engine.pending_accepted_at, engine.observed_at = None, None, now
+                    engine._record('ENTRY_REJECTED', {'request_id': pending.request_id, 'reason': reason,
+                        'observed_at': now.isoformat(), 'history_barrier': barrier})
+            if not invalid and barrier != previous_barrier:
+                analysis = checkpoint.get('analysis') or {'rule_version': RULE_VERSION, 'state': 'UNAVAILABLE',
+                    'samples': 0, 'required': RULE_REQUIRED, 'target': None, 'available_at': None,
+                    'reason': 'HISTORY_RESYNC_PENDING', 'evidence': {}}
+                if barrier.get('blocked'):
+                    analysis = {**analysis, 'state': 'UNAVAILABLE', 'target': None, 'reason': 'HISTORY_RESYNC_PENDING'}
+                value = {**checkpoint, 'analysis': analysis, 'history_barrier': barrier}
+                db.execute('SAVEPOINT rule_history_metadata')
+                try:
+                    db.execute('INSERT INTO directional_rule_state VALUES(?,?,?) ON CONFLICT(account_id) DO UPDATE SET payload=excluded.payload,sha256=excluded.sha256',
+                               (account_id, encoded(value), digest(value)))
+                    db.execute('RELEASE rule_history_metadata')
+                except sqlite3.Error:
+                    recovered_savepoint = False
+                    if db.in_transaction:
+                        try:
+                            db.execute('ROLLBACK TO rule_history_metadata')
+                            db.execute('RELEASE rule_history_metadata')
+                            recovered_savepoint = True
+                        except sqlite3.Error:
+                            db.rollback()
+                    if not recovered_savepoint:
+                        # RAISE(ROLLBACK), and some SQLite IO failures, erase the
+                        # whole transaction. Discard its in-memory journal and
+                        # reload the latest financial head before recording halt.
+                        db.execute('BEGIN IMMEDIATE')
+                        state, engine = self._load(db, account_id)
+                        pending = engine.pending
+                        if pending is not None and pending.target != 'FLAT':
+                            if engine.observed_at is not None and now < engine.observed_at:
+                                raise ValueError('Observation clock cannot move backwards')
+                            engine.pending, engine.pending_accepted_at, engine.observed_at = None, None, now
+                            engine._record('ENTRY_REJECTED', {'request_id': pending.request_id,
+                                'reason': 'RULE_HISTORY_STATE_UNAVAILABLE', 'observed_at': now.isoformat(),
+                                'history_barrier': barrier})
+                    if not engine.halted:
+                        engine.halted, engine.protection_only = True, True
+                        engine._record('ENTRY_STOPPED', {'reason': 'RULE_HISTORY_STATE_UNAVAILABLE',
+                                                       'protective_exits_enabled': True})
+            if engine.journal:
+                state = self._commit(db, state, engine, 'history-guard:' + now.isoformat() + ':' + str(state['revision'] + 1), 'RULE_HISTORY_GUARD',
+                                     {'now': now.isoformat(), 'history_barrier': barrier}, now)
+            return self._view(db, state, engine)
 
     def cancel_pending_risk(self, account_id, now, news=None):
         """News/TTL controls run even during a quote outage; never invent a fill."""
@@ -261,6 +371,14 @@ class Store:
                                        (encoded(value), digest(value), account_id))
                         return self._view(db, state, engine)
             outcome = 'NO_SIGNAL'
+            barrier = old.get('history_barrier') or {}
+            if proposal is not None and Proposal.model_validate(proposal).target != 'FLAT':
+                if barrier.get('blocked'):
+                    analysis['decision_status'] = 'HISTORY_RESYNC_PENDING'
+                    proposal = None
+                elif barrier.get('resume_after') and (stamp is None or aware_stamp(stamp) <= aware_stamp(barrier['resume_after'])):
+                    analysis['decision_status'] = 'HISTORY_RESYNC_WAIT_NEW_BAR'
+                    proposal = None
             if proposal is not None:
                 proposal = Proposal.model_validate(proposal)
                 if state['revision'] >= state['operation_limit']:

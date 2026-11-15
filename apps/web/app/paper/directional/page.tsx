@@ -17,7 +17,7 @@ const initial={instrument:'XAU/USD',strategy:'MANUAL',initial_cash:'10000',tick_
 function RuleAnalysis({view}:{view:DirectionalView}){
  const analysis=view.analysis&&'rule_version'in view.analysis?view.analysis:null;
  const indicators=analysis?(['ema20','ema60','rsi14','atr14'] as const).map(key=>({key,label:({ema20:'EMA20',ema60:'EMA60',rsi14:'RSI14',atr14:'ATR14'})[key],value:analysis.evidence[key]})):[];
- const conditions=analysis?.evidence.conditions&&typeof analysis.evidence.conditions==='object'&&!Array.isArray(analysis.evidence.conditions)?analysis.evidence.conditions as Record<string,unknown>:null;
+ const conditions=analysis?.state==='READY'&&analysis.evidence.conditions&&typeof analysis.evidence.conditions==='object'&&!Array.isArray(analysis.evidence.conditions)?analysis.evidence.conditions as Record<string,unknown>:null;
  return <section className={styles.analysis} aria-label="闭合K线规则运行依据"><div className={styles.cardHeading}><h3>{directionalRuleName(view.metadata.rule??'未取得冻结规则')}</h3><span className={styles.badge}>{analysis?({WARMUP:'历史预热',READY:'规则已计算',UNAVAILABLE:'行情暂不可用'})[analysis.state]:'等待后台计算'}</span></div><p>冻结周期 {view.metadata.timeframe??'—'} · 每次数量 {view.metadata.quantity??'—'} · 止损 {view.metadata.stop_loss_percent?Number(view.metadata.stop_loss_percent)*100:'—'}% · 止盈 {view.metadata.take_profit_percent?Number(view.metadata.take_profit_percent)*100:'—'}%</p>
   <p>{view.config.instrument==='XAU/USD'?'黄金使用服务器采集的真实闭合 1m 报价样本；没有交易所成交量。':'加密使用 Bitget 真实闭合 OHLC；未闭合柱不产生信号。'}同一闭合柱只评估一次；后台独立运行，不依赖浏览器打开。它是确定性规则模拟，不是 AI 或实盘。</p>
   <p>账户冻结新闻来源：{view.config.news_sources?.join('、')??'请查看服务器冻结配置'}。更换来源需创建新账户，旧账本保留。</p>
@@ -26,6 +26,7 @@ function RuleAnalysis({view}:{view:DirectionalView}){
    {analysis.decision_status?<p>本柱处理状态：{directionalReason(analysis.decision_status)}</p>:null}
    {analysis.evaluated_at?<p>后台评估 UTC {analysis.evaluated_at}</p>:null}
    {analysis.source?<p>柱来源 {analysis.source}</p>:null}
+   {analysis.resynchronized_at?<p>最近重新同步 UTC {analysis.resynchronized_at}。确认快照闭合到 {analysis.resume_after}；只允许后续新闭合柱产生开仓。</p>:null}
    {analysis.bar_sha256?<p className={styles.digest}>闭合柱摘要 {analysis.bar_sha256}</p>:null}
    <details><summary>查看完整规则证据（只读）</summary><pre className={styles.evidence}>{JSON.stringify(analysis.evidence,null,2)}</pre></details></>:<p role="status">服务端尚未返回本账户的规则分析。刷新只读取状态，不会由手机补造 K 线、新闻或触发下单。</p>}
  </section>;

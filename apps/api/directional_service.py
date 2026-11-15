@@ -1,6 +1,6 @@
 """Separate owner-scoped directional paper runtime, with no live execution path."""
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, nullcontext
 from datetime import datetime, timezone
 from decimal import Decimal, localcontext, ROUND_CEILING, ROUND_FLOOR
 import hashlib
@@ -183,6 +183,9 @@ def create_app(path=None, *, provider=fetch_quote, news_provider=None, news_sour
                os.environ.get('DIRECTIONAL_ALLOWED_ORIGINS', 'https://fc666-test.vercel.app').split(',')) if value.strip()}
     clock = clock or (lambda: datetime.now(timezone.utc))
     store = Store(path)
+    restart_pending = frozenset((row['account_id'], row['pending']['request_id']) for row in store.active()
+        if row['metadata'].get('strategy') == 'PRICE_ACTION' and row['pending'] is not None
+        and row['pending']['target'] != 'FLAT')
     history = RuleMarket(Path(path).with_name('closed-rule-bars.sqlite3'))
     stop = Event()
     lock = Lock()
@@ -234,10 +237,18 @@ def create_app(path=None, *, provider=fetch_quote, news_provider=None, news_sour
                 and analysis['target'] is not None and view['position'] is None):
             gate = automatic_budget(view, analysis['target'])
         if view['metadata']['strategy'] == 'PRICE_ACTION' and gate == 'CLEAR':
-            if analysis is None or analysis['state'] != 'READY':
-                gate = 'HISTORY_UNAVAILABLE' if analysis and analysis['state'] == 'UNAVAILABLE' else 'HISTORY_WARMUP'
+            barrier = view.get('rule_history') or {}
+            if barrier.get('blocked'):
+                gate = 'HISTORY_RESYNC_PENDING'
+            elif (analysis and analysis.get('available_at') and barrier.get('resume_after')
+                    and datetime.fromisoformat(analysis['available_at']) <= datetime.fromisoformat(barrier['resume_after'])):
+                gate = 'HISTORY_RESYNC_WAIT_NEW_BAR'
+            elif analysis is None or analysis['state'] != 'READY':
+                gate = analysis.get('reason', 'HISTORY_UNAVAILABLE') if analysis and analysis['state'] == 'UNAVAILABLE' else 'HISTORY_WARMUP'
             elif analysis.get('decision_status') == 'CLOSED_BAR_STALE':
                 gate = 'CLOSED_BAR_STALE'
+            elif analysis.get('decision_status') == 'HISTORY_RESYNC_WAIT_NEW_BAR':
+                gate = 'HISTORY_RESYNC_WAIT_NEW_BAR'
         if analysis and analysis.get('decision_id') and view['last_outcome'] and view['last_outcome']['request_id'] == analysis['decision_id']:
             outcome = view['last_outcome']
             analysis = {**analysis, 'decision_status': 'QUEUED' if outcome['status'] == 'ACCEPTED' else
@@ -248,12 +259,19 @@ def create_app(path=None, *, provider=fetch_quote, news_provider=None, news_sour
                 'analysis': analysis}
 
     def refresh_rules_once():
-        scopes = {(row['config']['instrument'], row['metadata']['timeframe']) for row in store.active()
-                  if row['metadata'].get('strategy') == 'PRICE_ACTION' and row['status'] == 'RUNNING'}
+        accounts = [row for row in store.active() if row['metadata'].get('strategy') == 'PRICE_ACTION' and row['status'] == 'RUNNING']
+        scopes = {(row['config']['instrument'], row['metadata']['timeframe']) for row in accounts}
         for name, timeframe in sorted(scopes):
             if stop.is_set():
                 return
-            history.refresh(name, timeframe, clock(), bar_provider)
+            members = [row for row in accounts if row['config']['instrument'] == name and row['metadata']['timeframe'] == timeframe]
+            barriers = [datetime.fromisoformat(row['rule_history']['detected_at']) for row in members
+                        if row.get('rule_history') and row['rule_history']['blocked']]
+            def publish(value, members=members):
+                for member in members:
+                    store.rule_history_guard(member['account_id'], value, now=clock(), restart_pending=restart_pending)
+            history.refresh(name, timeframe, clock(), bar_provider,
+                            recovery_after=max(barriers) if barriers else None, on_state=publish)
 
     def closed_bar_decide(view, now, news):
         if (view['metadata'].get('strategy') != 'PRICE_ACTION' or view['status'] != 'RUNNING'
@@ -265,11 +283,19 @@ def create_app(path=None, *, provider=fetch_quote, news_provider=None, news_sour
         analysis = price_analysis(bars, instrument=name, source=bar_source(name),
                                   timeframe=metadata['timeframe'], now=now, rule=metadata['rule'])
         analysis = {**analysis, 'source': bar_source(name)}
+        barrier = view.get('rule_history') or {}
+        if barrier.get('resynchronized_at'):
+            analysis['resynchronized_at'] = barrier['resynchronized_at']
+            analysis['resume_after'] = barrier['resume_after']
         if cached['error']:
-            analysis.update(state='UNAVAILABLE', target=None, reason='HISTORY_UNAVAILABLE')
+            analysis.update(state='UNAVAILABLE', target=None, reason=cached.get('error_reason') or 'HISTORY_UNAVAILABLE')
         target = analysis['target']
         proposal = None
-        if analysis['available_at'] and (now - datetime.fromisoformat(analysis['available_at'])).total_seconds() > 120:
+        if barrier.get('blocked'):
+            analysis['decision_status'] = 'HISTORY_RESYNC_PENDING'
+        elif analysis['available_at'] and barrier.get('resume_after') and datetime.fromisoformat(analysis['available_at']) <= datetime.fromisoformat(barrier['resume_after']):
+            analysis['decision_status'] = 'HISTORY_RESYNC_WAIT_NEW_BAR'
+        elif analysis['available_at'] and (now - datetime.fromisoformat(analysis['available_at'])).total_seconds() > 120:
             analysis['decision_status'] = 'CLOSED_BAR_STALE'
         elif analysis['state'] == 'READY' and target is not None:
             current = view['position']['direction'] if view['position'] else None
@@ -377,10 +403,17 @@ def create_app(path=None, *, provider=fetch_quote, news_provider=None, news_sour
                             continue
                         try:
                             previous = row['last_quote']
-                            after = store.on_quote(row['account_id'], quote, now=stamp, news=news)
-                            if previous is None or quote.at > Quote.model_validate(previous).at:
-                                auto_decide(after, stamp, news)
-                                closed_bar_decide(after, stamp, news)
+                            rule = row['metadata'].get('strategy') == 'PRICE_ACTION'
+                            # Linearize cache publication, durable fences and quote fills.
+                            with history.lock if rule else nullcontext():
+                                stamp = clock()
+                                if rule:
+                                    store.rule_history_guard(row['account_id'], history.read(name, row['metadata']['timeframe']),
+                                                             now=stamp, restart_pending=restart_pending)
+                                after = store.on_quote(row['account_id'], quote, now=stamp, news=news)
+                                if previous is None or quote.at > Quote.model_validate(previous).at:
+                                    auto_decide(after, stamp, news)
+                                    closed_bar_decide(after, stamp, news)
                         except Conflict:
                             logger.info('directional_revision_changed')
                         except Exception:
@@ -555,6 +588,7 @@ def create_app(path=None, *, provider=fetch_quote, news_provider=None, news_sour
                 'state': 'SERVER_CONFIGURED' if news_ready else 'NEWS_UNAVAILABLE', 'source': current_news_source},
                 'instruments': instruments(), 'feed': current,
                 'strategies': ['MANUAL', 'SMA20_QUOTES', 'PRICE_ACTION'], 'closed_bar_rules': list(RULES),
+                'history_recovery': 'QUARANTINE_TWO_FULL_SNAPSHOTS_NEW_BAR_ONLY',
                 'closed_bar_max_lag_seconds': 120, 'server_time': clock().isoformat()}
 
     @app.get('/api/v1/directional/accounts')
