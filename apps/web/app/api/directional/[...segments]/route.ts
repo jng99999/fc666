@@ -29,6 +29,7 @@ async function proxy(request:Request,context:{params:Promise<{segments:string[]}
   const response=await fetch(new URL('/api/v1/directional/'+segments.join('/'),configured),{method:request.method,headers:{'Content-Type':'application/json',...(cookie?{Cookie:cookie}:{}),...(!read?{Origin:request.headers.get('origin')??''}:{})},body,cache:'no-store',redirect:'error',signal:AbortSignal.timeout(12000)});
   const forwarded=new Headers(headers),session=response.headers.get('set-cookie');
   if(session)forwarded.set('Set-Cookie',session);
+  if(read&&['news','status'].includes(segments[0]))for(const name of ['Link','X-Data-Attribution','X-Data-Modification']){const value=response.headers.get(name);if(value)forwarded.set(name,value);}
   return Response.json(await response.json(),{status:response.status,headers:forwarded});
  }catch{
   return Response.json({detail:read?'独立模拟服务暂不可用，保留最后确认账本。':segments[0]==='research'?'研究请求结果尚未确认，请重试同一请求或刷新研究记录；不会自动下单。':'提交结果尚未确认，请先刷新账户核对；不要另建请求重复下单。'},{status:502,headers});

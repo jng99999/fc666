@@ -39,6 +39,8 @@ BEA_URL = 'https://www.bea.gov/news/schedule/ics/online-calendar-subscription.ic
 BEA_SCOPE_URL = 'https://www.bea.gov/news/schedule'
 FED_URL = 'https://www.federalreserve.gov/json/calendar.json'
 FED_SCOPE_URL = 'https://www.federalreserve.gov/newsevents/calendar.htm'
+NYFED_URL = 'https://www.newyorkfed.org/research/calendars/nationalecon_cal'
+NYFED_SOURCE = 'official-nyfed-us-calendar-bitget-v2'
 BITGET_URL = 'https://api.bitget.com/api/v2/public/annoucements'
 CATEGORIES = ('security', 'maintenance_system_updates', 'symbol_delisting')
 CRYPTO = tuple(name for name in INSTRUMENTS if name != 'XAU/USD')
@@ -48,6 +50,12 @@ SCOPE = ('BLS/BEA/Fed官方列举宏观日历及Bitget已发布风险公告，�
 FEEDS = (('bls-calendar', BLS_URL), ('bls-month-scope', BLS_SCOPE_URL), ('bea-calendar', BEA_URL), ('bea-year-scope', BEA_SCOPE_URL),
          ('fed-calendar', FED_URL), ('fed-month-scope', FED_SCOPE_URL),
          *((f'bitget-{category}', BITGET_URL) for category in CATEGORIES))
+NYFED_SCOPE = ('纽约联储列举的整月关键经济发布日历、BEA/Fed日历及Bitget已发布风险公告；'
+               '包含CPI、就业、PPI、JOLTS，但不是BLS全部目录或全球突发新闻。全部保守HIGH是本平台政策。'
+               '纽约联储明确使用美国东部时间；无AM/PM的01至07点条目按整日不确定风险处理。'
+               'Fed JSON未附时区，采用纽约发布惯例（假设）。Bitget仅回查3小时公告及发布后冷却。'
+               '纽约联储日历经本平台解析转换，保留原始标题和链接；不代表其背书。'
+               '使用条款：https://www.newyorkfed.org/privacy/termsofuse')
 
 
 class _Failure(ValueError):
@@ -263,7 +271,17 @@ class PublicNews:
     """Fetcher may be an httpx transport or callable ``(url, params=...) -> Response``."""
     source = SOURCE
 
-    def __init__(self, path, *, fetcher=None):
+    def __init__(self, path, *, fetcher=None, calendar='bls'):
+        if calendar not in ('bls', 'nyfed'):
+            raise ValueError('An explicit supported official calendar profile is required')
+        self.calendar = calendar
+        self.source = NYFED_SOURCE if calendar == 'nyfed' else SOURCE
+        self.version = 'nyfed-calendar-publication-v2' if calendar == 'nyfed' else VERSION
+        self.scope = NYFED_SCOPE if calendar == 'nyfed' else SCOPE
+        # Refresh before a legitimate upstream cache Age consumes the 120s TTL.
+        # Expiry remains unchanged; neither polling nor reading renews old data.
+        self.poll_interval = 30 if calendar == 'nyfed' else 60
+        self.feeds = (('nyfed-month-calendar', NYFED_URL), *FEEDS[2:]) if calendar == 'nyfed' else FEEDS
         self.path = Path(path)
         if self.path.suffix != '.sqlite3':
             raise ValueError('A dedicated .sqlite3 news evidence file is required')
@@ -277,6 +295,8 @@ class PublicNews:
         self._lock, self._refresh_lock = RLock(), Lock()
         self._closed, self._last_vendor = False, 0.0
         self._relay_url = os.environ.get('DIRECTIONAL_BLS_RELAY_URL') or None
+        if calendar == 'nyfed' and self._relay_url is not None:
+            raise ValueError('The NY Fed profile cannot use a BLS subscription node')
         if self._relay_url is not None:
             parts = urlsplit(self._relay_url)
             if (self._relay_url != 'https://fc666-test.vercel.app/api/public-calendar/bls'
@@ -288,8 +308,8 @@ class PublicNews:
         self._client = None if self._fetcher else httpx.Client(transport=fetcher or httpx.HTTPTransport(retries=0, trust_env=False), trust_env=False,
             timeout=6, follow_redirects=False, headers={'User-Agent': 'FC666-public-source-research/1.0',
             'Accept': 'application/json,text/calendar,text/html;q=0.9', 'Cache-Control': 'no-cache'})
-        self._state = {'version': VERSION, 'state': 'WARMUP', 'error': None, 'snapshot': None,
-                       'feeds': [_feed(name, url) for name, url in FEEDS]}
+        self._state = {'version': self.version, 'state': 'WARMUP', 'error': None, 'snapshot': None,
+                       'feeds': [_feed(name, url) for name, url in self.feeds]}
         with self._connection() as db:
             tables = {row[0] for row in db.execute("SELECT name FROM sqlite_master WHERE type='table'")}
             if tables - {'public_news_snapshot'}:
@@ -300,10 +320,11 @@ class PublicNews:
         if row:
             try:
                 value = json.loads(row[0])
-                if len(row[0]) > 2500000 or _sha(value) != row[1] or value.get('version') != VERSION:
+                if len(row[0]) > 2500000 or _sha(value) != row[1] or value.get('version') != self.version:
                     raise ValueError('Invalid news evidence')
                 if value.get('snapshot'):
-                    News.model_validate(value['snapshot']['news'])
+                    if News.model_validate(value['snapshot']['news']).source != self.source:
+                        raise ValueError('A different calendar profile cannot grant permission')
                 self._state = {**value, 'state': 'WARMUP', 'error': 'REVALIDATION_REQUIRED'}
             except (ValueError, TypeError, KeyError):
                 self._state.update(state='UNAVAILABLE', error='CACHE_INVALID')
@@ -336,7 +357,7 @@ class PublicNews:
             if self._closed:
                 raise _Failure('COLLECTOR_CLOSED')
         parsed = urlsplit(url)
-        allowed = url in (BLS_URL, BEA_URL, BEA_SCOPE_URL, FED_URL, FED_SCOPE_URL, BITGET_URL, self._relay_url) or bool(re.fullmatch(r'https://www\.bls\.gov/schedule/\d{4}/\d{2}_sched\.htm', url))
+        allowed = url in (BLS_URL, BEA_URL, BEA_SCOPE_URL, FED_URL, FED_SCOPE_URL, BITGET_URL, NYFED_URL, self._relay_url) or bool(re.fullmatch(r'https://www\.bls\.gov/schedule/\d{4}/\d{2}_sched\.htm', url))
         if not allowed or parsed.scheme != 'https' or parsed.query or parsed.fragment:
             raise _Failure('SOURCE_URL_INVALID')
         if parsed.netloc == 'api.bitget.com':
@@ -459,6 +480,13 @@ class PublicNews:
             raise _Failure('BEA_YEAR_COVERAGE_MISSING')
         return events, labels
 
+    def _nyfed(self, now, started, feeds):
+        from core.paper.nyfed_calendar import parse_nyfed
+        text, checked, item = self._request('nyfed-month-calendar', NYFED_URL, now, started, feeds)
+        events, labels, uncertain, coverage = parse_nyfed(text, now, checked)
+        item['events'] = len(events)
+        return events, labels, uncertain, coverage
+
     def _fed(self, now, started, feeds):
         resources, failures = self._resources((('fed-month-scope', FED_SCOPE_URL), ('fed-calendar', FED_URL)), now, started, feeds)
         if failures:
@@ -548,7 +576,16 @@ class PublicNews:
                     return
                 old = self._state
             events, labels, uncertain, failures = [], {}, [], []
-            for collector in (self._bls, self._bea):
+            calendar_scope = _month(now, NY)
+            if self.calendar == 'nyfed':
+                try:
+                    rows, names, unknown, calendar_scope = self._nyfed(now, started, feeds)
+                    events.extend(rows); labels.update(names); uncertain.extend(unknown)
+                except Exception as error:
+                    code = _error_code(error); failures.append(code)
+                    if feeds:
+                        feeds[-1]['error'] = feeds[-1].get('error') or code
+            for collector in ((self._bea,) if self.calendar == 'nyfed' else (self._bls, self._bea)):
                 begin = len(feeds)
                 try:
                     rows, names = collector(now, started, feeds)
@@ -571,15 +608,14 @@ class PublicNews:
                 raise _Failure(failures[0])
             observed = self._stamp(now, started)
             year = now.astimezone(NY).year
-            bls_scope = _month(now, NY)
-            begin = max(lookback, bls_scope[0], fed_scope[0], _local(datetime(year, 1, 1), NY))
-            end = min(bls_scope[1], fed_scope[1], _local(datetime(year + 1, 1, 1), NY))
+            begin = max(lookback, calendar_scope[0], fed_scope[0], _local(datetime(year, 1, 1), NY))
+            end = min(calendar_scope[1], fed_scope[1], _local(datetime(year + 1, 1, 1), NY))
             if not begin <= now < end:
                 raise _Failure('CALENDAR_COVERAGE_INCOMPLETE')
-            news = News(source=SOURCE, observed_at=observed, coverage_start=begin, coverage_end=end, events=tuple(events))
+            news = News(source=self.source, observed_at=observed, coverage_start=begin, coverage_end=end, events=tuple(events))
             snapshot = {'news': news.model_dump(mode='json'), 'labels': labels,
                 'uncertain': [{**row, 'start': row['start'].isoformat(), 'end': row['end'].isoformat()} for row in uncertain]}
-            value = {'version': VERSION, 'state': 'READY', 'error': None, 'snapshot': snapshot, 'feeds': feeds}
+            value = {'version': self.version, 'state': 'READY', 'error': None, 'snapshot': snapshot, 'feeds': feeds}
             with self._lock:
                 if self._closed:
                     return
@@ -593,7 +629,7 @@ class PublicNews:
                 if self._closed:
                     return
                 old = self._state
-                missing = [{**_feed(name, url), 'error': 'SOURCE_NOT_ACQUIRED'} for name, url in FEEDS if not any(row['name'] == name for row in feeds)]
+                missing = [{**_feed(name, url), 'error': 'SOURCE_NOT_ACQUIRED'} for name, url in self.feeds if not any(row['name'] == name for row in feeds)]
                 value = {**old, 'state': 'UNAVAILABLE', 'error': code, 'feeds': feeds + missing if feeds else old['feeds']}
                 self._state = value  # A known failure blocks grants before slow persistence.
             try:
@@ -661,7 +697,10 @@ class PublicNews:
                 if len(upcoming) == 10:
                     break
         coverage = news or recorded
-        return {'source': SOURCE, 'state': state, 'error': error, 'scope': SCOPE,
+        attribution = (f'Economic Indicators Calendar, © {(recorded.observed_at if recorded else now).astimezone(NY).year} Federal Reserve Bank of New York'
+                       if self.calendar == 'nyfed' else None)
+        return {'source': self.source, 'state': state, 'error': error, 'scope': self.scope,
+            **({'attribution': attribution} if attribution else {}),
             'observed_at': recorded.observed_at.isoformat() if recorded else None,
             'coverage_start': coverage.coverage_start.isoformat() if coverage else None,
             'coverage_end': coverage.coverage_end.isoformat() if coverage else None,

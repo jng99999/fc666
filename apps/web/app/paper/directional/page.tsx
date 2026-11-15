@@ -18,7 +18,8 @@ function NewsEvidence({news}:{news:z.infer<typeof DirectionalStatus>['news']}){
  const monitor=news.monitor;if(!monitor)return null;
  const time=(value:string|null)=>value?new Date(value).toLocaleString('zh-CN',{timeZone:'Asia/Shanghai',hour12:false}):'尚未取得';
  return <section className={styles.card} aria-label="官方新闻与事件监测"><div className={styles.cardHeading}><h2>新闻与事件监测</h2><span className={styles.badge}>{({READY:'采集正常',UNAVAILABLE:'采集不可用',STALE:'已过期',WARMUP:'首次采集中'})[monitor.state]}</span></div>
-  <p>美国官方宏观日历与 Bitget 风险公告。采集正常不等于允许开仓，以本账户的来源、消息窗口和最终门禁为准。</p>
+  <p>美国经济发布日历与 Bitget 风险公告。采集正常不等于允许开仓，以本账户的来源、消息窗口和最终门禁为准。</p>
+  {monitor.source==='official-nyfed-us-calendar-bitget-v2'?<p><a href="https://www.newyorkfed.org/research/calendars/nationalecon_cal" target="_blank" rel="noopener noreferrer">{monitor.attribution}</a>。本平台解析并转换展示，保留原始发布标题和来源链接，不代表其背书。来源数据适用原有许可条件：<a href="https://www.newyorkfed.org/privacy/termsofuse" target="_blank" rel="noopener noreferrer">来源使用条款 ↗</a></p>:null}
   <dl className={styles.analysisGrid}><div><dt>最近有效观测 · 北京时间</dt><dd>{time(monitor.observed_at)}</dd></div><div><dt>来源校验项</dt><dd>{monitor.feeds.length} 项</dd></div></dl>
   {monitor.error?<p className={styles.reason} role="status">新闻采集或时间覆盖异常，禁止新风险。诊断：{monitor.error}</p>:null}
   <details><summary>近期高影响事件与来源证据</summary><p>{monitor.scope}</p><p className={styles.digest}>账户当前来源：{news.source??'未配置'}<br/>采集器来源：{monitor.source}</p><p>覆盖范围 · 北京时间：{time(monitor.coverage_start)} — {time(monitor.coverage_end)}。消息窗口跨越覆盖边界时禁止开仓。</p>

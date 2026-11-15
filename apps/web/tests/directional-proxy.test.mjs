@@ -5,6 +5,14 @@ import {GET as health} from '../app/api/health/route.ts';
 
 const params=(segments)=>({params:Promise.resolve({segments})});
 const uuid='12345678-1234-4234-8234-123456789012';
+test('calendar attribution and license survive news proxy while unrelated headers stay private',async t=>{
+ const previous=process.env.DIRECTIONAL_API_BASE_URL;process.env.DIRECTIONAL_API_BASE_URL='https://backend.example';
+ t.after(()=>{if(previous===undefined)delete process.env.DIRECTIONAL_API_BASE_URL;else process.env.DIRECTIONAL_API_BASE_URL=previous;});
+ t.mock.method(globalThis,'fetch',async()=>Response.json({source:'TEST_ONLY'},{headers:{Link:'<https://www.newyorkfed.org/privacy/termsofuse>; rel="license"','X-Data-Attribution':'Economic Indicators Calendar - Federal Reserve Bank of New York','X-Data-Modification':'Parsed by FC666','X-Private-Token':'not-forwarded'}}));
+ const response=await GET(new Request('https://app.example/api/directional/news'),params(['news']));
+ assert.match(response.headers.get('Link'),/rel="license"/);assert.match(response.headers.get('X-Data-Attribution'),/Federal Reserve/);
+ assert.equal(response.headers.get('X-Data-Modification'),'Parsed by FC666');assert.equal(response.headers.get('X-Private-Token'),null);
+});
 test('official news snapshot and evidence are read-only bounded proxy resources',async t=>{
  const previous=process.env.DIRECTIONAL_API_BASE_URL;process.env.DIRECTIONAL_API_BASE_URL='https://backend.example';
  t.after(()=>{if(previous===undefined)delete process.env.DIRECTIONAL_API_BASE_URL;else process.env.DIRECTIONAL_API_BASE_URL=previous;});

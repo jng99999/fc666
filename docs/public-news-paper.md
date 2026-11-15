@@ -2,6 +2,18 @@
 
 在唯一主源码增量接入，实盘固定关闭；不注册付费服务、不新增依赖、不修改旧账户新闻来源或账本。
 
+## 追加：纽约联储独立关键指标来源
+
+用户要求自行继续找源后，核实采用纽约联储官方 [Economic Indicators Calendar](https://www.newyorkfed.org/research/calendars/nationalecon_cal)。实际账户服务器普通HTTPS200，页面列出当月全部工作日和事件、前后月份导航，并明确所有时间为Eastern Time。其[使用条款](https://www.newyorkfed.org/privacy/termsofuse)允许自动访问及业务使用、存储、分发和转换，须保留来源/原始标题/链接、标注修改、不暗示背书，相关数据沿用其权限条件。网页显示归属及条款链接；公开快照和证据接口通过Link/license与X-Data-Attribution/Modification传递，同源代理保留这些头，金融JSON契约不变。
+
+这不是BLS全目录镜像，不伪造Real Earnings、州就业或其他未列项目。明确新来源 `official-nyfed-us-calendar-bitget-v2`，包括纽约联储列举的关键指标、BEA/Fed及Bitget风险公告。每月必须解析到CPI、就业、PPI、JOLTS核心条目，缺少则拒绝；验证月份、全部工作日格子、原链接/逐事件时刻配对。网页结构改变、不完整或日期不合法均禁止新风险。
+
+某些条目打印无AM/PM的02:00；官方R-Star页面实际说明下午2点，故不可解释为凌晨。01至07点无AM/PM时保守记录整日不确定风险，不生成假精确时刻；覆盖与禁入窗口仍由原门禁裁剪。所有时区采用America/New_York并检查夏令时。
+
+部署显式 `DIRECTIONAL_OFFICIAL_CALENDAR=nyfed`，没有BLS失败自动回退。旧v1仍可明确选择，缓存版本与来源严格隔离，重启必须重验；管理员只更新news.source为v2，旧账户冻结来源不变，需要新建验收账户。新profile每30秒采集，既有120秒新闻和每源HTTP新鲜度门槛不放宽；缓存读取不能续期。
+
+备选ShowMyTrades从服务器200且覆盖未来30天，但其条款不允许公开日历API再分发，生成时刻/15分钟缓存也需独立处理，因此本轮不采用。FXMacroData有6小时CDN缓存及展示许可限制，同样不接入。未注册、付费或要求用户提供密钥。
+
 ## 来源与风险政策
 
 - BLS 官方 `https://www.bls.gov/schedule/news_release/bls.ics` 与当前月日历：US-Eastern，按 America/New_York 和夏令时转换。BLS明确提供自动日历订阅并允许使用公开内容。本机普通HTTP为200，账户服务器为Akamai通用403，拒绝原因未确定；不改请求身份、不解挑战、不轮换节点。由本项目固定Vercel节点正常订阅两个固定官方资源，是否可用必须以该节点真实响应验证。固定 `/api/public-calendar/bls` 无客户端目标参数、只读、最多60秒缓存；保留实际获取时间、上游Date/Last-Modified、内容摘要及原文，失败503，不给旧资源续期。账户服务器需明确配置此订阅节点，仍校验原始取时及每个必要来源的过期。

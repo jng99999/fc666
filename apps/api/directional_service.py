@@ -175,7 +175,8 @@ def create_app(path=None, *, provider=fetch_quote, news_provider=None, news_sour
             raise ValueError('Public news adapter requires an explicit HTTPS URL')
         if public_news_provider is None:
             from core.paper.public_news import PublicNews
-            public_news_provider = PublicNews(Path(path).with_name('public-news.sqlite3'))
+            public_news_provider = PublicNews(Path(path).with_name('public-news.sqlite3'),
+                calendar=os.environ.get('DIRECTIONAL_OFFICIAL_CALENDAR', 'bls'))
     if operator_store is None and os.environ.get('FC666_OPERATOR_DIR'):
         from core.security.operator import OperatorStore
         operator_store = OperatorStore(os.environ['FC666_OPERATOR_DIR'], secure=secure)
@@ -492,7 +493,7 @@ def create_app(path=None, *, provider=fetch_quote, news_provider=None, news_sour
                 refresh_news_once()
             except Exception:
                 logger.warning('directional_public_news_unavailable')
-            stop.wait(60)
+            stop.wait(getattr(public_news_provider, 'poll_interval', 60))
 
     @asynccontextmanager
     async def lifespan(app):
@@ -637,10 +638,11 @@ def create_app(path=None, *, provider=fetch_quote, news_provider=None, news_sour
             return JSONResponse({'status': 'not_ready', 'trading_enabled': False}, status_code=503)
 
     @app.get('/api/v1/directional/status')
-    def status():
+    def status(response: Response):
         news_ready, current_news_source = news_configuration()
         with lock:
             current = {name: dict(value) for name, value in feed.items()}
+        news_attribution(response)
         return {'service': 'directional-paper-v1', 'mode': 'RESEARCH_PAPER', 'trading_enabled': False,
                 'ai': {'configured': False}, 'news': {'configured': news_ready,
                 'state': 'SERVER_CONFIGURED' if news_ready else 'NEWS_UNAVAILABLE', 'source': current_news_source,
@@ -652,17 +654,26 @@ def create_app(path=None, *, provider=fetch_quote, news_provider=None, news_sour
                 'bitget_history_policy': history_policy('BTCUSDT'),
                 'closed_bar_max_lag_seconds': 120, 'server_time': clock().isoformat()}
 
+    def news_attribution(response):
+        if public_news_provider is not None and public_news_provider.source == 'official-nyfed-us-calendar-bitget-v2':
+            response.headers['Link'] = ('<https://www.newyorkfed.org/privacy/termsofuse>; rel="license", '
+                '<https://www.newyorkfed.org/research/calendars/nationalecon_cal>; rel="describedby"')
+            response.headers['X-Data-Attribution'] = public_news_provider.status(clock())['attribution'].replace('©', '(c)')
+            response.headers['X-Data-Modification'] = 'Parsed to UTC and conservatively HIGH by FC666; no New York Fed endorsement'
+
     @app.get('/api/v1/directional/news')
-    def public_news():
+    def public_news(response: Response):
         value = public_news_provider.read('BTCUSDT', clock()) if public_news_provider is not None else None
         if value is None:
             return JSONResponse({'detail': 'Official news collection is unavailable or stale'}, status_code=503)
+        news_attribution(response)
         return value.model_dump(mode='json')
 
     @app.get('/api/v1/directional/news/status')
-    def public_news_status():
+    def public_news_status(response: Response):
         if public_news_provider is None:
             return JSONResponse({'detail': 'Official news adapter is not enabled'}, status_code=503)
+        news_attribution(response)
         return public_news_provider.status(clock())
 
     @app.get('/api/v1/directional/accounts')
