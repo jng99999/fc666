@@ -13,7 +13,7 @@ let nextAttempt=0;
 let lastFailure='BLS_SUBSCRIPTION_UNAVAILABLE';
 
 async function resource(url:string,calendar:boolean):Promise<Resource>{
- const response=await fetch(url,{cache:'no-store',redirect:'error',signal:AbortSignal.timeout(8000)});
+ const response=await fetch(url,{cache:'no-store',redirect:'error',signal:AbortSignal.timeout(8000),headers:{'User-Agent':'FC666-official-calendar-subscription/1.0','Accept':'text/calendar,text/html;q=0.9','Cache-Control':'no-cache'}});
  if(!response.ok||!response.body)throw new Error(`BLS_HTTP_${response.status}`);
  const chunks:Uint8Array[]=[];let bytes=0;const reader=response.body.getReader();
  try{for(;;){const {done,value}=await reader.read();if(done)break;bytes+=value.byteLength;if(bytes>MAX_BYTES)throw new Error('BLS response too large');chunks.push(value);}}
