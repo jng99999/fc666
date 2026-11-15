@@ -5,6 +5,15 @@ import {GET as health} from '../app/api/health/route.ts';
 
 const params=(segments)=>({params:Promise.resolve({segments})});
 const uuid='12345678-1234-4234-8234-123456789012';
+test('official news snapshot and evidence are read-only bounded proxy resources',async t=>{
+ const previous=process.env.DIRECTIONAL_API_BASE_URL;process.env.DIRECTIONAL_API_BASE_URL='https://backend.example';
+ t.after(()=>{if(previous===undefined)delete process.env.DIRECTIONAL_API_BASE_URL;else process.env.DIRECTIONAL_API_BASE_URL=previous;});
+ const calls=[];t.mock.method(globalThis,'fetch',async(url)=>{calls.push(String(url));return Response.json({source:'TEST_ONLY'});});
+ for(const segments of [['news'],['news','status']])assert.equal((await GET(new Request('https://app.example/api/directional/'+segments.join('/')),params(segments))).status,200);
+ assert.deepEqual(calls,['https://backend.example/api/v1/directional/news','https://backend.example/api/v1/directional/news/status']);
+ for(const segments of [['news'],['news','status'],['news','refresh'],['news','status','extra']])assert.equal((await POST(new Request('https://app.example/api/directional/news',{method:'POST',body:'{}'}),params(segments))).status,404);
+ assert.equal(calls.length,2);
+});
 test('directional proxy constrains paths, origin and cookies and never retries a write',async t=>{
  const previous=process.env.DIRECTIONAL_API_BASE_URL;
  process.env.DIRECTIONAL_API_BASE_URL='https://backend.example';

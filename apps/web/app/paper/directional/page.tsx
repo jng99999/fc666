@@ -14,6 +14,19 @@ function indicatorText(value:unknown,key:string){
 }
 const initial={instrument:'XAU/USD',strategy:'MANUAL',initial_cash:'10000',tick_size:'0.01',quantity_step:'0.001',max_quantity:'10',max_order_quote:'5000',fee_rate:'0.001',slippage:'0.05',news_pre_seconds:'1800',news_post_seconds:'1800',quantity:'1',stop_loss_percent:'0.01',take_profit_percent:'0.02',rule:'STRUCTURE_FVG',timeframe:'1m'};
 
+function NewsEvidence({news}:{news:z.infer<typeof DirectionalStatus>['news']}){
+ const monitor=news.monitor;if(!monitor)return null;
+ const time=(value:string|null)=>value?new Date(value).toLocaleString('zh-CN',{timeZone:'Asia/Shanghai',hour12:false}):'尚未取得';
+ return <section className={styles.card} aria-label="官方新闻与事件监测"><div className={styles.cardHeading}><h2>新闻与事件监测</h2><span className={styles.badge}>{({READY:'采集正常',UNAVAILABLE:'采集不可用',STALE:'已过期',WARMUP:'首次采集中'})[monitor.state]}</span></div>
+  <p>美国官方宏观日历与 Bitget 风险公告。采集正常不等于允许开仓，以本账户的来源、消息窗口和最终门禁为准。</p>
+  <dl className={styles.analysisGrid}><div><dt>最近有效观测 · 北京时间</dt><dd>{time(monitor.observed_at)}</dd></div><div><dt>监测来源</dt><dd>{monitor.feeds.length} 个</dd></div></dl>
+  {monitor.error?<p className={styles.reason} role="status">新闻采集或时间覆盖异常，禁止新风险。诊断：{monitor.error}</p>:null}
+  <details><summary>近期高影响事件与来源证据</summary><p>{monitor.scope}</p><p className={styles.digest}>账户当前来源：{news.source??'未配置'}<br/>采集器来源：{monitor.source}</p><p>覆盖范围 · 北京时间：{time(monitor.coverage_start)} — {time(monitor.coverage_end)}。消息窗口跨越覆盖边界时禁止开仓。</p>
+   {monitor.next_high.length?<ul>{monitor.next_high.map(event=><li key={event.event_id}><a href={event.url} target="_blank" rel="noopener noreferrer">{event.title}</a><br/>{time(event.scheduled_at)} · {event.instruments.includes('*')?'全部监测产品':event.instruments.join('、')}</li>)}</ul>:<p>当前快照没有待显示事件；不代表市场没有突发新闻。</p>}
+   {monitor.feeds.map(feed=><div className={styles.analysis} key={feed.name}><strong>{feed.name}</strong><p><a href={feed.url} target="_blank" rel="noopener noreferrer">查看官方来源 ↗</a> · {feed.events} 项</p><p>最近验证 · 北京时间 {time(feed.checked_at)}</p><p className={styles.digest}>上游时间：{feed.upstream_date??'未提供'}<br/>内容修改时间：{feed.last_modified??'未提供'}<br/>内容摘要：{feed.sha256??'尚未取得'}</p></div>)}
+  </details></section>;
+}
+
 function RuleAnalysis({view}:{view:DirectionalView}){
  const analysis=view.analysis&&'rule_version'in view.analysis?view.analysis:null;
  const indicators=analysis?(['ema20','ema60','rsi14','atr14'] as const).map(key=>({key,label:({ema20:'EMA20',ema60:'EMA60',rsi14:'RSI14',atr14:'ATR14'})[key],value:analysis.evidence[key]})):[];
@@ -86,6 +99,7 @@ export default function DirectionalPage(){
  return <main className={styles.page} aria-busy={!ready}>
   <header className={styles.heading}><div><p>账户 / 独立研究模拟</p><h1>双向模拟与保护退出</h1><span>真实公共报价 · 独立资金 · 实盘关闭</span></div><Link href="/research/closed-rules">规则回测与成本对比 →</Link></header>
   <section className={styles.card}><h2>运行边界</h2><p>全额抵押的合成多空模拟；加密使用 Bitget 现货 bid/ask，黄金使用 Swissquote XAU/USD。这里不是永续或经纪商账户，未模拟资金费、隔夜费和保证金强平。</p><p>高影响消息窗口禁止开仓，缺失、过期或覆盖不足也禁止开仓；已有持仓的止盈止损仍由服务器执行。采样中断期间无法执行，恢复后按实际报价处理跳空。</p>{status&&!status.news.configured?<p className={styles.reason} role="status">当前服务器新闻源未配置：所有策略均禁止新开仓，已有持仓保留止盈止损。管理员可到<Link href="/system/api">系统 / API 接入</Link>配置新闻源，配置后仍须通过来源、时效与事件窗口校验。</p>:null}<div className={styles.tags}><span>{status?directionalReason(status.news.state):'正在检查服务…'}</span><Link href="/research/ai">查看 AI 配置与自动模拟</Link><span>后台独立运行</span></div></section>
+  {status?<NewsEvidence news={status.news}/>:null}
   {readError?<p className={styles.error} role="alert">{readError}</p>:null}{error?<p className={styles.error} role="alert">{error}</p>:null}{notice?<p className={styles.notice} role="status">{notice}</p>:null}
   {pending&&!busy?<div className={styles.card}><p>上次提交尚未核对。请先刷新账本；如需再次提交，沿用同一请求编号。</p><div className={styles.actions}><button onClick={()=>void refreshNow()}>刷新并核对</button><button onClick={()=>{if(pending)void submit(pending.path,pending.body);}}>重查同一请求</button></div></div>:null}
   <section className={styles.card}><div className={styles.cardHeading}><h2>我的独立账户</h2><button disabled={!ready||busy} onClick={()=>void refreshNow()}>刷新账户</button></div>

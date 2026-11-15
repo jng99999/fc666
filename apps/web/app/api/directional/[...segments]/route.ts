@@ -4,7 +4,8 @@ async function proxy(request:Request,context:{params:Promise<{segments:string[]}
  const {segments}=await context.params;
  const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
  const read=request.method==='GET';
- const valid=segments.length===1&&((segments[0]==='status'&&read)||(segments[0]==='accounts'&&['GET','POST'].includes(request.method)))||
+ const valid=segments.length===1&&((['status','news'].includes(segments[0])&&read)||(segments[0]==='accounts'&&['GET','POST'].includes(request.method)))||
+  segments.length===2&&segments[0]==='news'&&segments[1]==='status'&&read||
   segments[0]==='accounts'&&uuid.test(segments[1]??'')&&((segments.length===2&&read)||(segments.length===3&&['decision','stop'].includes(segments[2])&&request.method==='POST'))||
   segments[0]==='research'&&((segments.length===2&&['status','jobs'].includes(segments[1])&&read)||
    (segments.length===3&&segments[1]==='jobs'&&uuid.test(segments[2])&&read)||
