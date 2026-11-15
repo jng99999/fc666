@@ -1,8 +1,9 @@
 services:
   directional:
-    image: fc666-directional-test:official-news-20261116
+    image: fc666-directional-test:official-news-settled-20261116
     environment:
       LIVE_TRADING: "false"
       DIRECTIONAL_PUBLIC_NEWS_URL: "https://fc666-test.vercel.app/api/directional/news"
+      DIRECTIONAL_BITGET_SETTLEMENT_SECONDS: "60"
     labels:
       fc666.news.scope: official-us-macro-and-published-bitget-risk-only

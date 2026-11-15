@@ -44,8 +44,8 @@ def market(tmp_path, monkeypatch):
     monkeypatch.setattr(rule_market.time, 'monotonic', lambda: clock[0])
     opened = []
 
-    def create():
-        instance = rule_market.RuleMarket(tmp_path / 'synthetic-rule-market.sqlite3')
+    def create(**kwargs):
+        instance = rule_market.RuleMarket(tmp_path / 'synthetic-rule-market.sqlite3', **kwargs)
         opened.append(instance)
         return instance
 
@@ -87,6 +87,119 @@ def rule_bar(index, **updates):
                   volume=row.volume, is_closed=True)
     values.update(updates)
     return RuleBar(**values)
+
+
+@pytest.mark.parametrize('wait', [-1, True, False, 1.5, '60', None, 3601])
+def test_settlement_wait_rejects_non_integer_or_unbounded_values(tmp_path, wait):
+    with pytest.raises(ValueError, match='Settlement wait'):
+        rule_market.RuleMarket(tmp_path / 'synthetic-invalid-wait.sqlite3', settlement_seconds=wait)
+
+
+@pytest.mark.parametrize(('timeframe', 'offset', 'expected_seconds'), [
+    ('1m', 239, 120), ('1m', 240, 180),
+    ('1h', 3659, 0), ('1h', 3660, 3600),
+    ('4h', 14459, 0), ('4h', 14460, 14400),
+])
+def test_bitget_settlement_boundary_waits_before_flooring_period(market, timeframe, offset, expected_seconds):
+    _, public, _, reopen = market
+    instance = reopen(settlement_seconds=60)
+    now = START + timedelta(seconds=offset)
+    public.server_ms = int(now.timestamp() * 1000)
+    public.rows = []
+    assert instance.fetch('BTCUSDT', timeframe, now) == []
+    _, _, begin, end, observed = public.candle_calls[-1]
+    assert end == int((START + timedelta(seconds=expected_seconds)).timestamp() * 1000)
+    assert begin == end - 500 * rule_market.INTERVALS[timeframe] * 1000
+    assert observed == public.server_ms
+
+
+def test_settlement_uses_earlier_server_clock_and_rejects_return_after_cutoff(market):
+    _, public, _, reopen = market
+    instance = reopen(settlement_seconds=60)
+    now = START + timedelta(minutes=5, seconds=20)
+    public.server_ms = int((now - timedelta(seconds=40)).timestamp() * 1000)
+    public.rows = [crypto(i) for i in range(3)]
+    assert len(instance.fetch('BTCUSDT', '1m', now)) == 3
+    assert public.candle_calls[-1][3] == int((START + 3 * MINUTE).timestamp() * 1000)
+    public.rows.append(crypto(3))
+    with pytest.raises(ValueError, match='metadata'):
+        instance.fetch('BTCUSDT', '1m', now)
+
+
+def test_settlement_refresh_skip_uses_same_delayed_boundary(market):
+    _, public, clock, reopen = market
+    instance = reopen(settlement_seconds=60)
+    public.rows = [crypto(i) for i in range(3)]
+    now = START + timedelta(minutes=4, seconds=20)
+    public.server_ms = int(now.timestamp() * 1000)
+    instance.refresh('BTCUSDT', '1m', now)
+    assert len(instance.read('BTCUSDT', '1m')['bars']) == 3
+    clock[0] += 6
+    instance.refresh('BTCUSDT', '1m', START + timedelta(minutes=4, seconds=59))
+    assert public.server_calls == 1
+    clock[0] += 6
+    now = START + 5 * MINUTE
+    public.server_ms = int(now.timestamp() * 1000)
+    public.rows.append(crypto(3))
+    instance.refresh('BTCUSDT', '1m', now)
+    assert public.server_calls == 2
+    assert len(instance.read('BTCUSDT', '1m')['bars']) == 4
+
+
+@pytest.mark.parametrize('invalid', ['too_recent', 'source', 'instrument', 'timeframe'])
+def test_settlement_provider_cannot_bypass_delayed_cutoff_or_scope(market, invalid):
+    _, _, _, reopen = market
+    instance = reopen(settlement_seconds=60)
+    rows = [rule_bar(0)]
+    if invalid == 'too_recent':
+        rows.append(rule_bar(3))  # Closed in wall time, not yet arrival-eligible.
+    elif invalid == 'source':
+        rows = [rule_bar(0, source='synthetic-other-source')]
+    elif invalid == 'instrument':
+        rows = [rule_bar(0, instrument='ETHUSDT')]
+    else:
+        rows = [rule_bar(0, timeframe='5m', close_time=START + 5 * MINUTE)]
+    instance.refresh('BTCUSDT', '1m', START + 4 * MINUTE, provider=lambda *_: rows)
+    state = instance.read('BTCUSDT', '1m')
+    assert state['error'] is True and state['bars'] == ()
+
+
+def test_settlement_keeps_real_gaps_and_late_revision_isolation(market):
+    _, _, _, reopen = market
+    instance = reopen(settlement_seconds=60)
+    original = [rule_bar(0), rule_bar(2)]
+    now = START + 4 * MINUTE
+    instance.refresh('BTCUSDT', '1m', now, provider=lambda *_: original)
+    assert [bar.open_time for bar in instance.read('BTCUSDT', '1m')['bars']] == [START, START + 2 * MINUTE]
+    revised = [original[0], rule_bar(2, high=D('102'), close=D('101'), volume=D('11'))]
+    instance.refresh('BTCUSDT', '1m', now + timedelta(seconds=10), provider=lambda *_: revised)
+    state = instance.read('BTCUSDT', '1m')
+    assert state['error'] is True and state['error_reason'] == 'HISTORY_REVISED'
+    assert state['bars'] == tuple(original)
+    instance.refresh('BTCUSDT', '1m', now + timedelta(seconds=20), provider=lambda *_: revised)
+    state = instance.read('BTCUSDT', '1m')
+    assert state['error'] is False and state['resume_after'] == START + 3 * MINUTE
+
+
+def test_settlement_does_not_delay_observed_gold_sampling(market):
+    _, public, _, reopen = market
+    instance = reopen(settlement_seconds=3600)
+    sample(instance)
+    now = START + MINUTE
+    assert len(instance.fetch('XAU/USD', '1m', now)) == 1
+    instance.refresh('XAU/USD', '1m', now)
+    state = instance.read('XAU/USD', '1m')
+    assert not state['error'] and len(state['bars']) == 1
+    assert public.server_calls == 0
+
+
+def test_explicit_zero_settlement_is_backwards_compatible(market):
+    default, public, _, reopen = market
+    explicit = reopen(settlement_seconds=0)
+    public.rows = [crypto(i) for i in range(3)]
+    now = START + 3 * MINUTE
+    assert default.fetch('BTCUSDT', '1m', now) == explicit.fetch('BTCUSDT', '1m', now)
+    assert default.settlement_seconds == explicit.settlement_seconds == 0
 
 
 def test_gold_only_complete_real_observed_minute_closes_and_never_invents_volume(market):

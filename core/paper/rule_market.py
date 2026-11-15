@@ -36,7 +36,12 @@ def bar_source(instrument):
 class RuleMarket:
     """History IO runs on its own collector, independent of protective quote ticks."""
 
-    def __init__(self, path):
+    def __init__(self, path, *, settlement_seconds=0):
+        if type(settlement_seconds) is not int or not 0 <= settlement_seconds <= 3600:
+            raise ValueError('Settlement wait must be an integer from 0 to 3600 seconds')
+        # A minimum arrival wait, never a guarantee that upstream cannot revise.
+        # Gold uses its own observed sampling coverage and is not delayed.
+        self.settlement_seconds = settlement_seconds
         self.path = Path(path)
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self.lock = RLock()
@@ -57,6 +62,11 @@ class RuleMarket:
 
     def close(self):
         self.client.close()
+
+    def _available_boundary(self, instrument, timeframe, clock_ms):
+        duration = INTERVALS[timeframe] * 1000
+        wait = 0 if instrument == 'XAU/USD' else self.settlement_seconds * 1000
+        return (clock_ms - wait) // duration * duration
 
     def observe(self, value, now):
         quote = Quote.model_validate(value)
@@ -94,10 +104,11 @@ class RuleMarket:
         if abs(server - local) > 60000:
             raise ValueError('Public candle clock differs from the server clock')
         duration = INTERVALS[timeframe] * 1000
-        end = min(server, local) // duration * duration
+        end = self._available_boundary(instrument, timeframe, min(server, local))
         candles = self.public.candles(instrument, timeframe, end - 500 * duration, end, min(server, local))
         if any(row.instrument_id != BITGET_SYMBOLS[instrument] or row.timeframe != timeframe
-               or row.source != 'bitget.public' or row.is_closed is not True for row in candles):
+               or row.source != 'bitget.public' or row.is_closed is not True
+               or int(row.close_time.timestamp() * 1000) > end for row in candles):
             raise ValueError('Public candle metadata does not match its requested scope')
         return [RuleBar(instrument=instrument, source=row.source, timeframe=timeframe,
                        open_time=row.open_time, close_time=row.close_time, open=row.open,
@@ -117,8 +128,8 @@ class RuleMarket:
                 if time.monotonic() - self.attempts.get(key, -100) < 5:
                     return
                 if previous and not previous['error'] and previous['bars']:
-                    boundary = int(now.timestamp()) // INTERVALS[timeframe] * INTERVALS[timeframe]
-                    if previous['bars'][-1].close_time.timestamp() >= boundary:
+                    boundary = self._available_boundary(instrument, timeframe, int(now.timestamp() * 1000))
+                    if previous['bars'][-1].close_time.timestamp() * 1000 >= boundary:
                         return
             self.attempts[key] = time.monotonic()
         try:
@@ -126,8 +137,9 @@ class RuleMarket:
             if len(raw) > 500:
                 raise ValueError('Closed history limit exceeded')
             bars = tuple(RuleBar.model_validate(row.model_dump() if isinstance(row, RuleBar) else row) for row in raw)
+            boundary = self._available_boundary(instrument, timeframe, int(now.timestamp() * 1000))
             if any(b.instrument != instrument or b.source != bar_source(instrument) or b.timeframe != timeframe
-                   or b.close_time > now for b in bars):
+                   or int(b.close_time.timestamp() * 1000) > boundary for b in bars):
                 raise ValueError('Closed history product/source/clock mismatch')
             if any(a.open_time >= b.open_time or a.close_time > b.open_time for a, b in zip(bars, bars[1:])):
                 raise ValueError('Closed history must be strictly ordered')

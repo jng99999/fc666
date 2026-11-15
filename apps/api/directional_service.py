@@ -162,7 +162,8 @@ def http_news(url, token=None, *, public_only=False):
 
 def create_app(path=None, *, provider=fetch_quote, news_provider=None, news_source=None,
                background=True, secure=True, clock=None, interval=10, allowed_origins=None, research_runner=None,
-               operator_store=None, bar_provider=None, public_news_provider=None, public_news_url=None):
+               operator_store=None, bar_provider=None, public_news_provider=None, public_news_url=None,
+               history_settlement_seconds=None):
     if os.environ.get('LIVE_TRADING', 'false').lower() not in ('false', '0'):
         raise ValueError('Directional service requires LIVE_TRADING=false')
     path = path or os.environ.get('DIRECTIONAL_DB_PATH', '/app/.runtime/directional/paper.sqlite3')
@@ -195,7 +196,19 @@ def create_app(path=None, *, provider=fetch_quote, news_provider=None, news_sour
     restart_pending = frozenset((row['account_id'], row['pending']['request_id']) for row in store.active()
         if row['metadata'].get('strategy') == 'PRICE_ACTION' and row['pending'] is not None
         and row['pending']['target'] != 'FLAT')
-    history = RuleMarket(Path(path).with_name('closed-rule-bars.sqlite3'))
+    if history_settlement_seconds is None:
+        history_settlement_seconds = int(os.environ.get('DIRECTIONAL_BITGET_SETTLEMENT_SECONDS', '0'))
+    history = RuleMarket(Path(path).with_name('closed-rule-bars.sqlite3'), settlement_seconds=history_settlement_seconds)
+
+    def settlement_for(instrument):
+        return 0 if instrument == 'XAU/USD' else history_settlement_seconds
+
+    def history_policy(instrument):
+        return 'minimum-arrival-wait-v2' if settlement_for(instrument) else 'closed-on-time-v1'
+
+    def matching_history_policy(view):
+        return (view['metadata'].get('history_settlement_seconds', 0) == settlement_for(view['config']['instrument'])
+                and view['metadata'].get('history_policy', 'closed-on-time-v1') == history_policy(view['config']['instrument']))
     stop = Event()
     lock = Lock()
     feed = {name: {'state': 'WAITING', 'last_checked': None, 'last_quote': None} for name in INSTRUMENTS}
@@ -246,12 +259,19 @@ def create_app(path=None, *, provider=fetch_quote, news_provider=None, news_sour
                 'QUOTE_STALE' if not 0 <= (at - quote.at).total_seconds() <= config.quote_max_age_seconds else
                 entry_gate(config, at, news))
         analysis = signal(view) if view['metadata']['strategy'] == 'SMA20_QUOTES' else view.get('rule_analysis')
+        if view['metadata']['strategy'] == 'PRICE_ACTION' and not matching_history_policy(view):
+            previous = analysis or price_analysis((), instrument=config.instrument, source=bar_source(config.instrument),
+                timeframe=view['metadata']['timeframe'], now=at, rule=view['metadata']['rule'])
+            analysis = {**previous, 'state': 'UNAVAILABLE', 'target': None,
+                        'reason': 'HISTORY_POLICY_MISMATCH', 'decision_status': 'HISTORY_POLICY_MISMATCH'}
         if (gate == 'CLEAR' and analysis is not None and analysis['state'] == 'READY'
                 and analysis['target'] is not None and view['position'] is None):
             gate = automatic_budget(view, analysis['target'])
         if view['metadata']['strategy'] == 'PRICE_ACTION' and gate == 'CLEAR':
             barrier = view.get('rule_history') or {}
-            if barrier.get('blocked'):
+            if not matching_history_policy(view):
+                gate = 'HISTORY_POLICY_MISMATCH'
+            elif barrier.get('blocked'):
                 gate = 'HISTORY_RESYNC_PENDING'
             elif (analysis and analysis.get('available_at') and barrier.get('resume_after')
                     and datetime.fromisoformat(analysis['available_at']) <= datetime.fromisoformat(barrier['resume_after'])):
@@ -272,7 +292,8 @@ def create_app(path=None, *, provider=fetch_quote, news_provider=None, news_sour
                 'analysis': analysis}
 
     def refresh_rules_once():
-        accounts = [row for row in store.active() if row['metadata'].get('strategy') == 'PRICE_ACTION' and row['status'] == 'RUNNING']
+        accounts = [row for row in store.active() if row['metadata'].get('strategy') == 'PRICE_ACTION'
+                    and row['status'] == 'RUNNING' and matching_history_policy(row)]
         scopes = {(row['config']['instrument'], row['metadata']['timeframe']) for row in accounts}
         for name, timeframe in sorted(scopes):
             if stop.is_set():
@@ -302,9 +323,13 @@ def create_app(path=None, *, provider=fetch_quote, news_provider=None, news_sour
             analysis['resume_after'] = barrier['resume_after']
         if cached['error']:
             analysis.update(state='UNAVAILABLE', target=None, reason=cached.get('error_reason') or 'HISTORY_UNAVAILABLE')
+        if not matching_history_policy(view):
+            analysis.update(state='UNAVAILABLE', target=None, reason='HISTORY_POLICY_MISMATCH')
         target = analysis['target']
         proposal = None
-        if barrier.get('blocked'):
+        if not matching_history_policy(view):
+            analysis['decision_status'] = 'HISTORY_POLICY_MISMATCH'
+        elif barrier.get('blocked'):
             analysis['decision_status'] = 'HISTORY_RESYNC_PENDING'
         elif analysis['available_at'] and barrier.get('resume_after') and datetime.fromisoformat(analysis['available_at']) <= datetime.fromisoformat(barrier['resume_after']):
             analysis['decision_status'] = 'HISTORY_RESYNC_WAIT_NEW_BAR'
@@ -623,6 +648,8 @@ def create_app(path=None, *, provider=fetch_quote, news_provider=None, news_sour
                 'instruments': instruments(), 'feed': current,
                 'strategies': ['MANUAL', 'SMA20_QUOTES', 'PRICE_ACTION'], 'closed_bar_rules': list(RULES),
                 'history_recovery': 'QUARANTINE_TWO_FULL_SNAPSHOTS_NEW_BAR_ONLY',
+                'bitget_history_settlement_seconds': history_settlement_seconds,
+                'bitget_history_policy': history_policy('BTCUSDT'),
                 'closed_bar_max_lag_seconds': 120, 'server_time': clock().isoformat()}
 
     @app.get('/api/v1/directional/news')
@@ -655,7 +682,8 @@ def create_app(path=None, *, provider=fetch_quote, news_provider=None, news_sour
                         news_pre_seconds=body.news_pre_seconds, news_post_seconds=body.news_post_seconds)
         metadata = body.model_dump(mode='json', include={'strategy', 'quantity', 'stop_loss_percent', 'take_profit_percent'})
         if body.strategy == 'PRICE_ACTION':
-            metadata.update(rule=body.rule, timeframe=body.timeframe)
+            metadata.update(rule=body.rule, timeframe=body.timeframe,
+                            history_settlement_seconds=settlement_for(body.instrument), history_policy=history_policy(body.instrument))
         return enrich(store.create(identity, config, str(body.request_id), clock(), metadata=metadata))
 
     @app.get('/api/v1/directional/accounts/{account_id}')
