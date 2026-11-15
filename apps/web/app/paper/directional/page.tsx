@@ -19,11 +19,11 @@ function NewsEvidence({news}:{news:z.infer<typeof DirectionalStatus>['news']}){
  const time=(value:string|null)=>value?new Date(value).toLocaleString('zh-CN',{timeZone:'Asia/Shanghai',hour12:false}):'尚未取得';
  return <section className={styles.card} aria-label="官方新闻与事件监测"><div className={styles.cardHeading}><h2>新闻与事件监测</h2><span className={styles.badge}>{({READY:'采集正常',UNAVAILABLE:'采集不可用',STALE:'已过期',WARMUP:'首次采集中'})[monitor.state]}</span></div>
   <p>美国官方宏观日历与 Bitget 风险公告。采集正常不等于允许开仓，以本账户的来源、消息窗口和最终门禁为准。</p>
-  <dl className={styles.analysisGrid}><div><dt>最近有效观测 · 北京时间</dt><dd>{time(monitor.observed_at)}</dd></div><div><dt>监测来源</dt><dd>{monitor.feeds.length} 个</dd></div></dl>
+  <dl className={styles.analysisGrid}><div><dt>最近有效观测 · 北京时间</dt><dd>{time(monitor.observed_at)}</dd></div><div><dt>来源校验项</dt><dd>{monitor.feeds.length} 项</dd></div></dl>
   {monitor.error?<p className={styles.reason} role="status">新闻采集或时间覆盖异常，禁止新风险。诊断：{monitor.error}</p>:null}
   <details><summary>近期高影响事件与来源证据</summary><p>{monitor.scope}</p><p className={styles.digest}>账户当前来源：{news.source??'未配置'}<br/>采集器来源：{monitor.source}</p><p>覆盖范围 · 北京时间：{time(monitor.coverage_start)} — {time(monitor.coverage_end)}。消息窗口跨越覆盖边界时禁止开仓。</p>
    {monitor.next_high.length?<ul>{monitor.next_high.map(event=><li key={event.event_id}><a href={event.url} target="_blank" rel="noopener noreferrer">{event.title}</a><br/>{time(event.scheduled_at)} · {event.instruments.includes('*')?'全部监测产品':event.instruments.join('、')}</li>)}</ul>:<p>当前快照没有待显示事件；不代表市场没有突发新闻。</p>}
-   {monitor.feeds.map(feed=><div className={styles.analysis} key={feed.name}><strong>{feed.name}</strong><p><a href={feed.url} target="_blank" rel="noopener noreferrer">查看官方来源 ↗</a> · {feed.events} 项</p><p>最近验证 · 北京时间 {time(feed.checked_at)}</p><p className={styles.digest}>上游时间：{feed.upstream_date??'未提供'}<br/>内容修改时间：{feed.last_modified??'未提供'}<br/>内容摘要：{feed.sha256??'尚未取得'}</p></div>)}
+   {monitor.feeds.map(feed=><div className={styles.analysis} key={`${feed.name}:${feed.url}`}><strong>{feed.name}</strong><p><a href={feed.url} target="_blank" rel="noopener noreferrer">查看官方来源 ↗</a> · {feed.events} 项</p>{feed.error?<p className={styles.reason}>此来源本次不可用：{feed.error}</p>:null}<p>最近验证 · 北京时间 {time(feed.checked_at)}</p><p className={styles.digest}>上游时间：{feed.upstream_date??'未提供'}<br/>内容修改时间：{feed.last_modified??'未提供'}<br/>内容摘要：{feed.sha256??'尚未取得'}</p></div>)}
   </details></section>;
 }
 

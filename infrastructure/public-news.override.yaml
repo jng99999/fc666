@@ -1,0 +1,8 @@
+services:
+  directional:
+    image: fc666-directional-test:official-news-20261116
+    environment:
+      LIVE_TRADING: "false"
+      DIRECTIONAL_PUBLIC_NEWS_URL: "https://fc666-test.vercel.app/api/directional/news"
+    labels:
+      fc666.news.scope: official-us-macro-and-published-bitget-risk-only

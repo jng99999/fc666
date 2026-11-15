@@ -162,10 +162,19 @@ def http_news(url, token=None, *, public_only=False):
 
 def create_app(path=None, *, provider=fetch_quote, news_provider=None, news_source=None,
                background=True, secure=True, clock=None, interval=10, allowed_origins=None, research_runner=None,
-               operator_store=None, bar_provider=None):
+               operator_store=None, bar_provider=None, public_news_provider=None, public_news_url=None):
     if os.environ.get('LIVE_TRADING', 'false').lower() not in ('false', '0'):
         raise ValueError('Directional service requires LIVE_TRADING=false')
     path = path or os.environ.get('DIRECTIONAL_DB_PATH', '/app/.runtime/directional/paper.sqlite3')
+    public_news_url = public_news_url or os.environ.get('DIRECTIONAL_PUBLIC_NEWS_URL')
+    if public_news_url:
+        parsed = urlsplit(public_news_url)
+        if (parsed.scheme != 'https' or not parsed.hostname or parsed.username or parsed.password
+                or parsed.query or parsed.fragment):
+            raise ValueError('Public news adapter requires an explicit HTTPS URL')
+        if public_news_provider is None:
+            from core.paper.public_news import PublicNews
+            public_news_provider = PublicNews(Path(path).with_name('public-news.sqlite3'))
     if operator_store is None and os.environ.get('FC666_OPERATOR_DIR'):
         from core.security.operator import OperatorStore
         operator_store = OperatorStore(os.environ['FC666_OPERATOR_DIR'], secure=secure)
@@ -207,8 +216,12 @@ def create_app(path=None, *, provider=fetch_quote, news_provider=None, news_sour
             if operator_store is not None:
                 value = operator_store.vault.read()['news']
                 authorized_source = value['source']
-                selected_provider = (http_news(value['url'], value['token'], public_only=True)
-                                     if value['source'] and value['url'] else None)
+                if (public_news_provider is not None and public_news_url
+                        and value['source'] == public_news_provider.source and value['url'] == public_news_url):
+                    selected_provider = public_news_provider.read
+                else:
+                    selected_provider = (http_news(value['url'], value['token'], public_only=True)
+                                         if value['source'] and value['url'] else None)
             if selected_provider is None:
                 return None
             value = selected_provider(instrument, now)
@@ -444,11 +457,26 @@ def create_app(path=None, *, provider=fetch_quote, news_provider=None, news_sour
                 logger.warning('directional_closed_history_unavailable')
             stop.wait(5)
 
+    def refresh_news_once():
+        if public_news_provider is not None:
+            public_news_provider.refresh(clock())
+
+    def collect_news():
+        while not stop.is_set():
+            try:
+                refresh_news_once()
+            except Exception:
+                logger.warning('directional_public_news_unavailable')
+            stop.wait(60)
+
     @asynccontextmanager
     async def lifespan(app):
         thread = Thread(target=collect, daemon=True, name='directional-paper-clock') if background else None
         rule_thread = Thread(target=collect_rules, daemon=True, name='directional-closed-bars') if background else None
+        news_thread = Thread(target=collect_news, daemon=True, name='directional-public-news') if background and public_news_provider is not None else None
         if thread:
+            if news_thread:
+                news_thread.start()
             thread.start()
             rule_thread.start()
         if background:
@@ -458,6 +486,10 @@ def create_app(path=None, *, provider=fetch_quote, news_provider=None, news_sour
         if thread:
             thread.join(timeout=8)
             rule_thread.join(timeout=12)
+        if news_thread:
+            news_thread.join(timeout=1)
+        if public_news_provider is not None:
+            public_news_provider.close()
         history.close()
         research.close()
 
@@ -465,6 +497,7 @@ def create_app(path=None, *, provider=fetch_quote, news_provider=None, news_sour
     app.state.store = store
     app.state.poll_once = poll_once
     app.state.refresh_rules_once = refresh_rules_once
+    app.state.refresh_news_once = refresh_news_once
 
     @app.middleware('http')
     async def boundary(request, call_next):
@@ -585,11 +618,25 @@ def create_app(path=None, *, provider=fetch_quote, news_provider=None, news_sour
             current = {name: dict(value) for name, value in feed.items()}
         return {'service': 'directional-paper-v1', 'mode': 'RESEARCH_PAPER', 'trading_enabled': False,
                 'ai': {'configured': False}, 'news': {'configured': news_ready,
-                'state': 'SERVER_CONFIGURED' if news_ready else 'NEWS_UNAVAILABLE', 'source': current_news_source},
+                'state': 'SERVER_CONFIGURED' if news_ready else 'NEWS_UNAVAILABLE', 'source': current_news_source,
+                'monitor': public_news_provider.status(clock()) if public_news_provider is not None else None},
                 'instruments': instruments(), 'feed': current,
                 'strategies': ['MANUAL', 'SMA20_QUOTES', 'PRICE_ACTION'], 'closed_bar_rules': list(RULES),
                 'history_recovery': 'QUARANTINE_TWO_FULL_SNAPSHOTS_NEW_BAR_ONLY',
                 'closed_bar_max_lag_seconds': 120, 'server_time': clock().isoformat()}
+
+    @app.get('/api/v1/directional/news')
+    def public_news():
+        value = public_news_provider.read('BTCUSDT', clock()) if public_news_provider is not None else None
+        if value is None:
+            return JSONResponse({'detail': 'Official news collection is unavailable or stale'}, status_code=503)
+        return value.model_dump(mode='json')
+
+    @app.get('/api/v1/directional/news/status')
+    def public_news_status():
+        if public_news_provider is None:
+            return JSONResponse({'detail': 'Official news adapter is not enabled'}, status_code=503)
+        return public_news_provider.status(clock())
 
     @app.get('/api/v1/directional/accounts')
     def accounts(request: Request, response: Response):
