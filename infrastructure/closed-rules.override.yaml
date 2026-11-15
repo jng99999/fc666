@@ -1,0 +1,5 @@
+services:
+  directional:
+    image: fc666-directional-test:closed-rules-20261115
+    environment:
+      LIVE_TRADING: "false"

@@ -16,6 +16,7 @@ from uuid import uuid4
 
 from core.backtest.spot import digest
 from core.paper.directional import Config, DirectionalPaper, News, Proposal, Quote, VERSION as ENGINE_VERSION, aware
+from core.paper.price_action_rules import VERSION as RULE_VERSION, REQUIRED as RULE_REQUIRED
 
 VERSION = 'directional-sqlite-v1'
 VOLATILE = {'last_quote', 'observed_at', 'recent_quotes', 'updated_at'}
@@ -89,7 +90,7 @@ class Store:
                 pass
         with self.connection() as db:
             tables = {row[0] for row in db.execute("SELECT name FROM sqlite_master WHERE type='table'")}
-            if tables - {'directional_accounts', 'directional_operations', 'directional_fills'}:
+            if tables - {'directional_accounts', 'directional_operations', 'directional_fills', 'directional_rule_state'}:
                 raise ValueError('Refusing an unrelated database')
             db.execute('PRAGMA journal_mode=WAL')
             db.executescript('''
@@ -105,6 +106,9 @@ class Store:
                     account_id TEXT NOT NULL REFERENCES directional_accounts(account_id),
                     ordinal INTEGER NOT NULL, payload TEXT NOT NULL, sha256 TEXT NOT NULL,
                     PRIMARY KEY(account_id,ordinal));
+                CREATE TABLE IF NOT EXISTS directional_rule_state(
+                    account_id TEXT PRIMARY KEY REFERENCES directional_accounts(account_id),
+                    payload TEXT NOT NULL, sha256 TEXT NOT NULL);
             ''')
             for table in ('directional_operations', 'directional_fills'):
                 for action in ('UPDATE', 'DELETE'):
@@ -170,7 +174,113 @@ class Store:
                        'created_at', 'updated_at', 'last_quote', 'observed_at', 'recent_quotes', 'operation_limit', 'last_outcome')})
         result.update(fills=fills, fills_count=state['fills_count'], fills_truncated=state['fills_count'] > len(fills),
                       events=state['engine_events'], journal_sha256=state['journal_sha256'])
+        try:
+            checkpoint = self._rule_state(db, state['account_id'])
+            result['rule_analysis'] = checkpoint.get('analysis')
+        except (ValueError, KeyError, TypeError):
+            # A corrupt indicator checkpoint blocks new rule decisions, never
+            # the existing financial ledger's protective quote transition.
+            result['rule_analysis'] = {'rule_version': RULE_VERSION, 'state': 'UNAVAILABLE', 'samples': 0,
+                'required': RULE_REQUIRED, 'target': None, 'available_at': None,
+                'reason': 'RULE_CHECKPOINT_INVALID', 'evidence': {}}
         return result
+
+    def _rule_state(self, db, account_id):
+        row = db.execute('SELECT payload,sha256 FROM directional_rule_state WHERE account_id=?', (account_id,)).fetchone()
+        if row is None:
+            return {}
+        value = json.loads(row['payload'])
+        if digest(value) != row['sha256']:
+            raise ValueError('Rule checkpoint integrity failed')
+        if not isinstance(value, dict) or not isinstance(value.get('analysis'), dict):
+            raise ValueError('Rule checkpoint shape failed')
+        analysis = value['analysis']
+        if (analysis.get('state') not in ('WARMUP', 'READY', 'UNAVAILABLE')
+                or analysis.get('target') not in (None, 'LONG', 'SHORT')
+                or not isinstance(analysis.get('rule_version'), str)
+                or not isinstance(analysis.get('reason'), str) or not isinstance(analysis.get('evidence'), dict)
+                or type(analysis.get('samples')) is not int or not 0 <= analysis['samples'] <= 500
+                or analysis.get('required') != RULE_REQUIRED):
+            raise ValueError('Rule checkpoint analysis failed')
+        for stamp in (value.get('cursor'), analysis.get('available_at')):
+            if stamp is not None:
+                aware_stamp(stamp)
+        if value.get('cursor') is not None and (not isinstance(value.get('bar_sha256'), str)
+                or len(value['bar_sha256']) != 64 or any(c not in '0123456789abcdef' for c in value['bar_sha256'])):
+            raise ValueError('Rule checkpoint cursor hash failed')
+        return value
+
+    def cancel_pending_risk(self, account_id, now, news=None):
+        """News/TTL controls run even during a quote outage; never invent a fill."""
+        now = aware(now)
+        news = None if news is None else News.model_validate(news)
+        with self.transaction() as db:
+            state, engine = self._load(db, account_id)
+            engine.cancel_pending_risk(now=now, news=news)
+            if engine.journal:
+                state = self._commit(db, state, engine, 'gate:' + now.isoformat(), 'ENTRY_GATE',
+                    {'now': now.isoformat(), 'news': None if news is None else news.model_dump(mode='json')}, now)
+            else:
+                state = self._checkpoint(state, engine, now)
+                self._save(db, state)
+            return self._view(db, state, engine)
+
+    def rule_decision(self, account_id, analysis, *, bar_sha256, expected_revision, now, news=None, proposal=None):
+        """Atomically persist one closed-bar observation and its optional proposal.
+
+        Idle/blocked bars do not consume the financial-operation budget. Executed
+        proposals retain the full signal evidence in the immutable operation log.
+        """
+        now = aware(now)
+        news = None if news is None else News.model_validate(news)
+        analysis = json.loads(encoded(analysis))
+        if len(encoded(analysis)) > 32000 or len(bar_sha256) != 64:
+            raise ValueError('Bounded rule evidence and bar hash required')
+        with self.transaction() as db:
+            state, engine = self._load(db, account_id)
+            self._revision(state, expected_revision)
+            if state['metadata'].get('strategy') != 'PRICE_ACTION' or state['status'] != 'RUNNING':
+                raise Conflict('Rule decisions require an active closed-bar account')
+            old = self._rule_state(db, account_id)
+            stamp = analysis.get('available_at')
+            if stamp is not None:
+                closed_at = aware_stamp(stamp)
+                if closed_at > now:
+                    raise ValueError('Future rule evidence forbidden')
+                if old.get('cursor') is not None:
+                    previous = aware_stamp(old['cursor'])
+                    if closed_at < previous:
+                        return self._view(db, state, engine)
+                    if closed_at == previous:
+                        if old['bar_sha256'] != bar_sha256:
+                            raise Conflict('A processed closed candle was revised')
+                        if old.get('analysis', {}).get('state') == 'UNAVAILABLE':
+                            value = {**old, 'analysis': {**analysis, 'decision_status': 'BAR_ALREADY_EVALUATED',
+                                                        'evaluated_at': now.isoformat(), 'bar_sha256': bar_sha256}}
+                            db.execute('UPDATE directional_rule_state SET payload=?,sha256=? WHERE account_id=?',
+                                       (encoded(value), digest(value), account_id))
+                        return self._view(db, state, engine)
+            outcome = 'NO_SIGNAL'
+            if proposal is not None:
+                proposal = Proposal.model_validate(proposal)
+                if state['revision'] >= state['operation_limit']:
+                    state = self._stop_engine(state, engine, 'OPERATION_LIMIT')
+                    outcome = 'ENTRY_HALTED'
+                    state = self._commit(db, state, engine, 'rule-limit:' + proposal.request_id, 'RULE_LIMIT', {}, now)
+                else:
+                    result = engine.submit(proposal, now=now, news=news)
+                    outcome = result['reason'] if result['status'] == 'REJECTED' else 'QUEUED'
+                    state = self._commit(db, state, engine, 'decision:' + proposal.request_id, 'DECISION',
+                        {'request': proposal.model_dump(mode='json'), 'result': result, 'now': now.isoformat(),
+                         'news': None if news is None else news.model_dump(mode='json'),
+                         'rule_analysis': analysis, 'bar_sha256': bar_sha256}, now)
+            value = {**old, 'analysis': {**analysis, 'decision_status': analysis.get('decision_status', outcome),
+                                      'evaluated_at': now.isoformat(), 'bar_sha256': bar_sha256}}
+            if stamp is not None:
+                value.update(cursor=stamp, bar_sha256=bar_sha256)
+            db.execute('INSERT INTO directional_rule_state VALUES(?,?,?) ON CONFLICT(account_id) DO UPDATE SET payload=excluded.payload,sha256=excluded.sha256',
+                       (account_id, encoded(value), digest(value)))
+            return self._view(db, state, _CheckpointPaper(state))
 
     def _checkpoint(self, state, engine, now):
         state = dict(state)

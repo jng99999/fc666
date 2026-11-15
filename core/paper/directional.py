@@ -145,6 +145,25 @@ def entry_gate(config: Config, at: datetime, news: News | None):
     return 'CLEAR'
 
 
+def pending_entry_gate(config: Config, accepted_at: datetime, now: datetime, news: News | None):
+    """An old entry intent cannot outlive an embargo between observations."""
+    accepted_at, now = aware(accepted_at), aware(now)
+    if accepted_at > now:
+        raise ValueError('Pending acceptance cannot be in the future')
+    reason = entry_gate(config, now, news)
+    if reason != 'CLEAR':
+        return reason
+    # entry_gate has already established trusted, fresh, nonfuture evidence.
+    before, after = timedelta(seconds=config.news_pre_seconds), timedelta(seconds=config.news_post_seconds)
+    if news.coverage_start > accepted_at - after:
+        return 'NEWS_COVERAGE_INCOMPLETE'
+    for event in news.events:
+        if (event.impact == 'HIGH' and (config.instrument in event.instruments or '*' in event.instruments)
+                and event.scheduled_at - before <= now and event.scheduled_at + after >= accepted_at):
+            return 'HIGH_IMPACT_EVENT_CROSSED'
+    return 'CLEAR'
+
+
 class DirectionalPaper:
     """Bounded offline state machine. Calls are sequential; persistence is not provided."""
 
@@ -221,6 +240,29 @@ class DirectionalPaper:
                                   'news_sha256': self._news_evidence(news), **result})
         return dict(result)
 
+    def cancel_pending_risk(self, *, now: datetime, news: News | None):
+        """Recheck an unfilled entry without inventing another quote or fill.
+
+        News/clock outages must not leave an old entry intent reusable after an
+        embargo clears. Reduce-only decisions and existing brackets survive.
+        """
+        now = aware(now)
+        if self.observed_at is not None and now < self.observed_at:
+            raise ValueError('Observation clock cannot move backwards')
+        pending = self.pending
+        if pending is not None and pending.target != 'FLAT':
+            reason = ('DECISION_EXPIRED' if (now - pending.available_at).total_seconds() > self.config.decision_ttl_seconds
+                      else 'ENTRY_HALTED' if self.halted or self.balance <= 0 else
+                      pending_entry_gate(self.config, self.pending_accepted_at, now, news))
+            if reason != 'CLEAR':
+                self.pending = None
+                self.pending_accepted_at = None
+                self._record('ENTRY_REJECTED', {'request_id': pending.request_id, 'reason': reason,
+                                               'observed_at': now.isoformat(),
+                                               'news_sha256': self._news_evidence(news)})
+        self.observed_at = now
+        return self.view()
+
     def on_quote(self, quote: Quote, *, now: datetime, news: News | None):
         now = aware(now)
         self._fresh(quote, now)
@@ -228,7 +270,7 @@ class DirectionalPaper:
             raise ValueError('Observation clock cannot move backwards')
         if self.quote is not None and quote.at <= self.quote.at:
             if quote == self.quote:
-                return self.view()
+                return self.cancel_pending_risk(now=now, news=news)
             raise ValueError('Quotes must increase; timestamp revisions are forbidden')
         if len(self.journal) >= 100000:
             raise ValueError('Research event limit reached')
@@ -257,7 +299,8 @@ class DirectionalPaper:
                         self._close('SIGNAL_EXIT', request_id=pending.request_id)
                 else:
                     reason = ('DECISION_EXPIRED' if (now - pending.available_at).total_seconds() > self.config.decision_ttl_seconds
-                              else 'ENTRY_HALTED' if self.halted or self.balance <= 0 else entry_gate(self.config, now, news))
+                              else 'ENTRY_HALTED' if self.halted or self.balance <= 0 else
+                              pending_entry_gate(self.config, accepted_at, now, news))
                     if reason == 'CLEAR':
                         reason = self._open(pending, accepted_at)
                     if reason != 'CLEAR':

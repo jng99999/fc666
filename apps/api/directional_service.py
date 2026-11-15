@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from decimal import Decimal, localcontext, ROUND_CEILING, ROUND_FLOOR
 import hashlib
+import json
 import logging
 import os
 from pathlib import Path
@@ -24,6 +25,8 @@ from pydantic import ConfigDict, Field, model_validator
 from core.paper.directional import Boundary, Config, News, Proposal, Quote, entry_gate
 from core.paper.directional_market import INSTRUMENTS, fetch_quote, instruments, source_for
 from core.paper.directional_store import Conflict, Store
+from core.paper.price_action_rules import analyze as price_analysis, RULES
+from core.paper.rule_market import RuleMarket, bar_source
 from core.backtest.spot import rounded
 
 COOKIE = 'fc666_directional_session'
@@ -35,7 +38,7 @@ class Create(Boundary):
     model_config = ConfigDict(frozen=True, extra='forbid', allow_inf_nan=False)
     request_id: UUID
     instrument: str = Field(min_length=1, max_length=32)
-    strategy: Literal['MANUAL', 'SMA20_QUOTES', 'AI_RESEARCH']
+    strategy: Literal['MANUAL', 'SMA20_QUOTES', 'AI_RESEARCH', 'PRICE_ACTION']
     initial_cash: Decimal = Field(gt=0, le=1000000)
     tick_size: Decimal = Field(gt=0, le=1)
     quantity_step: Decimal = Field(gt=0, le=1)
@@ -48,18 +51,27 @@ class Create(Boundary):
     quantity: Decimal | None = Field(default=None, gt=0, le=1000)
     stop_loss_percent: Decimal | None = Field(default=None, ge=Decimal('.0001'), le=Decimal('.5'))
     take_profit_percent: Decimal | None = Field(default=None, ge=Decimal('.0001'), lt=1)
+    rule: Literal['STRUCTURE_FVG', 'RANGE_REVERSION', 'TREND_PULLBACK'] | None = None
+    timeframe: Literal['1m', '5m', '15m', '1h', '4h', '1d'] | None = None
 
     @model_validator(mode='after')
     def supported(self):
         source_for(self.instrument)
         automatic = (self.quantity, self.stop_loss_percent, self.take_profit_percent)
-        if self.strategy == 'SMA20_QUOTES':
+        if self.strategy in ('SMA20_QUOTES', 'PRICE_ACTION'):
             if any(value is None for value in automatic):
                 raise ValueError('Automatic quote strategy requires quantity and both protective percentages')
             if self.quantity > self.max_quantity or self.quantity % self.quantity_step:
                 raise ValueError('Automatic quantity exceeds limit or does not match quantity step')
         elif any(value is not None for value in automatic):
             raise ValueError('Manual accounts configure protective prices on each decision')
+        if self.strategy == 'PRICE_ACTION':
+            if self.rule is None or self.timeframe is None:
+                raise ValueError('Closed-bar accounts require an explicit rule and timeframe')
+            if self.instrument == 'XAU/USD' and self.timeframe != '1m':
+                raise ValueError('Gold uses complete one-minute quote samples only')
+        elif self.rule is not None or self.timeframe is not None:
+            raise ValueError('Rule/timeframe only apply to closed-bar accounts')
         if self.max_order_quote > self.initial_cash:
             raise ValueError('Order budget cannot exceed initial fully collateralized paper balance')
         if self.instrument == 'XAU/USD' and self.max_quantity > 100:
@@ -150,7 +162,7 @@ def http_news(url, token=None, *, public_only=False):
 
 def create_app(path=None, *, provider=fetch_quote, news_provider=None, news_source=None,
                background=True, secure=True, clock=None, interval=10, allowed_origins=None, research_runner=None,
-               operator_store=None):
+               operator_store=None, bar_provider=None):
     if os.environ.get('LIVE_TRADING', 'false').lower() not in ('false', '0'):
         raise ValueError('Directional service requires LIVE_TRADING=false')
     path = path or os.environ.get('DIRECTIONAL_DB_PATH', '/app/.runtime/directional/paper.sqlite3')
@@ -171,6 +183,7 @@ def create_app(path=None, *, provider=fetch_quote, news_provider=None, news_sour
                os.environ.get('DIRECTIONAL_ALLOWED_ORIGINS', 'https://fc666-test.vercel.app').split(',')) if value.strip()}
     clock = clock or (lambda: datetime.now(timezone.utc))
     store = Store(path)
+    history = RuleMarket(Path(path).with_name('closed-rule-bars.sqlite3'))
     stop = Event()
     lock = Lock()
     feed = {name: {'state': 'WAITING', 'last_checked': None, 'last_quote': None} for name in INSTRUMENTS}
@@ -216,13 +229,84 @@ def create_app(path=None, *, provider=fetch_quote, news_provider=None, news_sour
                 'QUOTE_UNAVAILABLE' if quote is None else
                 'QUOTE_STALE' if not 0 <= (at - quote.at).total_seconds() <= config.quote_max_age_seconds else
                 entry_gate(config, at, news))
-        analysis = signal(view) if view['metadata']['strategy'] == 'SMA20_QUOTES' else None
-        if gate == 'CLEAR' and analysis is not None and analysis['state'] == 'READY' and view['position'] is None:
+        analysis = signal(view) if view['metadata']['strategy'] == 'SMA20_QUOTES' else view.get('rule_analysis')
+        if (gate == 'CLEAR' and analysis is not None and analysis['state'] == 'READY'
+                and analysis['target'] is not None and view['position'] is None):
             gate = automatic_budget(view, analysis['target'])
+        if view['metadata']['strategy'] == 'PRICE_ACTION' and gate == 'CLEAR':
+            if analysis is None or analysis['state'] != 'READY':
+                gate = 'HISTORY_UNAVAILABLE' if analysis and analysis['state'] == 'UNAVAILABLE' else 'HISTORY_WARMUP'
+            elif analysis.get('decision_status') == 'CLOSED_BAR_STALE':
+                gate = 'CLOSED_BAR_STALE'
+        if analysis and analysis.get('decision_id') and view['last_outcome'] and view['last_outcome']['request_id'] == analysis['decision_id']:
+            outcome = view['last_outcome']
+            analysis = {**analysis, 'decision_status': 'QUEUED' if outcome['status'] == 'ACCEPTED' else
+                        outcome['status'] if outcome['status'] == 'FILLED' else outcome['reason']}
         return {**view, 'entry_gate': gate, 'feed': state,
                 'news': {'configured': news_ready, 'source': current_news_source,
                          'observed_at': news.observed_at.isoformat() if news else None},
                 'analysis': analysis}
+
+    def refresh_rules_once():
+        scopes = {(row['config']['instrument'], row['metadata']['timeframe']) for row in store.active()
+                  if row['metadata'].get('strategy') == 'PRICE_ACTION' and row['status'] == 'RUNNING'}
+        for name, timeframe in sorted(scopes):
+            if stop.is_set():
+                return
+            history.refresh(name, timeframe, clock(), bar_provider)
+
+    def closed_bar_decide(view, now, news):
+        if (view['metadata'].get('strategy') != 'PRICE_ACTION' or view['status'] != 'RUNNING'
+                or view['pending'] is not None or view['entry_halted']):
+            return
+        metadata, name = view['metadata'], view['config']['instrument']
+        cached = history.read(name, metadata['timeframe'])
+        bars = () if cached['error'] else cached['bars']
+        analysis = price_analysis(bars, instrument=name, source=bar_source(name),
+                                  timeframe=metadata['timeframe'], now=now, rule=metadata['rule'])
+        analysis = {**analysis, 'source': bar_source(name)}
+        if cached['error']:
+            analysis.update(state='UNAVAILABLE', target=None, reason='HISTORY_UNAVAILABLE')
+        target = analysis['target']
+        proposal = None
+        if analysis['available_at'] and (now - datetime.fromisoformat(analysis['available_at'])).total_seconds() > 120:
+            analysis['decision_status'] = 'CLOSED_BAR_STALE'
+        elif analysis['state'] == 'READY' and target is not None:
+            current = view['position']['direction'] if view['position'] else None
+            if current == target:
+                analysis['decision_status'] = 'SAME_DIRECTION'
+            else:
+                target = 'FLAT' if current is not None else target
+                config = Config.model_validate(view['config'])
+                gate = entry_gate(config, now, news) if target != 'FLAT' else 'CLEAR'
+                if gate == 'CLEAR':
+                    gate = automatic_budget(view, target)
+                if gate != 'CLEAR':
+                    analysis['decision_status'] = gate
+                else:
+                    request_id = 'price:' + hashlib.sha256((view['account_id'] + analysis['rule_version'] + analysis['available_at']).encode()).hexdigest()
+                    with localcontext() as context:
+                        context.prec = 60
+                        q = view['last_quote']
+                        base = rounded(Decimal(q['ask']) + config.slippage if target == 'LONG' else Decimal(q['bid']) - config.slippage,
+                                       config.tick_size, ROUND_CEILING if target == 'LONG' else ROUND_FLOOR)
+                        sl, tp = Decimal(metadata['stop_loss_percent']), Decimal(metadata['take_profit_percent'])
+                        stop_price = rounded(base * (1 - sl if target == 'LONG' else 1 + sl), config.tick_size,
+                                             ROUND_FLOOR if target == 'LONG' else ROUND_CEILING)
+                        take_price = rounded(base * (1 + tp if target == 'LONG' else 1 - tp), config.tick_size,
+                                             ROUND_CEILING if target == 'LONG' else ROUND_FLOOR)
+                        if target != 'FLAT' and min(stop_price, take_price) <= 0:
+                            analysis['decision_status'] = 'SIZE_OR_PRICE_LIMIT'
+                        else:
+                            proposal = Proposal(request_id=request_id, target=target, available_at=now,
+                                quantity='0' if target == 'FLAT' else metadata['quantity'],
+                                stop_loss=None if target == 'FLAT' else stop_price,
+                                take_profit=None if target == 'FLAT' else take_price)
+                            analysis['decision_id'] = request_id
+        last = cached['bars'][-1].model_dump(mode='json') if cached['bars'] else None
+        sha = hashlib.sha256(json.dumps(last, sort_keys=True).encode()).hexdigest()
+        store.rule_decision(view['account_id'], analysis, bar_sha256=sha, expected_revision=view['revision'],
+                            now=now, news=news, proposal=proposal)
 
     def auto_decide(view, now, news):
         if (view['metadata']['strategy'] != 'SMA20_QUOTES' or view['status'] != 'RUNNING'
@@ -262,6 +346,17 @@ def create_app(path=None, *, provider=fetch_quote, news_provider=None, news_sour
         names = sorted({row['config']['instrument'] for row in accounts})
         if not names:
             return
+        # Cancellation does not require a new quote: a short embargo must not be
+        # forgotten merely because the public feed repeated its last timestamp.
+        snapshots = {}
+        for name in names:
+            snapshots[name] = snapshot(name, clock())
+            for row in accounts:
+                if row['config']['instrument'] == name:
+                    try:
+                        store.cancel_pending_risk(row['account_id'], clock(), snapshots[name])
+                    except (Conflict, ValueError):
+                        logger.warning('directional_entry_gate_unavailable')
         with ThreadPoolExecutor(max_workers=3, thread_name_prefix='directional-public') as pool:
             futures = {pool.submit(provider, name): name for name in names}
             for future in as_completed(futures):
@@ -273,7 +368,7 @@ def create_app(path=None, *, provider=fetch_quote, news_provider=None, news_sour
                         raise ValueError('Configured public quote source required')
                     if not 0 <= (stamp - quote.at).total_seconds() <= 60:
                         raise ValueError('Fresh nonfuture public quote required')
-                    news = snapshot(name, stamp)
+                    news = snapshots[name]
                     with lock:
                         feed[name] = {'state': 'CONNECTED', 'last_checked': stamp.isoformat(),
                                       'last_quote': quote.model_dump(mode='json')}
@@ -285,10 +380,16 @@ def create_app(path=None, *, provider=fetch_quote, news_provider=None, news_sour
                             after = store.on_quote(row['account_id'], quote, now=stamp, news=news)
                             if previous is None or quote.at > Quote.model_validate(previous).at:
                                 auto_decide(after, stamp, news)
+                                closed_bar_decide(after, stamp, news)
                         except Conflict:
                             logger.info('directional_revision_changed')
                         except Exception:
                             logger.warning('directional_account_advance_unavailable')
+                    try:
+                        history.observe(quote, stamp)
+                    except Exception:
+                        # A history cache failure must not delay existing brackets.
+                        logger.warning('directional_gold_history_unavailable')
                 except Exception:
                     with lock:
                         feed[name] = {**feed[name], 'state': 'UNAVAILABLE', 'last_checked': stamp.isoformat()}
@@ -302,22 +403,35 @@ def create_app(path=None, *, provider=fetch_quote, news_provider=None, news_sour
                 logger.warning('directional_collection_unavailable')
             stop.wait(interval)
 
+    def collect_rules():
+        while not stop.is_set():
+            try:
+                refresh_rules_once()
+            except Exception:
+                logger.warning('directional_closed_history_unavailable')
+            stop.wait(5)
+
     @asynccontextmanager
     async def lifespan(app):
         thread = Thread(target=collect, daemon=True, name='directional-paper-clock') if background else None
+        rule_thread = Thread(target=collect_rules, daemon=True, name='directional-closed-bars') if background else None
         if thread:
             thread.start()
+            rule_thread.start()
         if background:
             research.start()
         yield
         stop.set()
         if thread:
             thread.join(timeout=8)
+            rule_thread.join(timeout=12)
+        history.close()
         research.close()
 
     app = FastAPI(title='FC666 Directional Research Paper', lifespan=lifespan)
     app.state.store = store
     app.state.poll_once = poll_once
+    app.state.refresh_rules_once = refresh_rules_once
 
     @app.middleware('http')
     async def boundary(request, call_next):
@@ -440,7 +554,8 @@ def create_app(path=None, *, provider=fetch_quote, news_provider=None, news_sour
                 'ai': {'configured': False}, 'news': {'configured': news_ready,
                 'state': 'SERVER_CONFIGURED' if news_ready else 'NEWS_UNAVAILABLE', 'source': current_news_source},
                 'instruments': instruments(), 'feed': current,
-                'strategies': ['MANUAL', 'SMA20_QUOTES'], 'server_time': clock().isoformat()}
+                'strategies': ['MANUAL', 'SMA20_QUOTES', 'PRICE_ACTION'], 'closed_bar_rules': list(RULES),
+                'closed_bar_max_lag_seconds': 120, 'server_time': clock().isoformat()}
 
     @app.get('/api/v1/directional/accounts')
     def accounts(request: Request, response: Response):
@@ -458,6 +573,8 @@ def create_app(path=None, *, provider=fetch_quote, news_provider=None, news_sour
                         decision_ttl_seconds=60, news_max_age_seconds=120,
                         news_pre_seconds=body.news_pre_seconds, news_post_seconds=body.news_post_seconds)
         metadata = body.model_dump(mode='json', include={'strategy', 'quantity', 'stop_loss_percent', 'take_profit_percent'})
+        if body.strategy == 'PRICE_ACTION':
+            metadata.update(rule=body.rule, timeframe=body.timeframe)
         return enrich(store.create(identity, config, str(body.request_id), clock(), metadata=metadata))
 
     @app.get('/api/v1/directional/accounts/{account_id}')
