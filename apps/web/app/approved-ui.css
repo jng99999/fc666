@@ -145,7 +145,7 @@ body.approved-ui :where(.gold-card,.health,.watch-panel,.depth-panel,.chart-pane
   body.approved-ui .workspace-primary-nav>a .workspace-icon { width:18px; height:18px; }
   body.approved-ui .workspace-settings { width:32px; height:32px; }
 }
-@media(max-width:760px) {
+@media(max-width:760px),(max-width:1024px) and (hover:none) and (pointer:coarse) {
   body.apple-ui.approved-ui { display:block; padding:12px 14px calc(102px + env(safe-area-inset-bottom)); font-size:13px; --radius:21px; }
   body.approved-ui .approved-workspace-content { display:block; }
   body.approved-ui .approved-workspace-header { height:38px; margin-bottom:12px; padding:0 2px; gap:0; }

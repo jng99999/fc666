@@ -109,7 +109,7 @@
 .exchange-analysis.gold-chart-workspace .gold-chart-caption{font-size:10px;color:#8a939f;gap:7px;flex-wrap:wrap;padding-top:6px}
 body.approved-ui .gold-workspace .exchange-analysis.gold-chart-workspace .chart-period-presets button{border-radius:4px;min-height:36px;padding:7px 9px;background:transparent;color:#8b929c;box-shadow:none;font-size:12px}
 body.approved-ui .gold-workspace .exchange-analysis.gold-chart-workspace .chart-period-presets button[aria-pressed=true]{background:#f0f2f4;color:#20252c;font-weight:650}
-@media(max-width:760px){
+@media(max-width:760px),(max-width:1024px) and (hover:none) and (pointer:coarse){
  .exchange-analysis{margin:0;border:0;padding:0;border-radius:0;font-size:12px}
  .exchange-analysis>.analysis-layout{gap:0}
  .exchange-analysis>.analysis-layout>.chart-column>.quote-card{border:0;border-radius:0;padding:8px 0 10px;box-shadow:none}
@@ -146,8 +146,10 @@ body.approved-ui .gold-workspace .exchange-analysis.gold-chart-workspace .chart-
  .exchange-analysis .exchange-market-stats dt{font-size:9px}
 }
 /* Product, quote, period tools and chart form one exchange screen on phones. */
-@media(max-width:760px){
+@media(max-width:760px),(max-width:1024px) and (hover:none) and (pointer:coarse){
  body.approved-ui:has(main.exchange-analysis)>.approved-workspace-header{display:none}
+ body.approved-ui .exchange-analysis .chart-tools>.mobile-mode{display:inline-flex}
+ body.approved-ui .exchange-analysis .desktop-only{display:none!important}
  body.approved-ui .exchange-analysis .exchange-mobile-product-bar{display:flex;align-items:center;gap:10px;min-height:44px;margin-bottom:2px}
  body.approved-ui .exchange-analysis .exchange-mobile-product-bar>.mobile-symbol-select{display:flex;flex:1;align-items:center;gap:6px;min-width:0;min-height:40px;border:0;border-radius:0;background:#fff;padding:0;color:#111;text-align:left;box-shadow:none}
  body.approved-ui .exchange-analysis .mobile-symbol-select .coin{display:none}

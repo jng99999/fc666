@@ -78,7 +78,7 @@ body.approved-ui main:has(>nav[aria-label="API接入导航"])>section,body.appro
 body.approved-ui main:has(>nav[aria-label="API接入导航"]) :is(input:not([type=checkbox]),textarea){background:#f7f8f9;border-color:#e5e7eb;border-radius:6px}
 body.approved-ui main:has(>nav[aria-label="API接入导航"]) button[type=submit]{background:#15171a;color:#fff;border-color:#15171a;border-radius:6px}
 
-@media(max-width:760px){
+@media(max-width:760px),(max-width:1024px) and (hover:none) and (pointer:coarse){
  html:has(body.approved-ui){scroll-padding-bottom:calc(90px + env(safe-area-inset-bottom))}
  body.apple-ui.approved-ui{padding:8px 12px calc(88px + env(safe-area-inset-bottom));font-size:13px;--radius:6px}
  body.approved-ui .approved-workspace-header{height:38px;margin-bottom:4px;padding:0 0 5px}
@@ -108,7 +108,6 @@ body.approved-ui main:has(>nav[aria-label="API接入导航"]) button[type=submit
  body.approved-ui main:has(>nav[aria-label="API接入导航"]) input:not([type=checkbox]){font-size:16px;min-height:44px}
  body.approved-ui .workspace-search-dialog,body.approved-ui .account-dialog,body.approved-ui .paper-stop-dialog{padding:16px;border-radius:10px}
 }
-@media(min-width:761px) and (max-width:1100px){body.apple-ui.approved-ui{padding:14px 16px;column-gap:12px}body.approved-ui .approved-workspace-navigation{left:16px;top:70px}}
 @media(max-width:760px),(max-width:1024px) and (hover:none) and (pointer:coarse){
  body.apple-ui.approved-ui{--text:#141619;--muted:#85898f;--apple-label:#141619;--apple-secondary:#85898f;color:#141619;font-size:13px;line-height:1.5}
  body.apple-ui.approved-ui button:where(:not(.danger):not(.danger-outline)){border:1px solid transparent;border-radius:10px;background:#f4f5f6;color:#17191c;box-shadow:none;text-shadow:none;transform:none;min-height:38px}
