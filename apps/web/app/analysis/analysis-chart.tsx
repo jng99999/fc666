@@ -29,7 +29,7 @@ export default function AnalysisChart({bars,lines,mode,resetKey=0,onInspect,show
   const series=lines.map(definition=>({...definition,series:definition.histogram?chart.addSeries(HistogramSeries,{lastValueVisible:false,priceLineVisible:false},definition.pane==='main'?0:subPane):chart.addSeries(LineSeries,{color:definition.color,lineWidth:['sma','smaSlow','ema'].includes(definition.key)?2:definition.key==='rsi'?rsiWidth:1,lastValueVisible:definition.key==='rsi',priceLineVisible:false,crosshairMarkerRadius:3,...(definition.key==='rsi'||definition.key.startsWith('stoch')?{autoscaleInfoProvider:()=>({priceRange:{minValue:0,maxValue:100}})}:{})},definition.pane==='main'?0:subPane)}));
   for(const line of series)for(const value of line.guides??[])line.series.createPriceLine({price:value,color:line.key==='rsi'?'#d8c9f2':'#acb8ca',lineWidth:1,lineStyle:2,axisLabelVisible:true,axisLabelColor:'#f3eefa',axisLabelTextColor:'#9273bc',title:''});
   if(lines.some(line=>line.key==='rsi'))chart.priceScale('right',subPane).applyOptions({scaleMargins:{top:.02,bottom:.02}});
-  let layoutFrame=0;
+  let layoutFrame=0,immersiveReset=0;
   let previousWidth=0;const resize=()=>{const mobile=mobileChartViewport();if(mobile)fitImmersiveChart(element);else{const immersive=element.closest('.analysis-modal-immersive');if(immersive)element.style.height=`${Math.max(150,immersive.getBoundingClientRect().bottom-element.getBoundingClientRect().top-12)}px`;}const width=element.clientWidth,height=element.clientHeight;if(!width||!height)return;chart.resize(width,height);if(mobile&&element.closest('[data-chart-frame]')&&previousWidth&&width!==previousWidth)renderer.current?.reset();previousWidth=width;if(volume)chart.panes()[1]?.setHeight(43);if(lines.some(line=>line.pane==='sub'))chart.panes()[subPane]?.setHeight(mobile?(height<=300?54:68):(window.innerHeight<=540?54:window.innerWidth<=760?68:102));cancelAnimationFrame(layoutFrame);layoutFrame=requestAnimationFrame(()=>paneLayout.current?.(element.getBoundingClientRect().top-(element.closest('.quote-chart-wrap')?.getBoundingClientRect().top??element.getBoundingClientRect().top)+chart.panes()[0].getHeight()+6));};
   const observer=new ResizeObserver(resize);observer.observe(element);const immersive=element.closest('[data-chart-frame]')??element.closest('.analysis-modal-immersive');if(immersive)observer.observe(immersive);resize();
   let initial=true,currentBars:Candle[]=[];
@@ -54,9 +54,9 @@ export default function AnalysisChart({bars,lines,mode,resetKey=0,onInspect,show
     line.series.applyOptions({priceFormat:line.key==='obv'?{type:'volume'}:{type:'price',precision:digits,minMove:10**-digits}});
     line.series.setData(data.bars.map((b,i)=>{const value=current?.values[i];return typeof value==='number'&&Number.isFinite(value)?{time:time(b.open_time),value,...(line.histogram?{color:value>=0?'#0bbd7980':'#f3516b80'}:{})}:{time:time(b.open_time)};}));
    }
-   if(initial){reset();initial=false;}
+   if(initial){reset();initial=false;if(mobileChartViewport()&&element.closest('.analysis-modal-immersive'))immersiveReset=requestAnimationFrame(()=>{immersiveReset=requestAnimationFrame(reset);});}
   }};
-  return()=>{renderer.current=null;colorMedia.removeEventListener('change',recolor);bridge.dispose();cancelAnimationFrame(layoutFrame);observer.disconnect();chart.remove();};
+  return()=>{renderer.current=null;colorMedia.removeEventListener('change',recolor);bridge.dispose();cancelAnimationFrame(layoutFrame);cancelAnimationFrame(immersiveReset);observer.disconnect();chart.remove();};
  // Indicator configuration rebuilds the panes; a market-data update preserves the viewport.
  // eslint-disable-next-line react-hooks/exhaustive-deps
  },[configuration,mode,showVolume,pricePrecision]);

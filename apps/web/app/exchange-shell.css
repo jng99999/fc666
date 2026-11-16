@@ -1,4 +1,5 @@
 /* Exchange workspace skin. Layout/interaction contracts and trading permissions stay unchanged. */
+.gold-heading-actions{display:contents}.gold-mobile-settings{display:none}
 @media(max-width:760px),(max-width:1024px) and (hover:none) and (pointer:coarse){
 html:has(body.approved-ui){background:#fff;scroll-padding-bottom:100px}
 body.apple-ui.approved-ui{
@@ -134,5 +135,15 @@ body.approved-ui main:has(>nav[aria-label="API接入导航"]) button[type=submit
  body.apple-ui.approved-ui .workspace-select-dialog [aria-selected=true]{background:#edf0f1;color:#111}
  body.apple-ui.approved-ui .workspace-icon-button{background:#fff;border:0;color:#17191c;box-shadow:none}
  body.apple-ui.approved-ui .workspace-primary-nav>a[aria-current=page]{color:#111}
+ body.apple-ui.approved-ui .replay-workspace .rp-chart-empty{border-radius:0;background:#fafbfc;color:#85898f}
+ body.apple-ui.approved-ui .replay-workspace .rp-chart-empty>.rp-icon{color:#8d949c}
+ body.apple-ui.approved-ui .replay-workspace .rp-chart-empty strong{color:#50565e}
+ body.apple-ui.approved-ui .replay-workspace .rp-setup-shortcut{background:#111315;color:#fff;border-radius:4px;box-shadow:none}
+ body.apple-ui.approved-ui .replay-workspace .rp-segmented{border-radius:4px;background:#f3f4f5}
+ body.apple-ui.approved-ui .replay-workspace .rp-pill{border-radius:2px;background:#f4f5f6;color:#85898f}
+ body.apple-ui.approved-ui:has(main.gold-market-workspace)>.approved-workspace-header,body.apple-ui.approved-ui:has(main.gold-market-workspace) .workspace-mobile-title{display:none}
+ body.apple-ui.approved-ui .gold-heading-actions{display:flex;align-items:center;gap:6px}
+ body.apple-ui.approved-ui .gold-mobile-settings{display:grid;place-items:center;color:#17191c;min-width:32px;min-height:34px}
+ body.apple-ui.approved-ui .gold-market-workspace .gold-heading{margin-bottom:10px}
 }
 }
