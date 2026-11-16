@@ -1,6 +1,7 @@
 export type ChartPoint={x:number;y:number};
 export const mobileExchangeQuery='(max-width:760px), (max-width:1024px) and (hover:none) and (pointer:coarse)';
 export function mobileChartViewport():boolean{return window.matchMedia(mobileExchangeQuery).matches;}
+export function chartCandleColors(mobile:boolean){const up=mobile?'#00b8c4':'#08bc76',down=mobile?'#ef4778':'#f14c68';return {upColor:up,downColor:down,wickUpColor:up,wickDownColor:down};}
 type Bounds={left:number;top:number;width:number;height:number};
 /** A clockwise quarter turn swaps physical axes; all chart APIs still use local pixels. */
 export function chartPointInBounds(point:ChartPoint,bounds:Bounds,size:{width:number;height:number},rotated:boolean):ChartPoint {

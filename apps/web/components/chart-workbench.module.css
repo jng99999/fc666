@@ -17,3 +17,15 @@
 .regionList{display:flex;align-items:center;gap:6px;overflow-x:auto;overscroll-behavior-x:contain;max-width:100%;padding:3px 1px 7px;scrollbar-width:thin}.workbench .regionList button{display:inline-flex;align-items:center;gap:5px;flex-shrink:0;min-height:34px;padding:5px 9px;font-size:10px;white-space:nowrap;background:#fff}.regionList button>span{width:6px;height:6px;border-radius:50%;flex-shrink:0}
 .selectedRegion{display:flex;align-items:center;gap:5px 10px;flex-wrap:wrap;min-width:0;padding:9px 10px;border:1px solid #dce8f8;border-radius:10px;background:#f8fbff;font-size:11px;margin:2px 0 8px;overflow-wrap:anywhere}.selectedRegion strong{font-size:11px}.selectedRegion span{color:#7188a7}.workbench .selectedRegion button{margin-left:auto;min-height:32px;font-size:10px;padding:3px 7px}.profileNote{margin:2px 0 7px;color:#8294ad;font-size:10px}
 @media(max-width:760px){.workbench.workbench button{min-height:42px}.workbench .heading button{min-height:34px}.workbench .anchor input,.workbench .rename input{min-height:44px}}
+@media(max-width:760px),(max-width:1024px) and (hover:none) and (pointer:coarse){
+ .workbench{color:#17191c;font-size:12px;line-height:1.55}
+ .heading{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px;padding:6px 0}.heading>strong{display:none}.channelControls{background:transparent;padding:0;gap:2px;border-radius:0;justify-content:flex-start}
+ .workbench .channelControls button{min-height:29px;font-size:10px;padding:4px 6px;border:0;border-radius:3px;background:transparent;box-shadow:none}.workbench .channelControls button[aria-pressed=true]{background:#eef0f2;color:#111;box-shadow:none}
+ .heading>button{font-size:10px;min-height:29px;padding:4px 6px;border-radius:3px;background:#f3f4f5;color:#626970}
+ .tools,.details{border:0;border-top:1px solid #eceef0;border-bottom:1px solid #eceef0;border-radius:0;background:#fff;margin:0 0 6px}
+ .tools summary,.details>summary{padding:10px 0;color:#51575e;font-size:11px;font-weight:500}.toolBody,.detailBody{padding:2px 0 10px}
+ .toolBody p,.detailBody p{font-size:11px;color:#7b8087;line-height:1.65}.toolRow label{font-size:11px;color:#626970}
+ .legend{color:#8a9097;padding:5px 0;font-size:10px}.notice,.caution{border-radius:3px;background:#f5f6f7;color:#777d85;font-size:11px;padding:7px 8px}
+ .patternLevels{gap:8px}.workbench .patternLevels>div{padding:7px 0;border-bottom:1px solid #eceef0;border-radius:0;background:#fff}.patternLevels dt{color:#8a9097}.workbench .patternLevels dd{font-size:12px;color:#17191c}
+ .toolRow :global(.workspace-select-trigger){border-radius:4px;background:#f4f5f6;color:#17191c}
+}

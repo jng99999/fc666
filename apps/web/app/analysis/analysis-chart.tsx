@@ -5,7 +5,7 @@ import type {Candle} from '../../lib/market';
 import type {IndicatorLine} from './analysis-indicators';
 import {chartCoordinates,type ChartCoordinates} from '../../lib/chart-coordinates';
 import ChartWorkbench from '../../components/chart-workbench';
-import {fitImmersiveChart,mobileChartViewport} from '../../lib/chart-landscape';
+import {fitImmersiveChart,mobileChartViewport,mobileExchangeQuery,chartCandleColors} from '../../lib/chart-landscape';
 
 type ChartData={bars:Candle[];lines:IndicatorLine[]};
 export default function AnalysisChart({bars,lines,mode,resetKey=0,onInspect,showVolume=false,onPaneLayout,pricePrecision}:ChartData&{mode:'candles'|'line';resetKey?:number;onInspect?:(index:number|null)=>void;showVolume?:boolean;onPaneLayout?:(top:number)=>void;pricePrecision?:number}){
@@ -20,6 +20,7 @@ export default function AnalysisChart({bars,lines,mode,resetKey=0,onInspect,show
   const element=host.current;
   const chart=createChart(element,{width:Math.max(1,element.clientWidth),height:Math.max(80,element.clientHeight),autoSize:false,layout:{background:{type:ColorType.Solid,color:'transparent'},textColor:'#8296b3',fontFamily:'-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif',fontSize:11,attributionLogo:true,panes:{separatorColor:'#edf1f8',separatorHoverColor:'#dae6f7',enableResize:false}},grid:{vertLines:{color:'#f1f5fa'},horzLines:{color:'#edf2f8',style:2}},rightPriceScale:{borderVisible:false,minimumWidth:54,scaleMargins:{top:.12,bottom:.1}},timeScale:{borderVisible:false,timeVisible:bars[0]?.timeframe!=='1d',secondsVisible:false,rightOffset:2,barSpacing:6,minBarSpacing:3},localization:{locale:'zh-CN'},crosshair:{mode:CrosshairMode.Normal,vertLine:{color:'#9cacc0',labelBackgroundColor:'#617fa5',style:2},horzLine:{color:'#9cacc0',labelBackgroundColor:'#617fa5',style:2}},handleScroll:{mouseWheel:false,pressedMouseMove:true,vertTouchDrag:false,horzTouchDrag:true},handleScale:{pinch:true,mouseWheel:true,axisPressedMouseMove:true,axisDoubleClickReset:true}});
   const candles=mode==='candles'?chart.addSeries(CandlestickSeries,{upColor:'#08bc76',downColor:'#f14c68',wickUpColor:'#08bc76',wickDownColor:'#f14c68',borderVisible:false,priceLineStyle:2,priceLineColor:'#88c1aa'}):null;
+  const colorMedia=window.matchMedia(mobileExchangeQuery),recolor=()=>candles?.applyOptions(chartCandleColors(colorMedia.matches));recolor();colorMedia.addEventListener('change',recolor);
   const trend=mode==='line'?chart.addSeries(AreaSeries,{lineColor:'#267aff',topColor:'#267aff20',bottomColor:'#267aff01',lineWidth:2,priceLineVisible:true,priceLineStyle:2,priceLineColor:'#88c1aa'}):null;
   const volume=showVolume?chart.addSeries(HistogramSeries,{priceFormat:{type:'volume'},lastValueVisible:false,priceLineVisible:false},1):null;
   const subPane=showVolume?2:1;
@@ -55,7 +56,7 @@ export default function AnalysisChart({bars,lines,mode,resetKey=0,onInspect,show
    }
    if(initial){reset();initial=false;}
   }};
-  return()=>{renderer.current=null;bridge.dispose();cancelAnimationFrame(layoutFrame);observer.disconnect();chart.remove();};
+  return()=>{renderer.current=null;colorMedia.removeEventListener('change',recolor);bridge.dispose();cancelAnimationFrame(layoutFrame);observer.disconnect();chart.remove();};
  // Indicator configuration rebuilds the panes; a market-data update preserves the viewport.
  // eslint-disable-next-line react-hooks/exhaustive-deps
  },[configuration,mode,showVolume,pricePrecision]);

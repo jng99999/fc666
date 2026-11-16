@@ -12,6 +12,8 @@ Reviewed the actual public Bitget mobile trading guide and its linked app screen
 
 Applied their information hierarchy to existing functionality: product selection and price summary, compact period/indicator controls, dominant price chart, secondary evidence panels, and persistent navigation. The mobile shell uses a white background, thin dividers, small radii and compact forms. Market summary labels distinguish the actual 20-bar high/low from the live 24-hour volume; unavailable provider fields are not relabelled as 24-hour statistics.
 
+The follow-up Bitget pass removes the separate FC666 header from the narrow-screen quote page, retains a real settings/API link next to product selection, combines period scrolling/custom periods/landscape/indicator controls into one row, and makes the chart the dominant first-screen surface. Cyan/pink candles are mobile-only; changing back to desktop restores the existing green/red palette. Shared phone controls use neutral gray secondary controls, black primary actions, flat white sections and thin separators; destructive actions keep their warning treatment. Desktop selectors, layout and palette remain intact.
+
 Directional mobile account descriptions are collapsible; the news-state summary and missing-source warning remain visible. Account selection, entry/exit commands, stops, cost assumptions, authentication and server-side news/risk gates are unchanged. Desktop keeps the original expanded descriptions and headings.
 
 ## Direct landscape

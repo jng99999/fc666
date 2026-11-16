@@ -1,6 +1,7 @@
 /* Exchange market skin. Layout and chart coordinates stay owned by the workbench. */
 .exchange-page-tabs,.exchange-market-stats{display:none}
 .exchange-quote-summary{display:contents}
+.exchange-mobile-product-bar{display:contents}.exchange-mobile-settings{display:none}
 @media(max-width:760px),(max-width:1024px) and (hover:none) and (pointer:coarse){
 .exchange-analysis{--bg:#fff;--panel:#fff;--text:#15191e;--muted:#8c929a;--blue:#171c22;--blue-soft:#f1f3f5;--line:#eceef0;--radius:6px;--shadow:none;color:var(--text);background:#fff;font-size:13px;letter-spacing:0}
 .exchange-analysis :is(h1,h2,h3,h4){letter-spacing:-.02em}
@@ -143,5 +144,40 @@ body.approved-ui .gold-workspace .exchange-analysis.gold-chart-workspace .chart-
  .exchange-analysis .quote-card>.exchange-quote-summary{gap:7px}
  .exchange-analysis .exchange-market-stats>div{gap:4px}
  .exchange-analysis .exchange-market-stats dt{font-size:9px}
+}
+/* Product, quote, period tools and chart form one exchange screen on phones. */
+@media(max-width:760px){
+ body.approved-ui:has(main.exchange-analysis)>.approved-workspace-header{display:none}
+ body.approved-ui .exchange-analysis .exchange-mobile-product-bar{display:flex;align-items:center;gap:10px;min-height:44px;margin-bottom:2px}
+ body.approved-ui .exchange-analysis .exchange-mobile-product-bar>.mobile-symbol-select{display:flex;flex:1;align-items:center;gap:6px;min-width:0;min-height:40px;border:0;border-radius:0;background:#fff;padding:0;color:#111;text-align:left;box-shadow:none}
+ body.approved-ui .exchange-analysis .mobile-symbol-select .coin{display:none}
+ body.approved-ui .exchange-analysis .mobile-symbol-select .mobile-symbol-label{font-size:19px;font-weight:750;white-space:nowrap;letter-spacing:-.3px}
+ body.approved-ui .exchange-analysis .mobile-symbol-select>.icon{width:13px;height:13px;margin-left:0}
+ body.approved-ui .exchange-analysis .exchange-product-type{font-size:9px;background:#f2f3f4;color:#888;border-radius:2px;padding:2px 4px;margin-left:3px}
+ body.approved-ui .exchange-analysis .exchange-mobile-settings{display:grid;place-items:center;width:30px;height:34px;color:#17191c}
+ body.approved-ui .exchange-analysis .exchange-page-tabs{gap:24px;margin-bottom:6px}
+ body.approved-ui .exchange-analysis .exchange-page-tabs a{font-size:13px;min-height:37px}
+ body.approved-ui .exchange-analysis .quote-card>.chart-toolbar{display:flex;align-items:center;gap:4px;min-height:39px;padding:3px 0;margin:0 0 4px}
+ body.approved-ui .exchange-analysis .chart-toolbar>.chart-period-control{display:flex;flex:1;align-items:center;min-width:0;gap:2px}
+ body.approved-ui .exchange-analysis .chart-toolbar .chart-period-presets{flex:1;min-width:0;background:#fff}
+ body.approved-ui .exchange-analysis .chart-toolbar .chart-period-presets button{font-size:11px;min-height:31px;min-width:32px;padding:5px 6px}
+ body.approved-ui .exchange-analysis .chart-toolbar .chart-custom-period{position:relative;flex:0 0 34px;margin:0}
+ body.approved-ui .exchange-analysis .chart-toolbar .chart-custom-period>summary{min-height:31px;font-size:0;padding:6px 0;white-space:nowrap;gap:0}
+ body.approved-ui .exchange-analysis .chart-toolbar .chart-custom-period>summary:before{content:'更多';font-size:10px;color:#73777e}
+ body.approved-ui .exchange-analysis .chart-toolbar .chart-custom-period>summary>span{display:none}
+ body.approved-ui .exchange-analysis .chart-toolbar .chart-custom-period form{position:absolute;right:-81px;top:34px;z-index:8;width:min(290px,calc(100vw - 28px));box-shadow:0 5px 20px #00000018;background:#fff;border:1px solid #eee}
+ body.approved-ui .exchange-analysis .chart-tools{gap:0;flex-shrink:0}
+ body.approved-ui .exchange-analysis .chart-tools>.icon-btn,body.approved-ui .exchange-analysis .chart-tools>.indicator-trigger{width:27px;min-width:27px;min-height:31px;height:31px;padding:4px;border:0;border-radius:2px;background:#fff}
+ body.approved-ui .exchange-analysis .chart-tools .icon{width:18px;height:18px}
+ body.approved-ui .exchange-analysis .mobile-chart-actions{display:none}
+ body.approved-ui .exchange-analysis .quote-card [data-testid=analysis-chart]{height:clamp(340px,52dvh,470px)}
+ body.approved-ui .exchange-analysis .quote-change.up{color:#00aeb8}
+ body.approved-ui .exchange-analysis .quote-change.down{color:#ef4778}
+ body.apple-ui.approved-ui .exchange-analysis .chart-period-presets button{background:transparent;color:#85898f;border:0;border-radius:3px;box-shadow:none}
+ body.apple-ui.approved-ui .exchange-analysis .chart-period-presets button[aria-pressed=true]{background:#f0f2f4;color:#15171a;font-weight:650}
+ body.apple-ui.approved-ui .exchange-analysis .chart-custom-period [role=group] button{background:#f3f4f5;color:#777d85;border-color:transparent;box-shadow:none}
+ body.apple-ui.approved-ui .exchange-analysis .chart-custom-period [role=group] button[aria-pressed=true]{background:#e8ebed;color:#111;border-color:transparent}
+ body.apple-ui.approved-ui [data-testid=chart-workbench] [aria-label="趋势通道方向"] button{background:transparent;color:#85898f;border:0;border-radius:3px;min-height:29px;padding:4px 6px;box-shadow:none}
+ body.apple-ui.approved-ui [data-testid=chart-workbench] [aria-label="趋势通道方向"] button[aria-pressed=true]{background:#f0f2f4;color:#111}
 }
 }
