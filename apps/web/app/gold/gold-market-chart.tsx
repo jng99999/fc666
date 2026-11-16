@@ -39,7 +39,7 @@ export default function GoldMarketChart({bars:sampled,ready}:{bars:GoldMarketTyp
   if(line)line.setData(bars.map(bar=>({time:bar.open_time/1000 as UTCTimestamp,value:Number(bar.close)})));
   const bridge=chartCoordinates(chart,(candles??line)!,element,()=>bars.map(b=>b.open_time));setCoordinates(bridge);
   chart.timeScale().fitContent();setFailed(false);
-  const resize=()=>{if(mobileChartViewport())fitImmersiveChart(element);else{const immersive=element.closest('.analysis-modal-immersive');if(immersive)element.style.height=`${Math.max(150,immersive.getBoundingClientRect().bottom-element.getBoundingClientRect().top-12)}px`;}chart.resize(Math.max(1,element.clientWidth),Math.max(80,element.clientHeight));};
+  let previousWidth=0;const resize=()=>{if(mobileChartViewport())fitImmersiveChart(element);else{const immersive=element.closest('.analysis-modal-immersive');if(immersive)element.style.height=`${Math.max(150,immersive.getBoundingClientRect().bottom-element.getBoundingClientRect().top-12)}px`;}const width=Math.max(1,element.clientWidth);chart.resize(width,Math.max(80,element.clientHeight));if(mobileChartViewport()&&element.closest('[data-chart-frame]')&&previousWidth&&width!==previousWidth)chart.timeScale().fitContent();previousWidth=width;};
   const observer=new ResizeObserver(resize);observer.observe(element);const immersive=element.closest('[data-chart-frame]')??element.closest('.analysis-modal-immersive');if(immersive)observer.observe(immersive);resize();
   return()=>{colorMedia.removeEventListener('change',recolor);bridge.dispose();observer.disconnect();chart.remove();};
  },[bars,mode,period,expanded]);
