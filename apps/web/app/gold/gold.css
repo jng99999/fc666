@@ -16,6 +16,18 @@
  body.approved-ui .gold-market-workspace .gold-mobile-tabs button{padding:9px 0;min-height:39px;font-size:13px;background:transparent;color:#85898f;border:0;border-radius:0;font-weight:500;box-shadow:none}
  body.approved-ui .gold-market-workspace .gold-mobile-tabs button[aria-current=page]{color:#141619;font-weight:650;border-bottom:2px solid #141619}
  .gold-mobile-tabs>span{margin-left:auto;color:#9b6d20;font-size:9px;white-space:nowrap}
+ body.apple-ui.approved-ui .gold-market-workspace .gold-mobile-tabs button{font-size:14px;min-height:44px}
+ body.apple-ui.approved-ui .gold-market-workspace .gold-quote{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);grid-template-areas:'bid ask' 'bid spread' 'state state';gap:8px 16px;padding:12px 0 16px}
+ body.apple-ui.approved-ui .gold-market-workspace .gold-quote>div:first-child{grid-area:ask;display:block}
+ body.apple-ui.approved-ui .gold-market-workspace .gold-quote>div:nth-child(2){grid-area:bid;display:block}
+ body.apple-ui.approved-ui .gold-market-workspace .gold-quote>div:nth-child(3){grid-area:spread;display:block}
+ body.apple-ui.approved-ui .gold-market-workspace .gold-quote>div:nth-child(2) strong{font-size:30px;font-weight:650;letter-spacing:-.6px;margin-top:8px}
+ body.apple-ui.approved-ui .gold-market-workspace .gold-quote>div:first-child strong,body.apple-ui.approved-ui .gold-market-workspace .gold-quote>div:nth-child(3) strong{font-size:15px;font-weight:500;letter-spacing:0;margin-top:2px}
+ body.apple-ui.approved-ui .gold-market-workspace .gold-mobile-quote-actions button{border-radius:12px;font-size:14px;min-height:46px}
+ body.apple-ui.approved-ui .gold-market-workspace .gold-mobile-order-quote{border-left:0;padding-left:8px}
+ body.apple-ui.approved-ui .gold-market-workspace .gold-mobile-order-controls input{border-radius:12px;min-height:48px;padding:10px 12px}
+ body.apple-ui.approved-ui .gold-market-workspace .gold-mobile-order-controls .gold-actions button{border-radius:12px;min-height:46px;font-size:14px}
+ body.apple-ui.approved-ui .gold-market-workspace .gold-workflow-links a{border-radius:12px;padding:12px;font-size:12px}
  body.approved-ui .gold-market-workspace>.gold-workflow-links{display:none}
  .gold-market-workspace .gold-grid{display:block}
  .gold-market-workspace[data-mobile-panel=quote] .gold-rule-card,.gold-market-workspace[data-mobile-panel=quote] .gold-trade-column,.gold-market-workspace[data-mobile-panel=quote]>.gold-ledger-details{display:none}

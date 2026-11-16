@@ -7,6 +7,29 @@
 .analysis{padding:18px;background:#f5f8fd;border:1px solid #e5edf8;border-radius:17px;margin:18px 0;min-width:0}.analysis .cardHeading{margin-bottom:8px}.analysis h3{margin:0}.analysisGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px 12px}.analysisGrid>div{min-width:0}.analysisGrid dt{font-size:11px;color:#71839e}.analysisGrid dd{font-size:13px;font-weight:550;margin:6px 0 0;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}.evidence{font:11px/1.8 ui-monospace,monospace;white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;max-height:320px;overflow:auto;background:#fff;padding:12px;border-radius:12px;min-width:0}.fullWidth{grid-column:1/-1}.page input{box-sizing:border-box;min-width:0;max-width:100%}.analysis .reason{margin-bottom:8px}@media(max-width:500px){.analysis{padding:13px}.analysisGrid{gap:13px 8px}.analysisGrid dd{font-size:12px}.analysis .cardHeading{align-items:flex-start}.evidence{font-size:10px;max-height:260px}}
 @media(max-width:760px){.page .error,.dialog [role=alert]{color:#af3455}.page .notice{color:#187953}}
 @media(max-width:760px){.page{color:#17191c}.heading p,.heading span,.heading a{color:#85898f}.card{border:0;border-bottom:1px solid #eceef0;border-radius:0;background:#fff;box-shadow:none;padding:14px 0;margin-bottom:12px}.card p,.dialog p,.fields label,.dialog label,.quote small,.metrics small,.position dt,.fill small,.fill>span,.footnote{color:#85898f}.page summary{color:#555b62;padding:10px 0;font-size:12px}.metrics>div,.position,.fill,.analysis{border-radius:4px;background:#f5f6f7;box-shadow:none}.reason{border-radius:4px;background:#fff8eb}.badge,.tags span{border-radius:3px;padding:4px 6px}.dialog{border:0;border-radius:10px;color:#17191c}.dialog::backdrop{background:#0005;backdrop-filter:none}.analysisGrid dt{color:#85898f}.analysisGrid dd{color:#17191c}}
+/* App controls use soft fills; dividers separate sections, not every field. */
+@media(max-width:760px),(max-width:1024px) and (hover:none) and (pointer:coarse){
+ .mobileTrade .orderColumn .openClose{padding:3px;background:#f3f4f5;border-radius:12px;margin-bottom:12px}
+ .mobileTrade .orderColumn .openClose button[aria-pressed]{border-radius:9px;min-height:36px;font-size:14px}
+ .mobileTrade .orderColumn .openClose button[aria-pressed=true]{box-shadow:0 1px 4px #00000008}
+ .mobileTrade .orderColumn .orderKind{border-radius:10px;padding:11px 12px;font-size:12px;margin-bottom:12px;color:#484e55}
+ .mobileTrade .orderColumn .mobileOrderForm label{font-size:12px;gap:6px;margin-bottom:12px;color:#737980}
+ .mobileTrade .orderColumn .mobileOrderForm input{border-radius:12px;background:#f4f5f6;height:48px;padding:10px 12px}
+ .mobileTrade .orderColumn .mobileOrderForm .directionButtons button{border-radius:8px;min-height:34px;font-size:12px;border-color:transparent;background:#f4f5f6}
+ .mobileTrade .orderColumn .mobileOrderForm .directionButtons button[data-side=long][aria-pressed=true]{background:#e9f8f9;color:#008e9a}
+ .mobileTrade .orderColumn .mobileOrderForm .directionButtons button[data-side=short][aria-pressed=true]{background:#fff0f5;color:#d43667}
+ .mobileTrade .orderColumn .mobileOrderForm .protectionLabel{font-size:12px;margin-top:14px}.mobileTrade .orderColumn .mobileOrderForm .protectionLabel small{font-size:10px}
+ .mobileTrade .orderColumn .mobileOrderForm button:is(.longAction,.shortAction)[type=submit]{border-radius:12px;min-height:46px;font-size:14px}
+ .mobileTrade .orderColumn .mobileOrderForm .available{font-size:11px;margin:12px 0}.mobileTrade .orderColumn .mobileOrderForm .available strong{font-size:14px}
+ .mobileTrade .tradeGrid .quoteColumn{border-left:0;padding-left:5px}.mobileTrade .quoteColumn .quoteHeading{font-size:11px;margin-bottom:16px}
+ .mobileTrade .quoteColumn :is(.askQuote,.bidQuote,.quoteMid){padding:14px 0 14px 5px}.mobileTrade .quoteColumn .quoteMid{border:0;background:#fafbfc;border-radius:10px}
+ .mobileTrade .quoteColumn :is(.askQuote,.bidQuote) strong{font-size:19px;font-weight:550}.mobileTrade .quoteColumn :is(.askQuote,.bidQuote) small{font-size:11px}
+ .mobileTrade .mobileRecords .recordTabs{gap:24px;border-bottom:1px solid #f3f4f5}.mobileTrade .mobileRecords .recordTabs button[role=tab]{background:transparent;border-radius:0;padding:12px 0;font-size:14px;box-shadow:none;color:#737980}
+ .mobileTrade .mobileRecords .recordTabs button[role=tab][aria-selected=true]{background:transparent;color:#111315}.mobileTrade .recordTabs button[aria-selected=true]:after{border-radius:2px;height:3px}
+ .mobileTrade .mobileCreate .fields input{border-radius:12px;background:#f4f5f6}.mobileTrade .mobileCreate .fields label{font-size:12px;color:#737980}
+ .mobileTrade .mobileCreate button[type=submit]{border-radius:12px;min-height:46px;font-size:14px}.mobileTrade .accountBar>button[type=button]{border-radius:10px}
+ .dialog[aria-labelledby=directional-stop-title]{border-radius:20px;padding:24px}.dialog[aria-labelledby=directional-stop-title] button{border-radius:12px}
+}
 /* Mobile trading composes the existing server actions into an order/quote screen. */
 @media(max-width:760px),(max-width:1024px) and (hover:none) and (pointer:coarse){
  .mobileTrade{padding:0 0 18px;max-width:none;color:#17191c;font-size:12px;line-height:1.5}

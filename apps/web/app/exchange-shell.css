@@ -111,14 +111,14 @@ body.approved-ui main:has(>nav[aria-label="API接入导航"]) button[type=submit
 @media(min-width:761px) and (max-width:1100px){body.apple-ui.approved-ui{padding:14px 16px;column-gap:12px}body.approved-ui .approved-workspace-navigation{left:16px;top:70px}}
 @media(max-width:760px),(max-width:1024px) and (hover:none) and (pointer:coarse){
  body.apple-ui.approved-ui{--text:#141619;--muted:#85898f;--apple-label:#141619;--apple-secondary:#85898f;color:#141619;font-size:13px;line-height:1.5}
- body.apple-ui.approved-ui button:where(:not(.danger):not(.danger-outline)){border:1px solid transparent;border-radius:4px;background:#f3f4f5;color:#17191c;box-shadow:none;text-shadow:none;transform:none;min-height:36px}
+ body.apple-ui.approved-ui button:where(:not(.danger):not(.danger-outline)){border:1px solid transparent;border-radius:10px;background:#f4f5f6;color:#17191c;box-shadow:none;text-shadow:none;transform:none;min-height:38px}
  body.apple-ui.approved-ui button:is([aria-pressed=true],[aria-selected=true],.active):where(:not(.danger):not(.danger-outline)){background:#e8ebed;color:#111;box-shadow:none}
- body.apple-ui.approved-ui :is(button[type=submit],button.primary,a.primary,.account-primary,.paper-create-submit){background:#111315;color:#fff;border-color:#111315;border-radius:5px;box-shadow:none}
+ body.apple-ui.approved-ui :is(button[type=submit],button.primary,a.primary,.account-primary,.paper-create-submit){background:#111315;color:#fff;border-color:#111315;border-radius:12px;box-shadow:none}
  body.apple-ui.approved-ui button.danger{background:#ef4778;color:#fff;border-color:#ef4778}
  body.apple-ui.approved-ui button.danger-outline{background:#fff1f5;color:#c3315c;border-color:#f5d5df}
  body.apple-ui.approved-ui dialog[aria-labelledby="directional-stop-title"] button[type=submit]{background:#d83e69;color:#fff;border-color:#d83e69}
  body.apple-ui.approved-ui :is(button,input,summary,a):focus-visible{outline:2px solid #8b929a;outline-offset:2px}
- body.apple-ui.approved-ui :is(input:not([type=checkbox]):not([type=radio]),textarea,.workspace-select-trigger){background:#f4f5f6;color:#17191c;border:1px solid transparent;border-radius:4px;box-shadow:none;min-height:42px}
+ body.apple-ui.approved-ui :is(input:not([type=checkbox]):not([type=radio]),textarea,.workspace-select-trigger){background:#f4f5f6;color:#17191c;border:1px solid transparent;border-radius:12px;box-shadow:none;min-height:46px}
  body.apple-ui.approved-ui .workspace-select-trigger>span{color:inherit}
  body.apple-ui.approved-ui .approved-workspace-content{gap:0}
  body.apple-ui.approved-ui :is(.account-card,.rp-card,.paper-create,.paper-account-picker,.paper-account-overview,.paper-record-panel,.paper-record-empty,.gold-card,.approved-system-page .health){border:0;border-bottom:1px solid #eceef0;border-radius:0;background:#fff;box-shadow:none;padding:14px 0;margin-bottom:12px}
@@ -129,9 +129,9 @@ body.approved-ui main:has(>nav[aria-label="API接入导航"]) button[type=submit
  body.apple-ui.approved-ui .gold-source-badge{background:#f4f5f6;color:#85898f;border-radius:2px}
  body.apple-ui.approved-ui .gold-actions button:first-child{background:#00b8c4;color:#fff}
  body.apple-ui.approved-ui .gold-actions button:last-child{background:#ef4778;color:#fff}
- body.apple-ui.approved-ui .workspace-select-dialog{border:0;border-radius:10px;background:#fff;box-shadow:0 8px 32px #0002;color:#141619}
- body.apple-ui.approved-ui .workspace-select-dialog .workspace-select-search{border-radius:4px;background:#f4f5f6}
- body.apple-ui.approved-ui .workspace-select-dialog :is(button,[role=option]){border-radius:3px;box-shadow:none;color:#17191c}
+ body.apple-ui.approved-ui .workspace-select-dialog{border:0;border-radius:20px;background:#fff;box-shadow:0 8px 32px #0002;color:#141619}
+ body.apple-ui.approved-ui .workspace-select-dialog .workspace-select-search{border-radius:12px;background:#f4f5f6}
+ body.apple-ui.approved-ui .workspace-select-dialog :is(button,[role=option]){border-radius:10px;box-shadow:none;color:#17191c}
  body.apple-ui.approved-ui .workspace-select-dialog [aria-selected=true]{background:#edf0f1;color:#111}
  body.apple-ui.approved-ui .workspace-icon-button{background:#fff;border:0;color:#17191c;box-shadow:none}
  body.apple-ui.approved-ui .workspace-primary-nav>a[aria-current=page]{color:#111}

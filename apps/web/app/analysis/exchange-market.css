@@ -173,7 +173,7 @@ body.approved-ui .gold-workspace .exchange-analysis.gold-chart-workspace .chart-
  body.approved-ui .exchange-analysis .quote-card [data-testid=analysis-chart]{height:clamp(340px,52dvh,470px)}
  body.approved-ui .exchange-analysis .quote-change.up{color:#00aeb8}
  body.approved-ui .exchange-analysis .quote-change.down{color:#ef4778}
- body.apple-ui.approved-ui .exchange-analysis .chart-period-presets button{background:transparent;color:#85898f;border:0;border-radius:3px;box-shadow:none}
+ body.apple-ui.approved-ui .exchange-analysis .chart-period-presets button{background:transparent;color:#737980;border:0;border-radius:8px;box-shadow:none}
  body.apple-ui.approved-ui .exchange-analysis .chart-period-presets button[aria-pressed=true]{background:#f0f2f4;color:#15171a;font-weight:650}
  body.apple-ui.approved-ui .exchange-analysis .chart-custom-period [role=group] button{background:#f3f4f5;color:#777d85;border-color:transparent;box-shadow:none}
  body.apple-ui.approved-ui .exchange-analysis .chart-custom-period [role=group] button[aria-pressed=true]{background:#e8ebed;color:#111;border-color:transparent}
