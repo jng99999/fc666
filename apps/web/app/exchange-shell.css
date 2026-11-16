@@ -145,5 +145,6 @@ body.approved-ui main:has(>nav[aria-label="API接入导航"]) button[type=submit
  body.apple-ui.approved-ui .gold-heading-actions{display:flex;align-items:center;gap:6px}
  body.apple-ui.approved-ui .gold-mobile-settings{display:grid;place-items:center;color:#17191c;min-width:32px;min-height:34px}
  body.apple-ui.approved-ui .gold-market-workspace .gold-heading{margin-bottom:10px}
+ body.approved-ui:has([data-testid=mobile-directional-trade]) .approved-workspace-header,body.approved-ui:has([data-testid=mobile-directional-trade]) .workspace-mobile-title,body.approved-ui:has([data-testid=mobile-directional-trade]) .account-navigation{display:none}
 }
 }

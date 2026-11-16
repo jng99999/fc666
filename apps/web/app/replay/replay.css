@@ -16,3 +16,4 @@
 @media(max-width:350px){.replay-workspace .rp-player{padding:14px 12px}.replay-workspace .rp-mobile-config small{font-size:9px}.replay-workspace .rp-quote>strong{font-size:25px}.replay-workspace .rp-transport{gap:5px}.replay-workspace .rp-transport-buttons{gap:5px}.replay-workspace .rp-play{min-width:100px;font-size:11px;padding:6px 8px}.replay-workspace .rp-speed>span{display:none}.replay-workspace .rp-speed select{max-width:54px}.replay-workspace .rp-clock time{font-size:8px}.replay-workspace .rp-player-heading h2{font-size:18px}}
 @media(max-width:760px){.replay-workspace .rp-field input,.replay-workspace .rp-field select{font-size:16px}}
 @media(prefers-reduced-motion:reduce){.replay-workspace *{transition:none!important;scroll-behavior:auto!important}}
+@media(max-width:760px),(max-width:1024px) and (hover:none) and (pointer:coarse){.replay-workspace .rp-chart-empty{z-index:3}.replay-workspace .rp-chart-wrap:has(>.rp-chart-empty){isolation:isolate}}

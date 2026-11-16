@@ -11,3 +11,31 @@
 .gold-message{padding:14px 18px;border-radius:16px;background:#eaf4ee;font-size:14px;overflow-wrap:anywhere}.gold-error{background:#fff1ef;color:#a33f36}
 .gold-heading{height:auto;min-height:0;border:0}
 @media(max-width:760px){.gold-workspace{padding:16px 12px 32px}.gold-heading h1{font-size:27px}.gold-heading span{font-size:11px}.gold-heading{gap:10px}.gold-grid{grid-template-columns:minmax(0,1fr);gap:0}.gold-card{padding:18px;border-radius:20px;margin-bottom:14px}.gold-quote{grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.gold-quote>div:nth-child(3){grid-column:1/-1;display:flex;justify-content:space-between;align-items:baseline}.gold-quote>div:nth-child(3) strong{font-size:18px}.gold-events li>div{flex-wrap:wrap;gap:5px}.gold-chart{height:150px}.workspace-asset-navigation{padding:8px 12px}.gold-notes{margin-bottom:16px}}
+@media(max-width:760px),(max-width:1024px) and (hover:none) and (pointer:coarse){
+ body.approved-ui .gold-market-workspace .gold-mobile-tabs{display:flex;align-items:center;gap:22px;margin:0 0 12px;border-bottom:1px solid #eceef0;min-width:0}
+ body.approved-ui .gold-market-workspace .gold-mobile-tabs button{padding:9px 0;min-height:39px;font-size:13px;background:transparent;color:#85898f;border:0;border-radius:0;font-weight:500;box-shadow:none}
+ body.approved-ui .gold-market-workspace .gold-mobile-tabs button[aria-current=page]{color:#141619;font-weight:650;border-bottom:2px solid #141619}
+ .gold-mobile-tabs>span{margin-left:auto;color:#9b6d20;font-size:9px;white-space:nowrap}
+ body.approved-ui .gold-market-workspace>.gold-workflow-links{display:none}
+ .gold-market-workspace .gold-grid{display:block}
+ .gold-market-workspace[data-mobile-panel=quote] .gold-rule-card,.gold-market-workspace[data-mobile-panel=quote] .gold-trade-column,.gold-market-workspace[data-mobile-panel=quote]>.gold-ledger-details{display:none}
+ .gold-market-workspace[data-mobile-panel=trade] .gold-grid>div,.gold-market-workspace[data-mobile-panel=analysis] .gold-market-card,.gold-market-workspace[data-mobile-panel=analysis] .gold-trade-column,.gold-market-workspace[data-mobile-panel=analysis]>.gold-ledger-details{display:none}
+ body.approved-ui .gold-market-workspace .gold-panel-heading{justify-content:flex-end;margin:0 0 6px}
+ .gold-market-workspace .gold-panel-heading h2{display:none}
+ body.approved-ui .gold-market-workspace .gold-quote{grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);grid-template-areas:'bid ask' 'bid spread' 'state state';gap:5px 14px;margin-bottom:8px}
+ .gold-market-workspace .gold-quote>div:first-child{grid-area:ask}.gold-market-workspace .gold-quote>div:nth-child(2){grid-area:bid}.gold-market-workspace .gold-quote>div:nth-child(3){grid-area:spread;display:block}
+ .gold-market-workspace .gold-quote>p{grid-area:state;font-size:9px}
+ .gold-market-workspace .gold-quote small{font-size:10px}
+ .gold-market-workspace .gold-quote>div:nth-child(2) strong{font-size:30px;letter-spacing:-.8px;margin-top:4px}
+ .gold-market-workspace .gold-quote>div:first-child strong,.gold-market-workspace .gold-quote>div:nth-child(3) strong{font-size:15px;margin-top:1px;letter-spacing:0}
+ .gold-mobile-quote-actions{display:flex;justify-content:flex-end;gap:8px;padding:10px 0;border-top:1px solid #eceef0}
+ body.approved-ui .gold-market-workspace .gold-mobile-quote-actions button{flex:1;min-height:42px;background:#f3f4f5;color:#15171a;border:0;border-radius:4px}
+ body.approved-ui .gold-market-workspace .gold-mobile-quote-actions button:last-child{flex:2;background:#141619;color:#fff}
+ .gold-mobile-research-links{display:flex;flex-direction:column;gap:0;margin:4px 0 16px}.gold-mobile-research-links a{padding:12px 0;border-bottom:1px solid #eceef0;font-size:13px;color:#30363d}
+ body.approved-ui .gold-market-workspace .gold-account-balances{margin:6px 0 14px}.gold-account-balances>summary{padding:10px 0;border-bottom:1px solid #eceef0;font-size:11px;color:#676d75;overflow-wrap:anywhere}
+ .gold-mobile-order{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:16px;margin-bottom:12px;align-items:start}
+ .gold-mobile-order-controls{min-width:0}.gold-mobile-order-controls>label{margin-top:0;font-size:11px}.gold-mobile-order-controls .gold-actions{grid-template-columns:1fr;gap:8px;margin-top:12px}
+ body.approved-ui .gold-market-workspace .gold-mobile-order-quote{padding:2px 0 0 12px;border-left:1px solid #eceef0;min-width:0}
+ .gold-mobile-order-quote small{display:block;font-size:10px;color:#8a9097;margin-bottom:4px}.gold-mobile-order-quote strong{display:block;font-size:17px;line-height:1.4;font-variant-numeric:tabular-nums;overflow-wrap:anywhere;margin-bottom:14px}.gold-mobile-order-quote strong:first-of-type{color:#00aeb8}.gold-mobile-order-quote strong:nth-of-type(2){color:#ef4778}.gold-mobile-order-quote>span{font-size:13px;font-variant-numeric:tabular-nums}.gold-mobile-order-quote p{font-size:10px;line-height:1.5;margin-top:12px}
+ body.approved-ui .gold-market-workspace .gold-create-panel{margin-top:10px}.gold-create-panel>summary{font-size:14px;font-weight:650;padding:12px 0;color:#17191c}.gold-create-panel form{padding-top:8px}
+}

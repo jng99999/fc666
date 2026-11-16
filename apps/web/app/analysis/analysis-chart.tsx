@@ -4,11 +4,11 @@ import {createChart,CandlestickSeries,HistogramSeries,LineSeries,AreaSeries,Colo
 import type {Candle} from '../../lib/market';
 import type {IndicatorLine} from './analysis-indicators';
 import {chartCoordinates,type ChartCoordinates} from '../../lib/chart-coordinates';
-import ChartWorkbench from '../../components/chart-workbench';
+import ChartWorkbench,{type MobileChartTools} from '../../components/chart-workbench';
 import {fitImmersiveChart,mobileChartViewport,mobileExchangeQuery,chartCandleColors} from '../../lib/chart-landscape';
 
 type ChartData={bars:Candle[];lines:IndicatorLine[]};
-export default function AnalysisChart({bars,lines,mode,resetKey=0,onInspect,showVolume=false,onPaneLayout,pricePrecision}:ChartData&{mode:'candles'|'line';resetKey?:number;onInspect?:(index:number|null)=>void;showVolume?:boolean;onPaneLayout?:(top:number)=>void;pricePrecision?:number}){
+export default function AnalysisChart({bars,lines,mode,resetKey=0,onInspect,showVolume=false,onPaneLayout,pricePrecision,mobileTools}:ChartData&{mode:'candles'|'line';resetKey?:number;onInspect?:(index:number|null)=>void;showVolume?:boolean;onPaneLayout?:(top:number)=>void;pricePrecision?:number;mobileTools?:MobileChartTools}){
  const host=useRef<HTMLDivElement>(null),renderer=useRef<{update:(data:ChartData)=>void;reset:()=>void}|null>(null),inspect=useRef(onInspect),paneLayout=useRef(onPaneLayout);
  inspect.current=onInspect;
  paneLayout.current=onPaneLayout;
@@ -62,5 +62,5 @@ export default function AnalysisChart({bars,lines,mode,resetKey=0,onInspect,show
  },[configuration,mode,showVolume,pricePrecision]);
  useEffect(()=>{renderer.current?.update({bars,lines});},[bars,lines,configuration,mode,showVolume,pricePrecision]);
  useEffect(()=>{renderer.current?.reset();},[resetKey]);
- return <ChartWorkbench bars={priceBars} context={{instrumentId:bars[0]?.instrument_id??'UNAVAILABLE',source:bars[0]?.source??'unavailable',timeframe:bars[0]?.timeframe??'1h',volumeKind:'trade'}} coordinates={coordinates}><div ref={host} className="analysis-chart quote-chart-host" data-testid="analysis-chart" aria-label={`闭合${mode==='candles'?'K线':'收盘走势'}${showVolume?'、成交量':''}${lines.some(line=>line.pane==='sub')?'与技术副图':''}`}/></ChartWorkbench>;
+ return <ChartWorkbench bars={priceBars} context={{instrumentId:bars[0]?.instrument_id??'UNAVAILABLE',source:bars[0]?.source??'unavailable',timeframe:bars[0]?.timeframe??'1h',volumeKind:'trade'}} coordinates={coordinates} mobileTools={mobileTools}><div ref={host} className="analysis-chart quote-chart-host" data-testid="analysis-chart" aria-label={`闭合${mode==='candles'?'K线':'收盘走势'}${showVolume?'、成交量':''}${lines.some(line=>line.pane==='sub')?'与技术副图':''}`}/></ChartWorkbench>;
 }
