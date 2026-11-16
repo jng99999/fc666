@@ -5,6 +5,7 @@ import {z} from 'zod';
 import WorkspaceSelect from '../../../components/workspace-select';
 import {DirectionalAccount,DirectionalAccounts,DirectionalStatus,DirectionalError,PriceActionRules,PriceActionTimeframes,directionalCreateBody,directionalRuleName,directionalStrategyName,directionalReason,directionalRequest,type DirectionalView} from '../../../lib/directional';
 import styles from './page.module.css';
+import {mobileExchangeQuery} from '../../../lib/chart-landscape';
 
 const KEY='fc666-directional-selected';
 const money=(value:string)=>Number(value).toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:4});
@@ -57,6 +58,9 @@ function StopDialog({target,busy,error,cancel,confirm}:{target:DirectionalView;b
 }
 
 export default function DirectionalPage(){
+ const [mobile,setMobile]=useState(false);
+ useEffect(()=>{const media=window.matchMedia(mobileExchangeQuery),update=()=>setMobile(media.matches);update();media.addEventListener('change',update);return()=>media.removeEventListener('change',update);},[]);
+ const Boundary=mobile?'details':'section';
  const [ready,setReady]=useState(false),[busy,setBusy]=useState(false),[loaded,setLoaded]=useState(false),[error,setError]=useState(''),[readError,setReadError]=useState(''),[notice,setNotice]=useState('');
  const [status,setStatus]=useState<z.infer<typeof DirectionalStatus>|null>(null),[accounts,setAccounts]=useState<DirectionalView[]>([]),[view,setView]=useState<DirectionalView|null>(null),[fields,setFields]=useState(initial);
  const [target,setTarget]=useState<'LONG'|'SHORT'>('LONG'),[quantity,setQuantity]=useState('1'),[stopLoss,setStopLoss]=useState(''),[takeProfit,setTakeProfit]=useState(''),[stopTarget,setStopTarget]=useState<DirectionalView|null>(null);
@@ -99,9 +103,10 @@ export default function DirectionalPage(){
  const canEnter=Boolean(view&&view.status==='RUNNING'&&!view.entry_halted&&!view.position&&!view.pending&&view.entry_gate==='CLEAR'&&view.last_quote);
  const validBracket=Boolean(view?.last_quote&&Number(quantity)>0&&Number(stopLoss)>0&&Number(takeProfit)>0&&(target==='LONG'?Number(stopLoss)<Number(view.last_quote.bid)&&Number(takeProfit)>Number(view.last_quote.ask):Number(takeProfit)<Number(view.last_quote.bid)&&Number(stopLoss)>Number(view.last_quote.ask)));
  return <main className={styles.page} aria-busy={!ready}>
-  <header className={styles.heading}><div><p>账户 / 独立研究模拟</p><h1>双向模拟与保护退出</h1><span>真实公共报价 · 独立资金 · 实盘关闭</span></div><Link href="/research/closed-rules">规则回测与成本对比 →</Link></header>
-  <section className={styles.card}><h2>运行边界</h2><p>全额抵押的合成多空模拟；加密使用 Bitget 现货 bid/ask，黄金使用 Swissquote XAU/USD。这里不是永续或经纪商账户，未模拟资金费、隔夜费和保证金强平。</p><p>高影响消息窗口禁止开仓，缺失、过期或覆盖不足也禁止开仓；已有持仓的止盈止损仍由服务器执行。采样中断期间无法执行，恢复后按实际报价处理跳空。</p>{status&&!status.news.configured?<p className={styles.reason} role="status">当前服务器新闻源未配置：所有策略均禁止新开仓，已有持仓保留止盈止损。管理员可到<Link href="/system/api">系统 / API 接入</Link>配置新闻源，配置后仍须通过来源、时效与事件窗口校验。</p>:null}<div className={styles.tags}><span>{status?directionalReason(status.news.state):'正在检查服务…'}</span><Link href="/research/ai">查看 AI 配置与自动模拟</Link><span>后台独立运行</span></div></section>
-  {status?<NewsEvidence news={status.news}/>:null}
+  <header className={styles.heading}><div><p>{mobile?'账户 / 合成多空':'账户 / 独立研究模拟'}</p><h1>{mobile?'双向模拟交易':'双向模拟与保护退出'}</h1><span>真实公共报价 · 独立资金 · 实盘关闭</span></div><Link href="/research/closed-rules">规则回测与成本对比 →</Link></header>
+  <Boundary className={styles.card}>{mobile?<summary>模拟说明与保护规则 · 实盘关闭</summary>:<h2>运行边界</h2>}<p>全额抵押的合成多空模拟；加密使用 Bitget 现货 bid/ask，黄金使用 Swissquote XAU/USD。这里不是永续或经纪商账户，未模拟资金费、隔夜费和保证金强平。</p><p>高影响消息窗口禁止开仓，缺失、过期或覆盖不足也禁止开仓；已有持仓的止盈止损仍由服务器执行。采样中断期间无法执行，恢复后按实际报价处理跳空。</p>{!mobile&&status&&!status.news.configured?<p className={styles.reason} role="status">当前服务器新闻源未配置：所有策略均禁止新开仓，已有持仓保留止盈止损。管理员可到<Link href="/system/api">系统 / API 接入</Link>配置新闻源，配置后仍须通过来源、时效与事件窗口校验。</p>:null}<div className={styles.tags}>{!mobile?<span>{status?directionalReason(status.news.state):'正在检查服务…'}</span>:null}<Link href="/research/ai">{mobile?'AI 配置与自动模拟':'查看 AI 配置与自动模拟'}</Link><span>后台独立运行</span></div></Boundary>
+  {mobile&&status&&!status.news.configured?<p className={styles.reason} role="status">当前服务器新闻源未配置：所有策略均禁止新开仓，已有持仓保留止盈止损。管理员可到<Link href="/system/api">系统 / API 接入</Link>配置新闻源，配置后仍须通过来源、时效与事件窗口校验。</p>:null}
+  {status?(mobile?<details className={styles.card}><summary>消息门禁 · {directionalReason(status.news.state)}</summary><NewsEvidence news={status.news}/></details>:<NewsEvidence news={status.news}/>):null}
   {readError?<p className={styles.error} role="alert">{readError}</p>:null}{error?<p className={styles.error} role="alert">{error}</p>:null}{notice?<p className={styles.notice} role="status">{notice}</p>:null}
   {pending&&!busy?<div className={styles.card}><p>上次提交尚未核对。请先刷新账本；如需再次提交，沿用同一请求编号。</p><div className={styles.actions}><button onClick={()=>void refreshNow()}>刷新并核对</button><button onClick={()=>{if(pending)void submit(pending.path,pending.body);}}>重查同一请求</button></div></div>:null}
   <section className={styles.card}><div className={styles.cardHeading}><h2>我的独立账户</h2><button disabled={!ready||busy} onClick={()=>void refreshNow()}>刷新账户</button></div>

@@ -21,9 +21,11 @@ export default function WorkspaceSelect({label,value,onValueChange,options,disab
   const viewport=window.visualViewport;
   function fitViewport(){
    const height=viewport?.height??window.innerHeight,top=viewport?.offsetTop??0;
+   const frame=trigger.current?.closest('[data-chart-frame]'),rotated=!!frame&&getComputedStyle(frame).getPropertyValue('--chart-rotation').trim()==='1';
+   node!.setAttribute('data-chart-rotated',String(rotated));
    node!.style.setProperty('--workspace-select-viewport-height',`${height}px`);
    node!.style.setProperty('--workspace-select-center',`${top+height/2}px`);
-   node!.toggleAttribute('data-compact',height<420);
+   node!.toggleAttribute('data-compact',(rotated?viewport?.width??window.innerWidth:height)<420);
   }
   fitViewport();node.showModal();const previous=document.body.style.overflow;document.body.style.overflow='hidden';
   viewport?.addEventListener('resize',fitViewport);viewport?.addEventListener('scroll',fitViewport);window.addEventListener('resize',fitViewport);

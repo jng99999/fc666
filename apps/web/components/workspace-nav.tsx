@@ -4,6 +4,7 @@ import {usePathname} from 'next/navigation';
 import {useEffect,useRef,useState,type ReactNode} from 'react';
 import {Symbols} from '../lib/market';
 import {StrategyCatalog,StrategyIds} from '../lib/research-strategies';
+import '../app/exchange-shell.css';
 
 const accountTabs=[['/paper/directional','双向模拟'],['/paper/realtime','现货模拟'],['/paper','历史模拟'],['/portfolio','组合估值'],['/portfolio/history','场景记录']] as const;
 type IconName='market'|'analysis'|'strategy'|'replay'|'account'|'settings'|'search'|'close'|'down';

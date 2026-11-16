@@ -1,0 +1,26 @@
+@media(max-width:760px),(max-width:1024px) and (hover:none) and (pointer:coarse){
+.exchange-analysis .analysis-modal.analysis-modal-immersive{padding:0;border:0;width:100vw;max-width:100vw}
+.analysis-landscape-frame{--chart-rotation:0;display:flex;flex-direction:column;box-sizing:border-box;width:100%;height:100%;min-height:0;padding:max(10px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) max(10px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left))}
+.exchange-analysis .landscape-mode-label{font-size:10px;font-weight:400;color:#8296b3;margin-left:9px}
+.exchange-analysis .analysis-landscape-frame .chart-period-control{display:flex;align-items:start;gap:5px}
+.exchange-analysis .analysis-landscape-frame .chart-period-presets{flex:1;min-width:0}
+.exchange-analysis .analysis-landscape-frame .chart-custom-period{position:relative;flex:0 0 100px;margin:0}
+.exchange-analysis .analysis-landscape-frame .chart-custom-period>summary{min-height:36px;font-size:10px;gap:4px;white-space:nowrap}
+.exchange-analysis .analysis-landscape-frame .chart-custom-period form{position:absolute;right:0;top:36px;width:280px;z-index:8;box-shadow:0 4px 16px #00000012}
+@media(max-width:1024px) and (orientation:portrait){
+ .analysis-landscape-frame{--chart-rotation:1;position:absolute;left:100vw;top:0;width:100dvh;height:100vw;max-width:none;transform-origin:0 0;transform:rotate(90deg);padding:8px max(12px,env(safe-area-inset-bottom)) 8px max(12px,env(safe-area-inset-top))}
+ .exchange-analysis .analysis-landscape-frame .dialog-header{margin-bottom:4px}
+ .exchange-analysis .analysis-landscape-frame .expanded-chart-controls{flex-wrap:nowrap;gap:8px}
+ .exchange-analysis .analysis-landscape-frame .expanded-chart-controls .chart-period-control{flex:1;min-width:180px}
+ .exchange-analysis .analysis-landscape-frame .expanded-chart-actions{max-width:300px;gap:4px}
+ .exchange-analysis .analysis-landscape-frame .expanded-chart-actions>button{min-height:34px;padding:5px 8px;font-size:11px}
+ .exchange-analysis .analysis-landscape-frame .expanded-chart-hint{display:none}
+ .exchange-analysis .analysis-landscape-frame .chart-toolbar{flex-wrap:nowrap}
+ .exchange-analysis.gold-chart-workspace .analysis-landscape-frame .gold-chart-toolbar{display:flex;flex-wrap:nowrap;align-items:start;gap:8px}
+ .exchange-analysis.gold-chart-workspace .analysis-landscape-frame .gold-chart-toolbar>.chart-period-control{flex:1;min-width:0}
+ .exchange-analysis.gold-chart-workspace .analysis-landscape-frame .gold-chart-toolbar>.gold-segmented{flex-shrink:0;margin:0}
+}
+/* Portalled menus keep the same direction as the chart that opened them. */
+body.approved-ui .workspace-select-dialog.workspace-select-dialog[data-chart-rotated=true],.exchange-analysis .analysis-modal[data-chart-rotated=true]{inset:50% auto auto 50%;margin:0;transform:translate(-50%,-50%) rotate(90deg);width:min(560px,calc(100dvh - 24px));max-height:calc(100vw - 24px)}
+body.approved-ui .workspace-select-dialog.workspace-select-dialog[data-chart-rotated=true] .workspace-select-options{max-height:calc(100vw - 180px)}
+}

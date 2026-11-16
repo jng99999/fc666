@@ -8,6 +8,9 @@ import ChartScenarioPanel from './chart-scenario-panel';
 import ChartDerivativesContext from './chart-derivatives-context';
 import type {ChartReferenceLine} from '../lib/chart-scenarios';
 import WorkspaceSelect from './workspace-select';
+import ChartGesturePlane from './chart-gesture-plane';
+import {chartLocalPoint,fitImmersiveChart,rotatedChartFrame,mobileExchangeQuery} from '../lib/chart-landscape';
+import {chartTrendGeometry} from '../lib/chart-trend-geometry';
 import styles from './chart-workbench.module.css';
 
 type Props={bars:readonly PriceBar[];context:PriceContext;coordinates:ChartCoordinates|null;children:ReactNode;historical?:boolean};
@@ -21,9 +24,12 @@ const shortLabel=(a:PriceAnnotation)=>({support:'支撑候选',resistance:'阻�
 
 export default function ChartWorkbench(props:Props){return <WorkbenchState {...props}/>;}
 function WorkbenchState({bars,context,coordinates,children,historical=false}:Props){
+ const [mobile,setMobile]=useState(false);
+ useEffect(()=>{const media=window.matchMedia(mobileExchangeQuery),update=()=>setMobile(media.matches);update();media.addEventListener('change',update);return()=>media.removeEventListener('change',update);},[]);
  const study=useMemo(()=>{try{return {analysis:analyzePriceAction(bars,context),error:''};}catch(error){const analysis:PriceAnalysis={annotations:[],regime:'UNAVAILABLE',atr:null,last:null,confirmedThrough:null,warnings:[],volumeProfile:{kind:'UNAVAILABLE',bins:[],poc:null,vah:null,val:null,totalVolume:0,reason:'数据未通过校验，停止区域计算。'}};return {analysis,error:error instanceof Error?error.message:'结构数据无法校验。'};}},[bars,context.instrumentId,context.source,context.timeframe,context.volumeKind]);
  const {analysis}=study;
  const [layers,setLayers]=useState({structure:true,zones:true,liquidity:false,sessions:false,retracements:false}),[automatic,setAutomatic]=useState(true),[inactive,setInactive]=useState(false),[profile,setProfile]=useState(false);
+ const [channelDirection,setChannelDirection]=useState<'all'|'up'|'down'>('all');
  const [tool,setTool]=useState<DrawingKind|'cursor'>('cursor'),[snap,setSnap]=useState(true),[draft,setDraft]=useState<DrawingPoint[]>([]),[selection,setSelection]=useState('');
  const scope=drawingScope(context);
  const currentScope=useRef(scope),importRevision=useRef(0);currentScope.current=scope;
@@ -52,10 +58,11 @@ function WorkbenchState({bars,context,coordinates,children,historical=false}:Pro
  useEffect(()=>{if(!coordinates)return;return coordinates.subscribe(()=>setRevision(value=>value+1));},[coordinates]);
  useEffect(()=>{setRevision(value=>value+1);},[bars]);
  const kinds=new Set(Object.keys(layers).filter(k=>layers[k as keyof typeof layers]).flatMap(k=>[...groups[k as keyof typeof groups]]));
- const candidates=automatic?analysis.annotations.filter(a=>kinds.has(a.kind as never)&&(inactive||!['BROKEN','EXPIRED','MITIGATED'].includes(a.state))&&a.confirmedAt<=(bars.at(-1)?.closedAt??0)):[];
+ const candidates=automatic?analysis.annotations.filter(a=>kinds.has(a.kind as never)&&(inactive||!['BROKEN','EXPIRED','MITIGATED'].includes(a.state))&&a.confirmedAt<=(bars.at(-1)?.closedAt??0)&&(!mobile||!['trend','channel'].includes(a.kind)||channelDirection==='all'||a.direction===channelDirection)):[];
  // One latest object per type prevents stacking dozens of overlapping gaps on a phone.
- const latest=new Map(candidates.map(a=>[a.kind,a]));
- const visible=[...latest.values()].sort((a,b)=>a.confirmedAt-b.confirmedAt).slice(-12);
+ const latest=new Map(candidates.map(a=>[mobile&&['trend','channel'].includes(a.kind)?`${a.kind}:${a.direction}`:a.kind,a]));
+ const ordered=[...latest.values()].sort((a,b)=>a.confirmedAt-b.confirmedAt),trends=ordered.filter(a=>['trend','channel'].includes(a.kind));
+ const visible=mobile?[...trends,...ordered.filter(a=>!['trend','channel'].includes(a.kind)).slice(-Math.max(0,12-trends.length))].sort((a,b)=>a.confirmedAt-b.confirmedAt):ordered.slice(-12);
  const chosen=candidates.find(a=>a.id===selection);if(chosen&&!visible.includes(chosen))visible.push(chosen);
  const manual=drawings.filter(d=>d.points.every(p=>p.time<=lastTime&&p.time>=(bars[0]?.time??0)));
  const selectedManual=drawings.find(d=>d.id===selection),selectedAuto=analysis.annotations.find(a=>a.id===selection);
@@ -65,11 +72,12 @@ function WorkbenchState({bars,context,coordinates,children,historical=false}:Pro
  const labels:ChartOverlayLabel[]=[];
  if(coordinates){
   visible.forEach((a,i)=>{
-   if(a.id!==selection&&i<visible.length-3)return;
-   const y1=coordinates.priceToY(a.high),y2=coordinates.priceToY(a.low),x1=coordinates.timeToX(a.start),x2=coordinates.timeToX(Math.min(a.end,lastTime));
+   if(a.id!==selection&&i<visible.length-3&&(!mobile||!['trend','channel'].includes(a.kind)))return;
+   const shape=mobile?chartTrendGeometry(a,bars[0]?.time??a.start,lastTime):a;
+   const y1=coordinates.priceToY(shape.high),y2=coordinates.priceToY(shape.low),x1=coordinates.timeToX(shape.start),x2=coordinates.timeToX(shape.end);
    const left=x1??(a.start<(bars[0]?.time??0)?0:null),right=x2??size.width;
    if(y1===null||y2===null||left===null||right<0||left>size.width||Math.max(y1,y2)<0||Math.min(y1,y2)>size.height)return;
-   labels.push({id:a.id,selectionId:a.id,text:shortLabel(a),title:`${a.label} · ${states[a.state]} · ${a.explanation}`,x:Math.max(0,left),y:Math.max(0,Math.min(y1,y2)),color:color(a),priority:a.id===selection?100:60+i/100});
+   labels.push({id:a.id,selectionId:a.id,text:shortLabel(a),title:`${a.label} · ${states[a.state]} · ${a.explanation}`,x:Math.max(0,left),y:Math.max(0,Math.min(y1,y2)),color:color(a),priority:a.id===selection?100:mobile&&a.kind==='channel'?80:60+i/100});
   });
   if(profile&&analysis.volumeProfile.kind==='OHLCV_ESTIMATE')for(const [name,value] of [['POC',analysis.volumeProfile.poc],['VAH',analysis.volumeProfile.vah],['VAL',analysis.volumeProfile.val]] as const){
    const y=value===null?null:coordinates.priceToY(value);if(y!==null)labels.push({id:`profile:${name}`,text:name,title:`${name} · OHLCV 估算 · ${value===null?'':fmt(value)}`,x:2,y,color:'#8b62be',priority:40});
@@ -89,10 +97,13 @@ function WorkbenchState({bars,context,coordinates,children,historical=false}:Pro
  }
  const placedLabels=layoutChartLabels(labels,size);
  function commit(next:ChartDrawing[]){setHistory(h=>({scope,past:[...h.past,h.present].slice(-40),present:next,future:[]}));setBlockedRead(false);setEditError('');}
- function selectTool(next:DrawingKind|'cursor'){setTool(next);setDraft([]);setNotice(next==='cursor'?'':next==='channel'?'依次点击趋势起点、终点，再点通道另一侧。':`在主图点选 ${drawingCount[next]} 个价格坐标；Esc 取消。`);if(next!=='cursor')requestAnimationFrame(()=>surface.current?.scrollIntoView({block:'start',behavior:'auto'}));}
+ function selectTool(next:DrawingKind|'cursor'){
+  setTool(next);setDraft([]);setNotice(next==='cursor'?'':next==='channel'?'依次点击趋势起点、终点，再点通道另一侧。':`在主图点选 ${drawingCount[next]} 个价格坐标；Esc 取消。`);
+  if(next!=='cursor')requestAnimationFrame(()=>{const target=surface.current;if(!target)return;const body=target.closest<HTMLElement>('.analysis-modal-body'),frame=target.closest('[data-chart-frame]');if(mobile&&body&&frame){const dialog=body.closest('dialog');if(dialog){dialog.scrollTop=0;dialog.scrollLeft=0;}const rect=target.getBoundingClientRect(),viewport=body.getBoundingClientRect();body.scrollTop+=rotatedChartFrame(target)?viewport.right-rect.right:rect.top-viewport.top;const chart=target.querySelector<HTMLElement>('.quote-chart-host');if(chart)fitImmersiveChart(chart);}else target.scrollIntoView({block:'start',behavior:'auto'});});
+ }
  function point(event:PointerEvent<SVGSVGElement>){
   if(tool==='cursor'||!coordinates||!bars.length||study.error)return;
-  const box=event.currentTarget.getBoundingClientRect(),x=event.clientX-box.left,y=event.clientY-box.top;
+  const {x,y}=chartLocalPoint(event.currentTarget,event.clientX,event.clientY);
   if(x<0||y<0||x>size.width||y>size.height)return;
   const time=coordinates.xToTime(x),price=coordinates.yToPrice(y);if(time===null||price===null||!Number.isFinite(price)||price<=0)return;
   const points=[...draft,snapDrawingPoint({time,price},bars,snap)];
@@ -111,6 +122,19 @@ function WorkbenchState({bars,context,coordinates,children,historical=false}:Pro
  function download(){const url=URL.createObjectURL(new Blob([encodeDrawings(drawings,context)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download=`fc666-drawings-${context.instrumentId.replace(/[^a-z0-9]/gi,'-')}-${context.timeframe}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(url),0);}
  function load(text:string){try{const next=decodeDrawings(text,context);commit(next);setExternal(null);setSelection('');setNotice('已载入当前产品、来源与周期的绘图。');}catch{setNotice('载入失败：只接受当前产品、来源、周期的有效 FC666 绘图文件。');}}
  function xy(p:DrawingPoint){if(!coordinates)return null;const x=coordinates.timeToX(p.time),y=coordinates.priceToY(p.price);return x===null||y===null?null:{x,y};}
+ function drawAutomatic(a:PriceAnnotation){
+  if(!coordinates)return null;
+  const shape=mobile?chartTrendGeometry(a,bars[0]?.time??a.start,lastTime):a,y1=coordinates.priceToY(shape.high),y2=coordinates.priceToY(shape.low),x1=coordinates.timeToX(shape.start),x2=coordinates.timeToX(shape.end);
+  const left=x1??(shape.start<(bars[0]?.time??0)?0:null),right=x2??size.width;
+  if(y1===null||y2===null||left===null||right<0||left>size.width||Math.max(y1,y2)<0||Math.min(y1,y2)>size.height)return null;
+  const stroke=color(a),selected=a.id===selection,points=shape.points?.map(p=>({x:coordinates.timeToX(p.time),y:coordinates.priceToY(p.price)})),width=selected?2:1.2;
+  let geometry:ReactNode;
+  if(points?.length&&points.every(p=>p.x!==null&&p.y!==null)){
+   if(a.kind==='channel'&&points.length===4){const [p,q,r,s]=points as {x:number;y:number}[];geometry=mobile?<><path d={`M${p.x},${p.y}L${q.x},${q.y}L${s.x},${s.y}L${r.x},${r.y}Z`} fill={stroke+'09'} stroke="none"/><line x1={p.x} y1={p.y} x2={q.x} y2={q.y} stroke={stroke} strokeWidth={width}/><line x1={r.x} y1={r.y} x2={s.x} y2={s.y} stroke={stroke} strokeWidth={width}/><line data-channel-midline x1={(p.x+r.x)/2} y1={(p.y+r.y)/2} x2={(q.x+s.x)/2} y2={(q.y+s.y)/2} stroke={stroke} strokeWidth={1} strokeDasharray="5 4"/></>:<path d={`M${p.x},${p.y} L${q.x},${q.y} M${r.x},${r.y} L${s.x},${s.y}`} stroke={stroke} fill="none" strokeWidth={width}/>;}
+   else geometry=<polyline points={points.map(p=>`${p.x},${p.y}`).join(' ')} stroke={stroke} fill="none" strokeWidth={width}/>;
+  }else geometry=Math.abs(y2-y1)<1?<line x1={Math.max(0,left)} x2={right} y1={y1} y2={y1} stroke={stroke} strokeWidth={selected?2:1} strokeDasharray="4 3"/>:<rect x={Math.max(0,left)} y={Math.min(y1,y2)} width={Math.max(1,right-Math.max(0,left))} height={Math.abs(y2-y1)} fill={stroke+(selected?'20':'0a')} stroke={stroke} strokeWidth={selected?2:1} strokeDasharray={a.state==='ACTIVE'?undefined:'4 3'}/>;
+  return <g key={a.id} data-annotation-id={a.id} data-channel-direction={a.kind==='channel'?a.direction:undefined} data-selected={selected} className={styles.annotation} onClick={e=>{if(tool==='cursor'){e.stopPropagation();setSelection(a.id);}}}><title>{a.label} · {states[a.state]} · {a.explanation}</title>{geometry}</g>;
+ }
  function drawManual(d:ChartDrawing){
   const ps=d.points.map(xy);if(ps.some(p=>!p))return null;const a=ps[0]!,b=ps[1],stroke=d.id===selection?'#f09325':'#7256ca';
   const common={stroke,strokeWidth:d.id===selection?2:1.3,fill:'none',vectorEffect:'non-scaling-stroke' as const};
@@ -123,7 +147,7 @@ function WorkbenchState({bars,context,coordinates,children,historical=false}:Pro
   return <g key={d.id} data-drawing-id={d.id} className={styles.manual} onClick={e=>{if(tool==='cursor'){e.stopPropagation();setSelection(d.id);}}}><title>{d.label}{d.locked?' · 已锁定':''}</title>{shape}{d.id===selection?ps.map((p,i)=><circle key={i} cx={p!.x} cy={p!.y} r={4} fill={stroke}/>):null}</g>;
  }
  return <section className={styles.workbench} data-testid="chart-workbench" data-instrument={context.instrumentId} data-source={context.source} data-timeframe={context.timeframe}>
-  <div className={styles.heading}><strong>结构 · 箱体 · 画线</strong><button type="button" aria-pressed={automatic} onClick={()=>setAutomatic(v=>!v)}>{automatic?'自动标记已开':'自动标记已关'}</button></div>
+  <div className={styles.heading}><strong>{mobile?'结构 · 箱体 · 通道':'结构 · 箱体 · 画线'}</strong>{mobile?<div className={styles.channelControls} role="group" aria-label="趋势通道方向">{([['all','全部通道'],['up','上行'],['down','下行']] as const).map(([value,label])=><button type="button" key={value} aria-pressed={channelDirection===value} onClick={()=>setChannelDirection(value)}>{label}</button>)}<button type="button" aria-label="绘制平行通道" disabled={!coordinates||!bars.length||!ready||Boolean(study.error)} onClick={()=>selectTool('channel')}>手绘通道</button></div>:null}<button type="button" aria-pressed={automatic} onClick={()=>setAutomatic(v=>!v)}>{automatic?'自动标记已开':'自动标记已关'}</button></div>
   <details className={styles.tools}><summary>绘图工具与图层 <span>{drawings.length} 个本机图形</span></summary><div className={styles.toolBody}>
    <div className={styles.toolRow}><WorkspaceSelect label="画线工具" value={tool} disabled={!coordinates||!bars.length||!ready||Boolean(study.error)} onValueChange={v=>selectTool(v as DrawingKind|'cursor')} options={[{value:'cursor',label:'浏览 / 选择'},...Object.entries(drawingLabels).map(([value,label])=>({value,label}))]}/><label><input type="checkbox" checked={snap} onChange={e=>setSnap(e.target.checked)}/>吸附 OHLC</label><button type="button" disabled={!draft.length&&tool==='cursor'} onClick={()=>selectTool('cursor')}>取消画线</button></div>
    <div className={styles.toolRow}>{Object.entries(groupNames).map(([key,label])=><label key={key}><input type="checkbox" checked={layers[key as keyof typeof layers]} onChange={e=>setLayers(v=>({...v,[key]:e.target.checked}))}/>{label}</label>)}<label><input type="checkbox" checked={inactive} onChange={e=>setInactive(e.target.checked)}/>显示失效区域</label><label><input type="checkbox" checked={profile} disabled={analysis.volumeProfile.kind==='UNAVAILABLE'} onChange={e=>setProfile(e.target.checked)}/>估算成交量分布</label></div>
@@ -134,9 +158,10 @@ function WorkbenchState({bars,context,coordinates,children,historical=false}:Pro
   {notice?<p className={styles.notice} role="status">{notice}</p>:null}
   {study.error?<p className={styles.caution} role="alert">{study.error} 未生成分析区域或研究交易。</p>:null}
   <div className={styles.surface} ref={surface} data-chart-surface>
+   {coordinates&&bars.length&&tool==='cursor'?<ChartGesturePlane coordinates={coordinates}/>:null}
    {children}
    {coordinates&&bars.length>0&&!study.error&&size.width>0?<svg data-testid="chart-drawing-overlay" className={`${styles.overlay} ${tool!=='cursor'?styles.drawing:''}`} width={size.width} height={size.height} viewBox={`0 0 ${size.width} ${size.height}`} onPointerUp={point} tabIndex={tool==='cursor'?-1:0} aria-label={tool==='cursor'?'价格结构与绘图图层':'点选主图锚点，Escape 取消'} onKeyDown={e=>{if(e.key==='Escape'){selectTool('cursor');e.stopPropagation();}}}>
-    {visible.map(a=>{const y1=coordinates.priceToY(a.high),y2=coordinates.priceToY(a.low);if(y1===null||y2===null)return null;const x1=coordinates.timeToX(a.start),x2=coordinates.timeToX(Math.min(a.end,lastTime));const left=x1??(a.start<(bars[0]?.time??0)?0:null),right=x2??size.width;if(left===null||right<0||left>size.width||Math.max(y1,y2)<0||Math.min(y1,y2)>size.height)return null;const stroke=color(a),low=Math.min(y1,y2),height=Math.abs(y2-y1),selected=a.id===selection;const points=a.points?.map(p=>({x:coordinates.timeToX(p.time),y:coordinates.priceToY(p.price)}));return <g key={a.id} data-annotation-id={a.id} data-selected={selected} className={styles.annotation} onClick={e=>{if(tool==='cursor'){e.stopPropagation();setSelection(a.id);}}}><title>{a.label} · {states[a.state]} · {a.explanation}</title>{points?.length&&points.every(p=>p.x!==null&&p.y!==null)?a.kind==='channel'&&points.length===4?<path d={`M${points[0].x},${points[0].y} L${points[1].x},${points[1].y} M${points[2].x},${points[2].y} L${points[3].x},${points[3].y}`} stroke={stroke} fill="none" strokeWidth={selected?2:1.2}/>:<polyline points={points.map(p=>`${p.x},${p.y}`).join(' ')} stroke={stroke} fill="none" strokeWidth={selected?2:1.2}/>:height<1?<line x1={Math.max(0,left)} x2={right} y1={y1} y2={y1} stroke={stroke} strokeWidth={selected?2:1} strokeDasharray="4 3"/>:<rect x={Math.max(0,left)} y={low} width={Math.max(1,right-Math.max(0,left))} height={height} fill={stroke+(selected?'20':'0a')} stroke={stroke} strokeWidth={selected?2:1} strokeDasharray={a.state==='ACTIVE'?undefined:'4 3'}/>}</g>;})}
+    {visible.map(drawAutomatic)}
     {profile&&analysis.volumeProfile.kind==='OHLCV_ESTIMATE'?<g data-testid="volume-profile-estimate">{analysis.volumeProfile.bins.map((bin,i)=>{const y1=coordinates.priceToY(bin.high),y2=coordinates.priceToY(bin.low),max=Math.max(...analysis.volumeProfile.bins.map(b=>b.volume));if(y1===null||y2===null||!max)return null;const width=Math.min(65,size.width*.18)*bin.volume/max;return <rect key={i} x={size.width-width} y={Math.min(y1,y2)} width={width} height={Math.max(1,Math.abs(y1-y2))} fill="#9c83d543"/>;})}{[['POC',analysis.volumeProfile.poc],['VAH',analysis.volumeProfile.vah],['VAL',analysis.volumeProfile.val]].map(([label,value])=>{const y=typeof value==='number'?coordinates.priceToY(value):null;return y===null?null:<line key={label as string} x1={0} x2={size.width} y1={y} y2={y} stroke="#8b62be" strokeDasharray="3 3"/>;})}</g>:null}
     {manual.map(drawManual)}{references.slice(0,24).map(line=>{const y=coordinates.priceToY(line.price);return y===null||y<0||y>size.height?null:<g key={line.id} data-reference-id={line.id}><title>{line.label} · {fmt(line.price)}</title><line x1={0} x2={size.width} y1={y} y2={y} stroke={line.color} strokeWidth={1.3} strokeDasharray="6 4"/></g>;})}
     {placedLabels.map(label=><g key={label.id} data-chart-label={label.id} className={styles.label} onClick={label.selectionId?e=>{if(tool==='cursor'){e.stopPropagation();setSelection(label.selectionId!);}}:undefined}><title>{label.title}</title><line className={styles.labelLeader} x1={Math.max(0,Math.min(size.width,label.x))} y1={label.y} x2={Math.max(label.left+6,Math.min(label.left+label.width-6,label.x))} y2={label.top+label.height/2} stroke={label.color}/><rect x={label.left} y={label.top} width={label.width} height={label.height} rx={6} fill="#ffffffed" stroke={label.color} strokeOpacity={label.selectionId===selection?1:.28}/><text x={label.left+8} y={label.top+15} fill={label.color}>{label.displayText}</text></g>)}
@@ -144,6 +169,7 @@ function WorkbenchState({bars,context,coordinates,children,historical=false}:Pro
    </svg>:null}
   </div>
   <div className={styles.legend}><span>{({UP:'上行结构',DOWN:'下行结构',RANGE:'区间结构',UNAVAILABLE:'结构预热中'} as const)[analysis.regime]}</span><span>{visible.length} 个自动标记 · {manual.length}/{drawings.length} 个本机图形</span></div>
+  {mobile&&automatic&&layers.structure&&!visible.some(a=>a.kind==='channel')?<p className={styles.caution}>当前闭合窗口没有符合所选方向的有效通道。可切换周期、显示失效区域，或点击“手绘通道”用三个锚点绘制。</p>:null}
   {visible.length?<div className={styles.regionList} aria-label="当前结构区域">{visible.map(a=><button key={a.id} type="button" aria-pressed={selection===a.id} onClick={()=>setSelection(a.id)}><span style={{background:color(a)}}/>{shortLabel(a)}</button>)}</div>:null}
   {selectedAuto?<p className={styles.selectedRegion} role="status"><strong style={{color:color(selectedAuto)}}>{selectedAuto.label}</strong><span>{states[selectedAuto.state]} · {fmt(selectedAuto.low)}—{fmt(selectedAuto.high)}</span><button type="button" aria-label="取消区域选择" onClick={()=>setSelection('')}>取消选择</button></p>:null}
   {profile&&analysis.volumeProfile.kind==='OHLCV_ESTIMATE'?<p className={styles.profileNote}>POC / VAH / VAL 为当前闭合柱 OHLCV 分箱估算。</p>:null}

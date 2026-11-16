@@ -1,4 +1,9 @@
 import type {IChartApi, ISeriesApi, SeriesType, UTCTimestamp} from 'lightweight-charts';
+export function zoomChartRange(range:{from:number;to:number},factor:number,anchor:number){
+ if(!Number.isFinite(factor)||factor<=0)return range;
+ const position=Math.max(0,Math.min(1,anchor)),span=Math.max(5,Math.min(10000,(range.to-range.from)/factor)),fixed=range.from+(range.to-range.from)*position;
+ return {from:fixed-span*position,to:fixed+span*(1-position)};
+}
 
 /** UTC milliseconds and price units throughout; only this bridge converts chart seconds. */
 export type ChartCoordinates = {
@@ -9,6 +14,9 @@ export type ChartCoordinates = {
  size:()=>{width:number;height:number};
  subscribe:(listener:()=>void)=>()=>void;
  dispose:()=>void;
+ panByPixels?:(pixels:number)=>void;
+ zoomAt?:(factor:number,x:number)=>void;
+ inspectAt?:(x:number,y:number)=>void;
 };
 
 export function chartCoordinates(chart:IChartApi,series:ISeriesApi<SeriesType>,element:HTMLElement,times:()=>readonly number[]):ChartCoordinates {
@@ -31,6 +39,9 @@ export function chartCoordinates(chart:IChartApi,series:ISeriesApi<SeriesType>,e
   priceToY:price=>series.priceToCoordinate(price),
   xToTime(x){const logical=scale.coordinateToLogical(x),rows=times();if(logical===null||!rows.length)return null;return rows[Math.max(0,Math.min(rows.length-1,Math.round(Number(logical))))];},
   yToPrice:y=>series.coordinateToPrice(y),
+  panByPixels(pixels){const range=scale.getVisibleLogicalRange(),width=scale.width();if(range&&width){const delta=pixels/width*(range.to-range.from);scale.setVisibleLogicalRange({from:range.from-delta,to:range.to-delta});}},
+  zoomAt(factor,x){const range=scale.getVisibleLogicalRange();if(range&&scale.width())scale.setVisibleLogicalRange(zoomChartRange(range,factor,x/scale.width()));},
+  inspectAt(x,y){const time=scale.coordinateToTime(x),price=series.coordinateToPrice(y);if(time!==null&&price!==null)chart.setCrosshairPosition(price,time,series);},
   size:()=>({width:scale.width(),height:chart.panes()[0]?.getHeight()??0}),
   subscribe(listener){
    if(disposed)return()=>{};
