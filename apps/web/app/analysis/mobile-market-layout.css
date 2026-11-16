@@ -43,8 +43,12 @@
  .phone-analysis-overview .analysis-detail{padding:12px 0}.phone-analysis-overview .analysis-detail h2{font-size:15px}
  .phone-market-list>header{display:flex;align-items:center;gap:12px;padding:8px 0 15px}.phone-market-list h1{font-size:23px;margin-right:auto}.phone-market-list>header>a{font-size:12px}
  body.approved-ui .phone-market-list .watchlist-card{display:block;border:0;padding:0;box-shadow:none;min-width:0}
- .phone-market-list .watch-rows{max-height:none;overflow:visible}.phone-market-list .watch-row{min-height:76px;border-radius:0;border:0;border-bottom:1px solid #f0f1f2;background:#fff}
- .phone-market-list .watch-row .coin{display:none}.phone-market-list .watch-price strong{font-size:16px}.phone-market-list .watch-identity strong{font-size:15px}
+ body.apple-ui.approved-ui .exchange-analysis .phone-market-list .watchlist-card{contain:none}
+ body.apple-ui.approved-ui .exchange-analysis .phone-market-list .watch-rows{height:auto;max-height:none;overflow:visible;flex:none}
+ body.apple-ui.approved-ui .exchange-analysis .phone-market-list .watch-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 0;margin:0;min-height:76px;border-radius:0;border:0;border-bottom:1px solid #f0f1f2;background:#fff;box-shadow:none}
+ .phone-market-list .watch-row:after,.phone-market-list .watch-row .coin,.phone-market-list .watch-spark,.phone-market-list .watch-footer{display:none}
+ body.approved-ui .exchange-analysis .phone-market-list .watch-identity{min-width:0;flex:1;gap:5px}.phone-market-list .watch-identity strong{font-size:15px;white-space:nowrap}
+ body.approved-ui .exchange-analysis .phone-market-list .watch-price{display:flex;flex-direction:column;align-items:flex-end;gap:5px;grid-column:auto;flex:none;min-width:0}.phone-market-list .watch-price strong{font-size:16px;white-space:nowrap}
  .phone-tools-links{display:grid;grid-template-columns:1fr 1fr;gap:10px}.phone-tools-links>a{padding:15px 10px;background:#f4f5f6;border-radius:4px;color:#20252a;font-size:13px}
  @media(max-width:359px){.phone-product-picker strong{font-size:16px}.phone-paper-label{font-size:8px}.phone-detail-tabs{gap:22px}.phone-price-summary .exchange-market-stats dt{font-size:9px}.phone-chart-actions{grid-template-columns:40px 40px 64px minmax(0,1fr);gap:4px}.phone-analysis-caption{font-size:11px}}
 }
