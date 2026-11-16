@@ -28,12 +28,12 @@
  body.apple-ui.approved-ui .gold-market-workspace .gold-mobile-order-controls input{border-radius:12px;min-height:48px;padding:10px 12px}
  body.apple-ui.approved-ui .gold-market-workspace .gold-mobile-order-controls .gold-actions button{border-radius:12px;min-height:46px;font-size:14px}
  body.apple-ui.approved-ui .gold-market-workspace .gold-workflow-links a{border-radius:12px;padding:12px;font-size:12px}
- body.approved-ui .gold-market-workspace>.gold-workflow-links{display:none}
+ body.apple-ui.approved-ui .gold-workspace.gold-market-workspace>.gold-workflow-links{display:none}
  .gold-market-workspace .gold-grid{display:block}
  .gold-market-workspace[data-mobile-panel=quote] .gold-rule-card,.gold-market-workspace[data-mobile-panel=quote] .gold-trade-column,.gold-market-workspace[data-mobile-panel=quote]>.gold-ledger-details{display:none}
  .gold-market-workspace[data-mobile-panel=trade] .gold-grid>div,.gold-market-workspace[data-mobile-panel=analysis] .gold-market-card,.gold-market-workspace[data-mobile-panel=analysis] .gold-trade-column,.gold-market-workspace[data-mobile-panel=analysis]>.gold-ledger-details{display:none}
- body.approved-ui .gold-market-workspace .gold-panel-heading{justify-content:flex-end;margin:0 0 6px}
- .gold-market-workspace .gold-panel-heading h2{display:none}
+ body.apple-ui.approved-ui .gold-workspace.gold-market-workspace .gold-panel-heading{justify-content:flex-end;margin:0 0 6px}
+ body.apple-ui.approved-ui .gold-workspace.gold-market-workspace .gold-panel-heading h2{display:none}
  body.approved-ui .gold-market-workspace .gold-quote{grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);grid-template-areas:'bid ask' 'bid spread' 'state state';gap:5px 14px;margin-bottom:8px}
  .gold-market-workspace .gold-quote>div:first-child{grid-area:ask}.gold-market-workspace .gold-quote>div:nth-child(2){grid-area:bid}.gold-market-workspace .gold-quote>div:nth-child(3){grid-area:spread;display:block}
  .gold-market-workspace .gold-quote>p{grid-area:state;font-size:9px}
