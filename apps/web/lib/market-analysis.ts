@@ -1,8 +1,10 @@
 import type {Candle,IndicatorRow,Interval} from './market';
 
 export const intervalMs:Record<Interval,number>={'1m':60000,'5m':300000,'15m':900000,'1h':3600000,'4h':14400000,'1d':86400000};
-export function summarizeMarket(bars:Candle[],row:IndicatorRow,timeframe:Interval,now:number,expectedInstrumentId:string){
- const step=intervalMs[timeframe];
+export function summarizeMarket(bars:Candle[],row:IndicatorRow,timeframe:string,now:number,expectedInstrumentId:string){
+ const match=/^([1-9]\d*)(m|h|d)$/.exec(timeframe),amount=Number(match?.[1]),unit=match?.[2];
+ const step=unit==='m'&&amount<=60?amount*60000:unit==='h'&&amount<=24?amount*3600000:unit==='d'&&amount===1?86400000:0;
+ if(!step)throw new Error('不支持的图表周期。');
  const closed=bars.filter(bar=>bar.is_closed&&Date.parse(bar.close_time)<=now);
  if(closed.length<21)throw new Error('已闭合历史不足 21 根，暂不生成分析。');
  if(closed.some(bar=>{const [o,h,l,c,v]=[bar.open,bar.high,bar.low,bar.close,bar.volume].map(Number);return ![o,h,l,c,v].every(Number.isFinite)||Math.min(o,h,l,c)<=0||v<0||h<Math.max(o,c,l)||l>Math.min(o,c,h);}))throw new Error('K 线价格或成交量无效，暂不生成分析。');

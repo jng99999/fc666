@@ -1,6 +1,7 @@
 'use client';
 import {useCallback,useEffect,useMemo,useRef,useState,type ReactNode,type PointerEvent} from 'react';
 import type {ChartCoordinates} from '../lib/chart-coordinates';
+import {layoutChartLabels,type ChartOverlayLabel} from '../lib/chart-label-layout';
 import {analyzePriceAction,type PriceAnalysis,type PriceBar,type PriceContext,type PriceAnnotation} from '../lib/price-action';
 import {decodeDrawings,drawingCount,drawingLabels,drawingScope,drawingStorageKey,encodeDrawings,snapDrawingPoint,validDrawing,type ChartDrawing,type DrawingKind,type DrawingPoint} from '../lib/chart-drawings';
 import ChartScenarioPanel from './chart-scenario-panel';
@@ -16,6 +17,7 @@ const states={ACTIVE:'有效',TOUCHED:'已触碰',MITIGATED:'已回补',BROKEN:'
 const fmt=(n:number)=>n.toLocaleString('zh-CN',{maximumFractionDigits:6});
 const utc=(n:number)=>new Date(n).toISOString().replace('T',' ').replace('.000Z',' UTC');
 const color=(a:PriceAnnotation)=>['BROKEN','EXPIRED','MITIGATED'].includes(a.state)?'#94a3b8':a.direction==='up'?'#139b79':a.direction==='down'?'#d84c70':'#3b7ee8';
+const shortLabel=(a:PriceAnnotation)=>({support:'支撑候选',resistance:'阻力候选',range:'震荡箱体',trend:'趋势线',channel:'趋势通道',demand:'需求 / OB候选',supply:'供应 / OB候选',fvg:'FVG',bos:'BOS',choch:'CHoCH',session:a.label,level:a.label,fibonacci:'回撤参考',liquidity:'流动性'}[a.kind])+(a.direction==='up'?' ↑':a.direction==='down'?' ↓':'');
 
 export default function ChartWorkbench(props:Props){return <WorkbenchState {...props}/>;}
 function WorkbenchState({bars,context,coordinates,children,historical=false}:Props){
@@ -60,9 +62,34 @@ function WorkbenchState({bars,context,coordinates,children,historical=false}:Pro
  const size=coordinates?.size()??{width:0,height:0};
  // revision makes coordinate projection follow actual chart scroll, scale and pane resize.
  void revision;
- const labelSlots:number[]=[];
+ const labels:ChartOverlayLabel[]=[];
+ if(coordinates){
+  visible.forEach((a,i)=>{
+   if(a.id!==selection&&i<visible.length-3)return;
+   const y1=coordinates.priceToY(a.high),y2=coordinates.priceToY(a.low),x1=coordinates.timeToX(a.start),x2=coordinates.timeToX(Math.min(a.end,lastTime));
+   const left=x1??(a.start<(bars[0]?.time??0)?0:null),right=x2??size.width;
+   if(y1===null||y2===null||left===null||right<0||left>size.width||Math.max(y1,y2)<0||Math.min(y1,y2)>size.height)return;
+   labels.push({id:a.id,selectionId:a.id,text:shortLabel(a),title:`${a.label} · ${states[a.state]} · ${a.explanation}`,x:Math.max(0,left),y:Math.max(0,Math.min(y1,y2)),color:color(a),priority:a.id===selection?100:60+i/100});
+  });
+  if(profile&&analysis.volumeProfile.kind==='OHLCV_ESTIMATE')for(const [name,value] of [['POC',analysis.volumeProfile.poc],['VAH',analysis.volumeProfile.vah],['VAL',analysis.volumeProfile.val]] as const){
+   const y=value===null?null:coordinates.priceToY(value);if(y!==null)labels.push({id:`profile:${name}`,text:name,title:`${name} · OHLCV 估算 · ${value===null?'':fmt(value)}`,x:2,y,color:'#8b62be',priority:40});
+  }
+  for(const d of manual){
+   const p=xy(d.points[0]);if(!p)continue;
+   labels.push({id:`drawing:${d.id}`,selectionId:d.id,text:d.label+(d.locked?' · 锁定':''),title:`手动 · ${d.label}`,x:p.x,y:p.y,color:d.id===selection?'#f09325':'#7256ca',priority:d.id===selection?100:30});
+   if(d.id===selection&&d.kind==='fibonacci')for(const ratio of [0,.382,.5,.618,1,1.272,1.618]){
+    const price=d.points[0].price+(d.points[1].price-d.points[0].price)*ratio,y=coordinates.priceToY(price);
+    if(y!==null)labels.push({id:`${d.id}:${ratio}`,text:`${ratio} · ${fmt(price)}`,title:`回撤参考 ${ratio} · ${fmt(price)}`,x:p.x,y,color:'#f09325',priority:35});
+   }
+  }
+  for(const line of references.slice(0,24)){
+   const y=coordinates.priceToY(line.price);if(y===null)continue;
+   labels.push({id:`reference:${line.id}`,text:`${line.label.replace('研究计划 第','研究 ').replace('档','').replace(' · 不下单','').replace(' · 非实时快照','')} · ${fmt(line.price)}`,title:`${line.label} · ${fmt(line.price)}`,x:2,y,color:line.color,priority:50});
+  }
+ }
+ const placedLabels=layoutChartLabels(labels,size);
  function commit(next:ChartDrawing[]){setHistory(h=>({scope,past:[...h.past,h.present].slice(-40),present:next,future:[]}));setBlockedRead(false);setEditError('');}
- function selectTool(next:DrawingKind|'cursor'){setTool(next);setDraft([]);setNotice(next==='cursor'?'':next==='channel'?'依次点击趋势起点、终点，再点通道另一侧。':`在主图点选 ${drawingCount[next]} 个价格坐标；Esc 取消。`);}
+ function selectTool(next:DrawingKind|'cursor'){setTool(next);setDraft([]);setNotice(next==='cursor'?'':next==='channel'?'依次点击趋势起点、终点，再点通道另一侧。':`在主图点选 ${drawingCount[next]} 个价格坐标；Esc 取消。`);if(next!=='cursor')requestAnimationFrame(()=>surface.current?.scrollIntoView({block:'start',behavior:'auto'}));}
  function point(event:PointerEvent<SVGSVGElement>){
   if(tool==='cursor'||!coordinates||!bars.length||study.error)return;
   const box=event.currentTarget.getBoundingClientRect(),x=event.clientX-box.left,y=event.clientY-box.top;
@@ -86,14 +113,14 @@ function WorkbenchState({bars,context,coordinates,children,historical=false}:Pro
  function xy(p:DrawingPoint){if(!coordinates)return null;const x=coordinates.timeToX(p.time),y=coordinates.priceToY(p.price);return x===null||y===null?null:{x,y};}
  function drawManual(d:ChartDrawing){
   const ps=d.points.map(xy);if(ps.some(p=>!p))return null;const a=ps[0]!,b=ps[1],stroke=d.id===selection?'#f09325':'#7256ca';
-  const common={stroke,strokeWidth:1.6,fill:'none',vectorEffect:'non-scaling-stroke' as const};
+  const common={stroke,strokeWidth:d.id===selection?2:1.3,fill:'none',vectorEffect:'non-scaling-stroke' as const};
   let shape:ReactNode;
   if(d.kind==='horizontal')shape=<line {...common} x1={0} x2={size.width} y1={a.y} y2={a.y}/>;
   else if(d.kind==='box')shape=<rect {...common} fill={stroke+'12'} x={Math.min(a.x,b!.x)} y={Math.min(a.y,b!.y)} width={Math.abs(b!.x-a.x)} height={Math.abs(b!.y-a.y)}/>;
-  else if(d.kind==='fibonacci')shape=<>{[0,.382,.5,.618,1,1.272,1.618].map(r=>{const price=d.points[0].price+(d.points[1].price-d.points[0].price)*r,y=coordinates!.priceToY(price);return y===null?null:<g key={r}><line {...common} strokeDasharray={r===0||r===1?undefined:'4 3'} x1={Math.min(a.x,b!.x)} x2={Math.max(a.x,b!.x)} y1={y} y2={y}/><text x={Math.min(a.x,b!.x)+4} y={y-3} fill={stroke}>{r} · {fmt(price)}</text></g>;})}</>;
+  else if(d.kind==='fibonacci')shape=<>{[0,.382,.5,.618,1,1.272,1.618].map(r=>{const price=d.points[0].price+(d.points[1].price-d.points[0].price)*r,y=coordinates!.priceToY(price);return y===null?null:<line key={r} {...common} strokeDasharray={r===0||r===1?undefined:'4 3'} x1={Math.min(a.x,b!.x)} x2={Math.max(a.x,b!.x)} y1={y} y2={y}/>;})}</>;
   else if(d.kind==='channel'){const c=ps[2]!,dy=c.y-(a.y+(b!.y-a.y)*(c.x-a.x)/(b!.x-a.x));shape=<><path {...common} fill={stroke+'0c'} d={`M${a.x},${a.y} L${b!.x},${b!.y} L${b!.x},${b!.y+dy} L${a.x},${a.y+dy}Z`}/><line {...common} strokeDasharray="4 3" x1={a.x} y1={a.y+dy/2} x2={b!.x} y2={b!.y+dy/2}/></>;}
   else shape=<line {...common} x1={a.x} y1={a.y} x2={b!.x} y2={b!.y}/>;
-  return <g key={d.id} data-drawing-id={d.id} className={styles.manual} onClick={e=>{if(tool==='cursor'){e.stopPropagation();setSelection(d.id);}}}><title>{d.label}{d.locked?' · 已锁定':''}</title>{shape}{ps.map((p,i)=><circle key={i} cx={p!.x} cy={p!.y} r={3} fill={stroke}/>)}<text x={Math.max(2,a.x+5)} y={Math.max(12,a.y-7)} fill={stroke}>{d.label}{d.locked?' · 锁定':''}</text></g>;
+  return <g key={d.id} data-drawing-id={d.id} className={styles.manual} onClick={e=>{if(tool==='cursor'){e.stopPropagation();setSelection(d.id);}}}><title>{d.label}{d.locked?' · 已锁定':''}</title>{shape}{d.id===selection?ps.map((p,i)=><circle key={i} cx={p!.x} cy={p!.y} r={4} fill={stroke}/>):null}</g>;
  }
  return <section className={styles.workbench} data-testid="chart-workbench" data-instrument={context.instrumentId} data-source={context.source} data-timeframe={context.timeframe}>
   <div className={styles.heading}><strong>结构 · 箱体 · 画线</strong><button type="button" aria-pressed={automatic} onClick={()=>setAutomatic(v=>!v)}>{automatic?'自动标记已开':'自动标记已关'}</button></div>
@@ -106,15 +133,20 @@ function WorkbenchState({bars,context,coordinates,children,historical=false}:Pro
   {external?<p className={styles.notice} role="status">另一标签页更新了绘图。<button type="button" onClick={()=>load(external)}>载入最新绘图</button><button type="button" onClick={()=>{setExternal(null);setNotice('继续使用本页绘图，并保存为最新版本。');}}>保留本页绘图</button></p>:null}
   {notice?<p className={styles.notice} role="status">{notice}</p>:null}
   {study.error?<p className={styles.caution} role="alert">{study.error} 未生成分析区域或研究交易。</p>:null}
-  <div className={styles.surface} ref={surface}>
+  <div className={styles.surface} ref={surface} data-chart-surface>
    {children}
    {coordinates&&bars.length>0&&!study.error&&size.width>0?<svg data-testid="chart-drawing-overlay" className={`${styles.overlay} ${tool!=='cursor'?styles.drawing:''}`} width={size.width} height={size.height} viewBox={`0 0 ${size.width} ${size.height}`} onPointerUp={point} tabIndex={tool==='cursor'?-1:0} aria-label={tool==='cursor'?'价格结构与绘图图层':'点选主图锚点，Escape 取消'} onKeyDown={e=>{if(e.key==='Escape'){selectTool('cursor');e.stopPropagation();}}}>
-    {visible.map((a,i)=>{const y1=coordinates.priceToY(a.high),y2=coordinates.priceToY(a.low);if(y1===null||y2===null)return null;const x1=coordinates.timeToX(a.start),x2=coordinates.timeToX(Math.min(a.end,lastTime));const left=x1??(a.start<(bars[0]?.time??0)?0:null),right=x2??size.width;if(left===null||right<0||left>size.width)return null;const stroke=color(a),low=Math.min(y1,y2),height=Math.abs(y2-y1),hasLabel=a.id===selection||i>=visible.length-3;let labelY=Math.max(12,Math.min(size.height-5,low-4));if(hasLabel){for(let pass=0;pass<12&&labelSlots.some(y=>Math.abs(y-labelY)<13);pass++)labelY=labelY>25?labelY-13:Math.min(size.height-5,low+14+pass*13);labelSlots.push(labelY);}const points=a.points?.map(p=>({x:coordinates.timeToX(p.time),y:coordinates.priceToY(p.price)}));return <g key={a.id} className={styles.annotation} onClick={e=>{if(tool==='cursor'){e.stopPropagation();setSelection(a.id);}}}><title>{a.label} · {states[a.state]} · {a.explanation}</title>{points?.length&&points.every(p=>p.x!==null&&p.y!==null)?a.kind==='channel'&&points.length===4?<path d={`M${points[0].x},${points[0].y} L${points[1].x},${points[1].y} M${points[2].x},${points[2].y} L${points[3].x},${points[3].y}`} stroke={stroke} fill="none" strokeWidth={1.2}/>:<polyline points={points.map(p=>`${p.x},${p.y}`).join(' ')} stroke={stroke} fill="none" strokeWidth={1.2}/>:height<1?<line x1={Math.max(0,left)} x2={right} y1={y1} y2={y1} stroke={stroke} strokeDasharray="4 3"/>:<rect x={Math.max(0,left)} y={low} width={Math.max(1,right-Math.max(0,left))} height={height} fill={stroke+'0d'} stroke={stroke} strokeWidth={1} strokeDasharray={a.state==='ACTIVE'?undefined:'4 3'}/>}{hasLabel?<text x={Math.max(3,Math.min(size.width-85,left+4))} y={labelY} fill={stroke}>{a.label}</text>:null}</g>;})}
-    {profile&&analysis.volumeProfile.kind==='OHLCV_ESTIMATE'?<g data-testid="volume-profile-estimate">{analysis.volumeProfile.bins.map((bin,i)=>{const y1=coordinates.priceToY(bin.high),y2=coordinates.priceToY(bin.low),max=Math.max(...analysis.volumeProfile.bins.map(b=>b.volume));if(y1===null||y2===null||!max)return null;const width=Math.min(65,size.width*.18)*bin.volume/max;return <rect key={i} x={size.width-width} y={Math.min(y1,y2)} width={width} height={Math.max(1,Math.abs(y1-y2))} fill="#9c83d543"/>;})}{[['POC',analysis.volumeProfile.poc],['VAH',analysis.volumeProfile.vah],['VAL',analysis.volumeProfile.val]].map(([label,value])=>{const y=typeof value==='number'?coordinates.priceToY(value):null;return y===null?null:<g key={label as string}><line x1={0} x2={size.width} y1={y} y2={y} stroke="#8b62be" strokeDasharray="3 3"/><text x={4} y={y-3} fill="#8b62be">{label} · OHLCV 估算</text></g>;})}</g>:null}
-    {manual.map(drawManual)}{references.slice(0,24).map(line=>{const y=coordinates.priceToY(line.price);return y===null||y<0||y>size.height?null:<g key={line.id} data-reference-id={line.id}><title>{line.label} · {fmt(line.price)}</title><line x1={0} x2={size.width} y1={y} y2={y} stroke={line.color} strokeWidth={1.3} strokeDasharray="6 4"/><text x={5} y={Math.max(11,y-4)} fill={line.color}>{line.label.replace('研究计划 第','研究 ').replace('档','').replace(' · 不下单','').replace(' · 非实时快照','')} · {fmt(line.price)}</text></g>;})}{draft.map((p,i)=>{const q=xy(p);return q?<circle key={i} cx={q.x} cy={q.y} r={5} fill="#f09325"/>:null;})}
+    {visible.map(a=>{const y1=coordinates.priceToY(a.high),y2=coordinates.priceToY(a.low);if(y1===null||y2===null)return null;const x1=coordinates.timeToX(a.start),x2=coordinates.timeToX(Math.min(a.end,lastTime));const left=x1??(a.start<(bars[0]?.time??0)?0:null),right=x2??size.width;if(left===null||right<0||left>size.width||Math.max(y1,y2)<0||Math.min(y1,y2)>size.height)return null;const stroke=color(a),low=Math.min(y1,y2),height=Math.abs(y2-y1),selected=a.id===selection;const points=a.points?.map(p=>({x:coordinates.timeToX(p.time),y:coordinates.priceToY(p.price)}));return <g key={a.id} data-annotation-id={a.id} data-selected={selected} className={styles.annotation} onClick={e=>{if(tool==='cursor'){e.stopPropagation();setSelection(a.id);}}}><title>{a.label} · {states[a.state]} · {a.explanation}</title>{points?.length&&points.every(p=>p.x!==null&&p.y!==null)?a.kind==='channel'&&points.length===4?<path d={`M${points[0].x},${points[0].y} L${points[1].x},${points[1].y} M${points[2].x},${points[2].y} L${points[3].x},${points[3].y}`} stroke={stroke} fill="none" strokeWidth={selected?2:1.2}/>:<polyline points={points.map(p=>`${p.x},${p.y}`).join(' ')} stroke={stroke} fill="none" strokeWidth={selected?2:1.2}/>:height<1?<line x1={Math.max(0,left)} x2={right} y1={y1} y2={y1} stroke={stroke} strokeWidth={selected?2:1} strokeDasharray="4 3"/>:<rect x={Math.max(0,left)} y={low} width={Math.max(1,right-Math.max(0,left))} height={height} fill={stroke+(selected?'20':'0a')} stroke={stroke} strokeWidth={selected?2:1} strokeDasharray={a.state==='ACTIVE'?undefined:'4 3'}/>}</g>;})}
+    {profile&&analysis.volumeProfile.kind==='OHLCV_ESTIMATE'?<g data-testid="volume-profile-estimate">{analysis.volumeProfile.bins.map((bin,i)=>{const y1=coordinates.priceToY(bin.high),y2=coordinates.priceToY(bin.low),max=Math.max(...analysis.volumeProfile.bins.map(b=>b.volume));if(y1===null||y2===null||!max)return null;const width=Math.min(65,size.width*.18)*bin.volume/max;return <rect key={i} x={size.width-width} y={Math.min(y1,y2)} width={width} height={Math.max(1,Math.abs(y1-y2))} fill="#9c83d543"/>;})}{[['POC',analysis.volumeProfile.poc],['VAH',analysis.volumeProfile.vah],['VAL',analysis.volumeProfile.val]].map(([label,value])=>{const y=typeof value==='number'?coordinates.priceToY(value):null;return y===null?null:<line key={label as string} x1={0} x2={size.width} y1={y} y2={y} stroke="#8b62be" strokeDasharray="3 3"/>;})}</g>:null}
+    {manual.map(drawManual)}{references.slice(0,24).map(line=>{const y=coordinates.priceToY(line.price);return y===null||y<0||y>size.height?null:<g key={line.id} data-reference-id={line.id}><title>{line.label} · {fmt(line.price)}</title><line x1={0} x2={size.width} y1={y} y2={y} stroke={line.color} strokeWidth={1.3} strokeDasharray="6 4"/></g>;})}
+    {placedLabels.map(label=><g key={label.id} data-chart-label={label.id} className={styles.label} onClick={label.selectionId?e=>{if(tool==='cursor'){e.stopPropagation();setSelection(label.selectionId!);}}:undefined}><title>{label.title}</title><line className={styles.labelLeader} x1={Math.max(0,Math.min(size.width,label.x))} y1={label.y} x2={Math.max(label.left+6,Math.min(label.left+label.width-6,label.x))} y2={label.top+label.height/2} stroke={label.color}/><rect x={label.left} y={label.top} width={label.width} height={label.height} rx={6} fill="#ffffffed" stroke={label.color} strokeOpacity={label.selectionId===selection?1:.28}/><text x={label.left+8} y={label.top+15} fill={label.color}>{label.displayText}</text></g>)}
+    {draft.map((p,i)=>{const q=xy(p);return q?<circle key={i} cx={q.x} cy={q.y} r={5} fill="#f09325"/>:null;})}
    </svg>:null}
   </div>
   <div className={styles.legend}><span>{({UP:'上行结构',DOWN:'下行结构',RANGE:'区间结构',UNAVAILABLE:'结构预热中'} as const)[analysis.regime]}</span><span>{visible.length} 个自动标记 · {manual.length}/{drawings.length} 个本机图形</span></div>
+  {visible.length?<div className={styles.regionList} aria-label="当前结构区域">{visible.map(a=><button key={a.id} type="button" aria-pressed={selection===a.id} onClick={()=>setSelection(a.id)}><span style={{background:color(a)}}/>{shortLabel(a)}</button>)}</div>:null}
+  {selectedAuto?<p className={styles.selectedRegion} role="status"><strong style={{color:color(selectedAuto)}}>{selectedAuto.label}</strong><span>{states[selectedAuto.state]} · {fmt(selectedAuto.low)}—{fmt(selectedAuto.high)}</span><button type="button" aria-label="取消区域选择" onClick={()=>setSelection('')}>取消选择</button></p>:null}
+  {profile&&analysis.volumeProfile.kind==='OHLCV_ESTIMATE'?<p className={styles.profileNote}>POC / VAH / VAL 为当前闭合柱 OHLCV 分箱估算。</p>:null}
   {analysis.warnings.length?<p className={styles.caution}>{analysis.warnings.join('；')}</p>:null}
   <details className={styles.details}><summary>区域依据与绘图管理</summary><div className={styles.detailBody}>
    <WorkspaceSelect label="查看图形依据" value={selection} placeholder="选择自动区域或手动画线" onValueChange={setSelection} options={[...candidates.slice(-150).map(a=>({value:a.id,label:`${a.label} · ${states[a.state]}`})),...drawings.map(d=>({value:d.id,label:`手动 · ${d.label}${d.locked?' · 锁定':''}${manual.includes(d)?'':' · 当前窗口外'}`}))]}/>

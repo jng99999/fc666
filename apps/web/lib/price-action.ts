@@ -28,7 +28,8 @@ const utcWeek=(time:number)=>{const today=utcDay(time),weekday=new Date(today).g
 export function validatePriceBars(bars:readonly PriceBar[],context:PriceContext):void {
  if(!Array.isArray(bars)||bars.length>5000)throw new Error('结构分析只接受最多 5000 根闭合柱。');
  if(!context||![context.instrumentId,context.source,context.timeframe].every(value=>typeof value==='string'&&value.length>0&&value.length<=256)||!['trade','tick','unavailable'].includes(context.volumeKind))throw new Error('结构分析需要明确的产品、来源、周期和成交量口径。');
- const interval=intervals[context.timeframe];
+ const parsed=/^([1-9]\d*)(m|h)$/.exec(context.timeframe);
+ const interval=intervals[context.timeframe]??(parsed?Number(parsed[1])*(parsed[2]==='m'?minute:60*minute):undefined);
  for(let i=0;i<bars.length;i++){
   const b=bars[i];
   if(!b||![b.time,b.closedAt].every(value=>Number.isSafeInteger(value)&&value>=0&&value<=8640000000000000)||b.closedAt<=b.time||interval!==undefined&&b.closedAt-b.time!==interval||![b.open,b.high,b.low,b.close].every(value=>Number.isFinite(value)&&value>0)||b.high<Math.max(b.open,b.close,b.low)||b.low>Math.min(b.open,b.close)||b.volume!==null&&(!Number.isFinite(b.volume)||b.volume<0))throw new Error('结构分析拒绝时间、价格或成交量无效的 K 线。');

@@ -28,11 +28,11 @@ export default function AnalysisChart({bars,lines,mode,resetKey=0,onInspect,show
   for(const line of series)for(const value of line.guides??[])line.series.createPriceLine({price:value,color:line.key==='rsi'?'#d8c9f2':'#acb8ca',lineWidth:1,lineStyle:2,axisLabelVisible:true,axisLabelColor:'#f3eefa',axisLabelTextColor:'#9273bc',title:''});
   if(lines.some(line=>line.key==='rsi'))chart.priceScale('right',subPane).applyOptions({scaleMargins:{top:.02,bottom:.02}});
   let layoutFrame=0;
-  const resize=()=>{const width=element.clientWidth,height=element.clientHeight;if(!width||!height)return;chart.resize(width,height);if(volume)chart.panes()[1]?.setHeight(43);if(lines.some(line=>line.pane==='sub'))chart.panes()[subPane]?.setHeight(window.innerWidth<=760?68:102);cancelAnimationFrame(layoutFrame);layoutFrame=requestAnimationFrame(()=>paneLayout.current?.(element.getBoundingClientRect().top-(element.closest('.quote-chart-wrap')?.getBoundingClientRect().top??element.getBoundingClientRect().top)+chart.panes()[0].getHeight()+6));};
-  const observer=new ResizeObserver(resize);observer.observe(element);resize();
+  const resize=()=>{const immersive=element.closest('.analysis-modal-immersive');if(immersive){const remaining=immersive.getBoundingClientRect().bottom-element.getBoundingClientRect().top-12;element.style.height=`${Math.max(150,remaining)}px`;}const width=element.clientWidth,height=element.clientHeight;if(!width||!height)return;chart.resize(width,height);if(volume)chart.panes()[1]?.setHeight(43);if(lines.some(line=>line.pane==='sub'))chart.panes()[subPane]?.setHeight(window.innerHeight<=540?54:window.innerWidth<=760?68:102);cancelAnimationFrame(layoutFrame);layoutFrame=requestAnimationFrame(()=>paneLayout.current?.(element.getBoundingClientRect().top-(element.closest('.quote-chart-wrap')?.getBoundingClientRect().top??element.getBoundingClientRect().top)+chart.panes()[0].getHeight()+6));};
+  const observer=new ResizeObserver(resize);observer.observe(element);const immersive=element.closest('.analysis-modal-immersive');if(immersive)observer.observe(immersive);resize();
   let initial=true,currentBars:Candle[]=[];
   const bridge=chartCoordinates(chart,(candles??trend)!,element,()=>currentBars.map(b=>Date.parse(b.open_time)));setCoordinates(bridge);
-  const reset=()=>{const count=window.innerWidth<=760?65:105;chart.timeScale().setVisibleLogicalRange({from:Math.max(0,currentBars.length-count),to:currentBars.length+3});};
+  const reset=()=>{const count=window.innerWidth<=760?65:105;for(let index=0;index<chart.panes().length;index++)chart.priceScale('right',index).applyOptions({autoScale:true});chart.timeScale().setVisibleLogicalRange({from:Math.max(0,currentBars.length-count),to:currentBars.length+3});};
   chart.subscribeCrosshairMove(event=>{
    if(typeof event.time!=='number'){inspect.current?.(null);return;}
    const index=currentBars.findIndex(bar=>Date.parse(bar.open_time)/1000===event.time);

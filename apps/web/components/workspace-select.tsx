@@ -9,6 +9,7 @@ type Props={label:string;value:string|number;onValueChange:(value:string)=>void;
 export default function WorkspaceSelect({label,value,onValueChange,options,disabled=false,placeholder='请选择',className='',id}:Props){
  const generatedId=useId(),dialogId=generatedId+'-dialog',titleId=generatedId+'-title';
  const trigger=useRef<HTMLButtonElement>(null),dialog=useRef<HTMLDialogElement>(null),search=useRef<HTMLInputElement>(null);
+ const focusSearchOnOpen=useRef(false);
  const [ready,setReady]=useState(false),[open,setOpen]=useState(false),[query,setQuery]=useState('');
  const current=options.find(option=>option.value===String(value));
  const normalized=query.trim().toLocaleLowerCase();
@@ -17,9 +18,20 @@ export default function WorkspaceSelect({label,value,onValueChange,options,disab
  useEffect(()=>{
   if(!open||!ready)return;
   const node=dialog.current;if(!node)return;
-  node.showModal();const previous=document.body.style.overflow;document.body.style.overflow='hidden';
-  const frame=requestAnimationFrame(()=>search.current?.focus());
-  return()=>{cancelAnimationFrame(frame);node.close();document.body.style.overflow=previous;trigger.current?.focus();};
+  const viewport=window.visualViewport;
+  function fitViewport(){
+   const height=viewport?.height??window.innerHeight,top=viewport?.offsetTop??0;
+   node!.style.setProperty('--workspace-select-viewport-height',`${height}px`);
+   node!.style.setProperty('--workspace-select-center',`${top+height/2}px`);
+   node!.toggleAttribute('data-compact',height<420);
+  }
+  fitViewport();node.showModal();const previous=document.body.style.overflow;document.body.style.overflow='hidden';
+  viewport?.addEventListener('resize',fitViewport);viewport?.addEventListener('scroll',fitViewport);window.addEventListener('resize',fitViewport);
+  const frame=requestAnimationFrame(()=>{
+   const selected=node.querySelector<HTMLButtonElement>('button[role=option][aria-selected=true]:not(:disabled)')??node.querySelector<HTMLButtonElement>('button[role=option]:not(:disabled)');
+   (focusSearchOnOpen.current?search.current:selected??node.querySelector<HTMLButtonElement>('.workspace-select-close'))?.focus();
+  });
+  return()=>{cancelAnimationFrame(frame);viewport?.removeEventListener('resize',fitViewport);viewport?.removeEventListener('scroll',fitViewport);window.removeEventListener('resize',fitViewport);node.close();document.body.style.overflow=previous;trigger.current?.focus({preventScroll:true});};
  },[open,ready]);
  useEffect(()=>{if(disabled)setOpen(false);},[disabled]);
  function close(){setOpen(false);}
@@ -37,7 +49,7 @@ export default function WorkspaceSelect({label,value,onValueChange,options,disab
   }else if((event.key==='Home'||event.key==='End')&&document.activeElement!==search.current){event.preventDefault();choices[event.key==='Home'?0:choices.length-1].focus();}
   else if(event.key==='Enter'&&document.activeElement===search.current){event.preventDefault();if(filtered.filter(option=>!option.disabled).length===1)choose(filtered.find(option=>!option.disabled)!);else choices[0].focus();}
  }
- return <><button ref={trigger} id={id} type="button" className={`workspace-select-trigger ${className}`} aria-label={label} aria-haspopup="dialog" aria-expanded={open} aria-controls={ready?dialogId:undefined} disabled={disabled||!ready} title={current?.label} onClick={()=>{setQuery('');setOpen(true);}}><span>{current?.label??placeholder}</span><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+ return <><button ref={trigger} id={id} type="button" className={`workspace-select-trigger ${className}`} aria-label={label} aria-haspopup="dialog" aria-expanded={open} aria-controls={ready?dialogId:undefined} disabled={disabled||!ready} title={current?.label} onClick={event=>{focusSearchOnOpen.current=event.detail===0;setQuery('');setOpen(true);}}><span>{current?.label??placeholder}</span><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
  {ready?createPortal(<dialog ref={dialog} id={dialogId} className="workspace-select-dialog" aria-labelledby={titleId} onCancel={event=>{event.preventDefault();close();}} onClose={close} onKeyDown={keyboard} onClick={event=>{if(event.target===event.currentTarget){const box=event.currentTarget.getBoundingClientRect();if(event.clientX<box.left||event.clientX>box.right||event.clientY<box.top||event.clientY>box.bottom)close();}}}>
   <header><h2 id={titleId}>{label}</h2><button type="button" className="workspace-select-close" aria-label={'关闭'+label} onClick={close}><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m6 6 12 12M6 18 18 6"/></svg></button></header>
   <div className="workspace-select-search"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg><input ref={search} type="search" aria-label={'搜索'+label} value={query} onChange={event=>setQuery(event.target.value)} placeholder="搜索选项" autoComplete="off"/>{query?<button type="button" onClick={()=>{setQuery('');search.current?.focus();}}>清空</button>:null}</div>

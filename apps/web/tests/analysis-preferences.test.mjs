@@ -18,6 +18,9 @@ test('workspace preference merge preserves unrelated existing fields and validat
  for(const watchlist of [[],['ETHUSDT','ETHUSDT'],['XAUUSD'],['UNKNOWN']])assert.equal(readAnalysisPreferences(JSON.stringify({...original,watchlist})).watchlist,null);
  assert.equal(readAnalysisPreferences('{invalid').symbol,undefined);
  assert.equal(readAnalysisPreferences(JSON.stringify({symbol:'XAUUSD',timeframe:'2h'})).symbol,undefined);
- assert.equal(readAnalysisPreferences(JSON.stringify({timeframe:'2h'})).timeframe,undefined);
+ assert.equal(readAnalysisPreferences(JSON.stringify({timeframe:'2h'})).timeframe,'2h');
+ assert.equal(readAnalysisPreferences(JSON.stringify({timeframe:'3m'})).timeframe,'3m');
+ assert.equal(readAnalysisPreferences(JSON.stringify({timeframe:'0m'})).timeframe,undefined);
+ assert.equal(readAnalysisPreferences(JSON.stringify({timeframe:'61m'})).timeframe,undefined);
  assert.deepEqual(readAnalysisPreferences('[]').stored,{});
 });

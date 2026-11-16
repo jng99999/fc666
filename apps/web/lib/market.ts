@@ -8,7 +8,7 @@ const decimal = z.string().regex(/^-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?$/).refine(v 
 const positive = decimal.refine(v => Number(v)>0);
 const nonnegative = decimal.refine(v => Number(v)>=0);
 export const CandleSchema = z.object({instrument_id:z.string().startsWith(`${MarketProvider}:spot:`),timeframe:z.enum(Intervals),open_time:z.iso.datetime({offset:true}),close_time:z.iso.datetime({offset:true}),open:positive,high:positive,low:positive,close:positive,volume:nonnegative,is_closed:z.boolean(),source:z.literal(`${MarketProvider}.public`)});
-export type Candle = z.infer<typeof CandleSchema>;
+export type Candle = Omit<z.infer<typeof CandleSchema>,'timeframe'>&{timeframe:string};
 const Base = z.object({schema_version:z.literal(1),type:z.literal("snapshot"),symbol:z.enum(Symbols),instrument_id:z.string(),generation:z.string(),sequence:z.number().int().positive(),received_at:z.iso.datetime({offset:true}),event_time:z.iso.datetime({offset:true}).nullable(),quality:z.literal("healthy")});
 const Ticker = Base.extend({channel:z.literal("ticker"),payload:z.object({price:positive,change_percent:decimal,volume:nonnegative,event_time:z.iso.datetime({offset:true})})});
 const Book = Base.extend({channel:z.literal("book"),payload:z.object({valid:z.literal(true),exchange_sequence:z.number().int().nonnegative(),snapshot_depth_limit:z.number(),bids:z.array(z.tuple([positive,nonnegative])).max(20),asks:z.array(z.tuple([positive,nonnegative])).max(20)})});
@@ -20,8 +20,9 @@ export type TickerSnapshot = z.infer<typeof Ticker>;
 export type BookSnapshot = z.infer<typeof Book>;
 export type TradeSnapshot = z.infer<typeof Trade>;
 export type CandleSnapshot = z.infer<typeof LiveCandle>;
-export async function getCandles(symbol:SymbolName,timeframe:Interval,signal:AbortSignal,limit=1000): Promise<Candle[]> {
-  const response=await fetch(`/api/market/candles?symbol=${symbol}&timeframe=${timeframe}&limit=${limit}`,{signal,cache:"no-store"});
+export async function getCandles(symbol:SymbolName,timeframe:Interval,signal:AbortSignal,limit=1000,end?:string): Promise<Candle[]> {
+  const query=new URLSearchParams({symbol,timeframe,limit:String(limit)});if(end)query.set('end',end);
+  const response=await fetch(`/api/market/candles?${query}`,{signal,cache:"no-store"});
   if (!response.ok) throw new Error("历史数据服务不可用");
   const bars=z.array(CandleSchema).parse(await response.json());
   if(bars.some(bar=>bar.instrument_id!==`${MarketProvider}:spot:${symbol.slice(0,-4)}-USDT`||bar.timeframe!==timeframe))throw new Error('K 线响应与请求的市场或周期不一致');
