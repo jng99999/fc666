@@ -1,0 +1,160 @@
+{
+  "version": "execution-validation-v1",
+  "source_commit": "8e82ea83661989d9cd3ccd9844ae1acad9d221ea",
+  "mode": "READ_ONLY_RESEARCH",
+  "trading_enabled": false,
+  "tests": {
+    "passed": 343,
+    "warnings": 1
+  },
+  "source_sha256": {
+    "directional-history/study.json": "4f1bbf2fcb1aecaa06ed11566669dc72d78b8ce56283736788a50df810d50c30",
+    "traders/observation.json": "719373bdd7ea0673231b6fcc3abe485a05fa1d435e1526f80196cc3e86c4f37a",
+    "traders/behavior-summary.json": "4284ce6f746180c7c2a95ebf80a5f3ee4adec61c6d6c10d0c2b87109cc5abfa9",
+    "committed-source-regression.log": "c43dff62a68a5a8d7ab4d108ee1745f82950a18a3a7538b8241d360d9188ae54"
+  },
+  "gold": {
+    "dataset_id": "ee9afe981db266959ebcc1557e6120ae6e60012f761265ed46d57ab57878276c",
+    "assumptions": [
+      "Independent 10000 USD per calendar year and scenario; SMA20 resets/warmup each year",
+      "Synthetic fully collateralized directional contract; not a broker/spot/perpetual specification",
+      "Only actual paired closing quotes from complete hours; gaps remain visible",
+      "Next observed quote after decision acceptance; not next-bar-open execution",
+      "Protection checked only on sampled closes; intrahour stops cannot be reconstructed",
+      "Actual historical bid/ask plus explicit fee-rate and absolute adverse slippage assumptions",
+      "No financing/funding/overnight swaps, executable depth or forced terminal liquidation",
+      "No historical news source: strict mode abstains; diagnostic is mechanics-only, not news qualification"
+    ],
+    "results": [
+      {
+        "year": 2023,
+        "scenario": "NEWS_REQUIRED_UNAVAILABLE",
+        "bars": 5138,
+        "long_entries": 0,
+        "short_entries": 0,
+        "stop_exits": 0,
+        "profit_exits": 0,
+        "return": "0",
+        "news_validated": false,
+        "fees": "0",
+        "position_open_at_end": false
+      },
+      {
+        "year": 2023,
+        "scenario": "DIAGNOSTIC_NO_REAL_NEWS",
+        "bars": 5138,
+        "long_entries": 246,
+        "short_entries": 235,
+        "stop_exits": 12,
+        "profit_exits": 15,
+        "return": "-0.0497076163",
+        "news_validated": false,
+        "fees": "186.394163",
+        "position_open_at_end": true
+      },
+      {
+        "year": 2024,
+        "scenario": "NEWS_REQUIRED_UNAVAILABLE",
+        "bars": 5917,
+        "long_entries": 0,
+        "short_entries": 0,
+        "stop_exits": 0,
+        "profit_exits": 0,
+        "return": "0",
+        "news_validated": false,
+        "fees": "0",
+        "position_open_at_end": false
+      },
+      {
+        "year": 2024,
+        "scenario": "DIAGNOSTIC_NO_REAL_NEWS",
+        "bars": 5917,
+        "long_entries": 308,
+        "short_entries": 281,
+        "stop_exits": 12,
+        "profit_exits": 26,
+        "return": "-0.03471066",
+        "news_validated": false,
+        "fees": "281.221600",
+        "position_open_at_end": true
+      },
+      {
+        "year": 2025,
+        "scenario": "NEWS_REQUIRED_UNAVAILABLE",
+        "bars": 5885,
+        "long_entries": 0,
+        "short_entries": 0,
+        "stop_exits": 0,
+        "profit_exits": 0,
+        "return": "0",
+        "news_validated": false,
+        "fees": "0",
+        "position_open_at_end": false
+      },
+      {
+        "year": 2025,
+        "scenario": "DIAGNOSTIC_NO_REAL_NEWS",
+        "bars": 5885,
+        "long_entries": 317,
+        "short_entries": 265,
+        "stop_exits": 24,
+        "profit_exits": 43,
+        "return": "0.0302983373",
+        "news_validated": false,
+        "fees": "402.424627",
+        "position_open_at_end": true
+      }
+    ]
+  },
+  "traders": {
+    "as_of": "2026-10-26T21:42:28.889000+00:00",
+    "live_stream": false,
+    "requests": 8,
+    "accounts": [
+      {
+        "address": "0x85ecf584f25db6f146718b86d493e33c5af72052",
+        "fills": 0,
+        "assets": 0,
+        "complete_episodes": 0,
+        "unmatched_fills": 0,
+        "fees_by_token": {},
+        "window_complete": false,
+        "pagination_truncated": false
+      },
+      {
+        "address": "0xf5d81a135f756ca16544e53c20fc20643ec3ad53",
+        "fills": 5996,
+        "assets": 21,
+        "complete_episodes": 0,
+        "unmatched_fills": 5996,
+        "fees_by_token": {
+          "USDC": "750.002888"
+        },
+        "window_complete": false,
+        "pagination_truncated": true
+      },
+      {
+        "address": "0x399965e15d4e61ec3529cc98b7f7ebb93b733336",
+        "fills": 5998,
+        "assets": 48,
+        "complete_episodes": 0,
+        "unmatched_fills": 5998,
+        "fees_by_token": {
+          "HYPE": "-0.07747195",
+          "PURR": "-0.26947",
+          "UBTC": "-0.0000125224",
+          "UENA": "-0.029720",
+          "UETH": "0.000999655",
+          "UFART": "-0.009023",
+          "UPUMP": "-5.925836",
+          "USDC": "-4.92471156",
+          "USOL": "-0.00026568",
+          "UXPL": "0.036487"
+        },
+        "window_complete": false,
+        "pagination_truncated": true
+      }
+    ],
+    "gold_connected": false
+  }
+}

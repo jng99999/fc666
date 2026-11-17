@@ -9,6 +9,12 @@ from tests.browser_terminal import ARGS
 from scripts.verify_replay_prefix import verify
 ROOT=Path(__file__).resolve().parents[1]
 
+def choose(page,label,option):
+    page.get_by_role('button',name=label,exact=True).click()
+    dialog=page.get_by_role('dialog',name=label,exact=True)
+    dialog.get_by_role('option',name=option,exact=True).click()
+    expect(dialog).not_to_be_visible()
+
 if __name__=='__main__':
     binary=subprocess.check_output(['node','scripts/browser_path.mjs'],cwd=ROOT,text=True).strip()
     errors=[];checks=[]
@@ -17,10 +23,10 @@ if __name__=='__main__':
         page=browser.new_page(locale='zh-CN',viewport={'width':1440,'height':1000},accept_downloads=True)
         page.on('pageerror',lambda error:errors.append(str(error)))
         page.goto('http://127.0.0.1:3000/replay',wait_until='domcontentloaded')
-        page.get_by_label('回放周期',exact=True).select_option('1m')
+        choose(page,'回放周期','1m')
         page.get_by_label('回放柱数',exact=True).fill('8')
         page.get_by_label('回放均线周期',exact=True).fill('2')
-        page.get_by_label('回放策略',exact=True).select_option('sma_long_flat_v1')
+        choose(page,'回放策略','SMA Long / Flat v1')
         page.get_by_label('回放 SMA 快周期',exact=True).fill('2')
         page.get_by_label('回放 SMA 慢周期',exact=True).fill('3')
         with page.expect_response(lambda response:response.url.endswith('/api/replay/sessions') and response.request.method=='POST') as response:page.get_by_role('button',name='创建固定回放').click()
@@ -53,7 +59,7 @@ if __name__=='__main__':
         assert [event['event_id'] for event in repeated['decisions']]==ids
         page.reload(wait_until='domcontentloaded')
         expect(panel).to_have_attribute('data-count','2')
-        expect(page.get_by_label('回放策略',exact=True)).to_have_value('sma_long_flat_v1')
+        expect(page.get_by_role('button',name='回放策略',exact=True)).to_have_text('SMA Long / Flat v1')
         expect(page.get_by_label('回放 SMA 慢周期',exact=True)).to_have_value('3')
         # Editing the next-session form cannot change the current frozen strategy.
         page.get_by_label('回放 SMA 慢周期',exact=True).fill('7')
@@ -66,13 +72,14 @@ if __name__=='__main__':
         assert page.evaluate('document.documentElement.scrollWidth<=innerWidth')
         page.screenshot(path=str(ROOT/'.runtime/replay-decisions-mobile.png'),full_page=True)
         page.set_viewport_size({'width':1440,'height':1000})
-        page.get_by_label('回放策略',exact=True).select_option('ema_long_flat_v1')
+        choose(page,'回放策略','EMA Long / Flat v1')
         with page.expect_response(lambda response:response.url.endswith('/api/replay/sessions') and response.request.method=='POST') as response:page.get_by_role('button',name='创建固定回放').click()
         assert response.value.status==201 and response.value.json()['manifest']['parameters']=={'period':2}
         for index in range(1,4):
             with page.expect_response(lambda response:response.url.endswith('/command')) as response:page.get_by_role('button',name='推进一根',exact=True).click()
         assert verify(response.value.json())=={'bars':3,'decisions':2}
-        expect(panel).to_contain_text('ema_long_flat_v1')
+        assert response.value.json()['manifest']['strategy']=='ema_long_flat_v1'
+        expect(panel).to_contain_text('EMA Long / Flat v1')
         checks.append('EMA selection binds shared indicator period; reached prefix and events reproduce offline; populated mobile layout has no page overflow')
         assert not errors,errors
         browser.close()

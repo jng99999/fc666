@@ -1,0 +1,26 @@
+name: fc666-directional-test
+services:
+  directional:
+    image: fc666-directional-test:runtime-20261027
+    command: ["uvicorn", "apps.api.directional_service:create_app", "--factory", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]
+    environment:
+      LIVE_TRADING: "false"
+      DIRECTIONAL_DB_PATH: /app/.runtime/directional/paper.sqlite3
+      DIRECTIONAL_ALLOWED_ORIGINS: https://fc666-test.vercel.app
+    ports: ["127.0.0.1:18668:8000"]
+    volumes: ["/opt/fc666-directional-test/data:/app/.runtime/directional"]
+    restart: unless-stopped
+    init: true
+    mem_limit: 512m
+    cpus: 0.5
+    pids_limit: 64
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: ["ALL"]
+    logging:
+      driver: json-file
+      options: {max-size: "10m", max-file: "3"}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/ready',timeout=5)"]
+      interval: 20s
+      timeout: 6s
+      retries: 3

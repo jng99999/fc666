@@ -3,7 +3,7 @@ import json
 from pathlib import Path
 import subprocess
 from playwright.sync_api import sync_playwright,expect
-from tests.browser_terminal import ARGS
+from tests.browser_terminal import ARGS,choose_workspace_option
 from scripts.reproduce_backtest import reproduce
 
 ROOT=Path(__file__).resolve().parents[1]
@@ -21,10 +21,10 @@ if __name__=='__main__':
         assert response.value.status==200
         page.wait_for_function(f"document.querySelectorAll('[data-testid=price-chart] canvas').length>{canvas_count}")
         expect(page.locator('.chart-caption')).to_contain_text('RSI14 / MACD / ATR14')
-        with page.expect_response(lambda r:'/api/market/indicators' in r.url and 'period=50' in r.url) as response:page.get_by_label('均线周期',exact=True).select_option('50')
+        with page.expect_response(lambda r:'/api/market/indicators' in r.url and 'period=50' in r.url) as response:choose_workspace_option(page,'均线周期','50')
         assert response.value.json()['period']==50
         expect(page.locator('.chart-caption')).to_contain_text('SMA50')
-        with page.expect_response(lambda r:'/api/market/indicators' in r.url and 'limit=120' in r.url) as response:page.get_by_label('历史窗口',exact=True).select_option('120')
+        with page.expect_response(lambda r:'/api/market/indicators' in r.url and 'limit=120' in r.url) as response:choose_workspace_option(page,'历史窗口','120 根')
         assert len(response.value.json()['rows'])==120
         assert response.value.json()['rows'][-1]['regime']['rule_version']=='er-atr-v1'
         expect(page.get_by_test_id('market-regime')).not_to_have_text('')
@@ -54,7 +54,7 @@ if __name__=='__main__':
         assert reproduce(json.loads(exported.read_text()))==run_id
         page.screenshot(path=str(ROOT/'.runtime/research-desktop.png'),full_page=True)
         checks.append('real historical run, fixed-cutoff determinism, downloaded full export offline reproduction')
-        page.get_by_label('策略',exact=True).select_option('sma_long_flat_v1')
+        choose_workspace_option(page,'策略','SMA 双均线')
         page.get_by_label('SMA 快周期',exact=True).fill('3')
         page.get_by_label('SMA 慢周期',exact=True).fill('7')
         with page.expect_response(lambda r:'/api/research/jobs/' in r.url and r.url.endswith('/result')) as response:page.get_by_role('button',name='运行历史回测').click()

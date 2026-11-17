@@ -2,11 +2,16 @@
 import json
 from pathlib import Path
 import subprocess
-from playwright.sync_api import sync_playwright,expect
+from playwright.sync_api import sync_playwright,expect,Page
 from scripts.dev_services import stop
 
 ROOT=Path(__file__).resolve().parents[1]
 ARGS=["--no-sandbox","--disable-dev-shm-usage","--use-gl=angle","--use-angle=swiftshader","--enable-unsafe-swiftshader"]
+
+def choose_workspace_option(page: Page, label: str, option: str) -> None:
+    """Choose the accessible label in a site-owned select dialog."""
+    page.get_by_role('button',name=label,exact=True).click()
+    page.get_by_role('dialog',name=label,exact=True).get_by_role('option',name=option,exact=True).click()
 
 METRICS="""(() => {
   window.__terminalMetrics={frames:[],paintLatencies:[],longTasks:[],lastFrame:null,seen:new Set()};
@@ -61,8 +66,8 @@ if __name__=="__main__":
                 page.get_by_role("button",name=interval,exact=True).click()
             candles=response.value.json();assert len(candles)>=120 and all(bar['is_closed'] for bar in candles)
             expect(page.get_by_role("button",name=interval,exact=True)).to_have_attribute('aria-pressed','true')
-        page.get_by_label("交易对",exact=True).select_option("ETHUSDT")
-        expect(page.locator('.ticker-head strong')).to_have_text('ETH/USDT')
+        choose_workspace_option(page,'交易对','ETHUSDT')
+        expect(page.get_by_role('button',name='交易对',exact=True)).to_have_text('ETHUSDT')
         expect(page.get_by_test_id('live-price')).not_to_have_text('—',timeout=15000)
         results.append("symbol and all six interval data paths")
         separator=page.get_by_role('separator',name='调整自选面板宽度')
@@ -72,7 +77,7 @@ if __name__=="__main__":
         width=separator.get_attribute('aria-valuenow');assert int(width)>230
         page.get_by_role('button',name='深度 / 成交',exact=True).click();expect(page.locator('.depth-panel')).not_to_be_visible()
         page.reload(wait_until='domcontentloaded')
-        expect(page.get_by_label('交易对',exact=True)).to_have_value('ETHUSDT')
+        expect(page.get_by_role('button',name='交易对',exact=True)).to_have_text('ETHUSDT')
         expect(page.get_by_role('button',name='1d',exact=True)).to_have_attribute('aria-pressed','true')
         expect(page.get_by_role('separator',name='调整自选面板宽度')).to_have_attribute('aria-valuenow',width)
         expect(page.locator('.depth-panel')).not_to_be_visible()
@@ -102,7 +107,7 @@ if __name__=="__main__":
         phone.goto('http://127.0.0.1:3000',wait_until='domcontentloaded')
         expect(phone.get_by_test_id('live-price')).not_to_have_text('—',timeout=30000)
         phone.get_by_role('button',name='订单簿',exact=True).click();expect(phone.locator('.book-panel')).to_be_visible();expect(phone.locator('.chart-panel')).not_to_be_visible()
-        phone.get_by_label('移动端交易对').select_option('ETHUSDT');expect(phone.locator('.ticker-head strong')).to_have_text('ETH/USDT')
+        choose_workspace_option(phone,'交易对摘要选择','ETH / USDT');expect(phone.get_by_role('button',name='交易对摘要选择',exact=True)).to_have_text('ETH / USDT')
         phone.get_by_role('button',name='成交',exact=True).click();expect(phone.locator('.trades-panel')).to_be_visible()
         phone.get_by_role('button',name='图表',exact=True).click();expect(phone.locator('.chart-panel')).to_be_visible()
         assert phone.evaluate('document.documentElement.scrollWidth <= innerWidth')

@@ -116,7 +116,9 @@ def test_real_database_research_repeat_and_invalid_inputs(database):
         assert client.post('/api/v1/research/backtest',json=request).json()==result
         from scripts.reproduce_backtest import reproduce
         assert reproduce(result)==result['run_id']
-        for change in ({'limit':1001},{'symbol':'SOLUSDT'},{'as_of':'2026-01-01T00:00:00'},{'config':{'period':True}},{'config':{'initial_cash':1000.01}},{'config':{'leverage':10}}):
+        for limit in (1001,5000):
+            assert client.post('/api/v1/research/backtest',json={**request,'limit':limit}).status_code==200
+        for change in ({'limit':5001},{'symbol':'SOLUSDT'},{'as_of':'2026-01-01T00:00:00'},{'config':{'period':True}},{'config':{'initial_cash':1000.01}},{'config':{'leverage':10}}):
             assert client.post('/api/v1/research/backtest',json={**request,**change}).status_code==422
         assert client.post('/api/v1/research/backtest',json={**request,'symbol':'ETHUSDT'}).status_code==409
 

@@ -1,0 +1,3 @@
+services:
+  directional:
+    image: fc666-directional-test:ta-shadow-20261029

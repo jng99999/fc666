@@ -53,6 +53,8 @@ def test_populated_pool_archive_replays_after_backup_restore_and_reopen(database
 
 def test_restore_semantic_failure_propagates_and_cleans_clone(database, tmp_path):
     engine, _, _ = database
+    with engine.connect() as db:
+        original_schema = db.scalar(text('SELECT version_num FROM alembic_version'))
     def reject(restored):
         raise ValueError('Fixture semantic mismatch')
     with pytest.raises(ValueError, match='semantic mismatch'):
@@ -61,4 +63,4 @@ def test_restore_semantic_failure_propagates_and_cleans_clone(database, tmp_path
     assert len(targets) == 1
     with engine.connect() as db:
         assert db.scalar(text('SELECT count(*) FROM pg_database WHERE datname=:target'), {'target':targets[0]}) == 0
-        assert db.scalar(text('SELECT version_num FROM alembic_version')) == '0026'
+        assert db.scalar(text('SELECT version_num FROM alembic_version')) == original_schema

@@ -94,7 +94,7 @@ def evaluate(seed, observations, instrument, config: BacktestConfig, limits: Ris
                         fills.append({**order, 'quantity': str(size), 'price': str(price), 'fee': str(fee), 'realized_pnl': str(fill_pnl), 'reference_close': str(bar.close), 'cash_after': str(cash), 'quantity_after': str(quantity)})
                         orders.append({**order, 'status': 'FILLED' if size >= wanted_step else 'PARTIAL_CANCELLED', 'quantity': str(size)})
             row = indicator.push(bar)
-            pending = strategy.decide(StrategyContext(bar.close_time, bar.close, row['values']['ema']))
+            pending = strategy.decide(StrategyContext(bar.close_time, bar.close, row['values']['ema'], bar.high, bar.low))
             if pending is not None:
                 signals.append({'target': pending.target, 'available_at': pending.available_at.isoformat()})
             value = cash + quantity * bar.close

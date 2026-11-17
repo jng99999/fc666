@@ -1,0 +1,43 @@
+/* Shared chart periods and the immersive viewport, scoped to the approved UI. */
+.exchange-analysis .chart-period-control{min-width:0;flex:1}
+.exchange-analysis :is(button,input,summary){scroll-margin-top:90px;scroll-margin-bottom:100px}
+.exchange-analysis .mobile-chart-actions{display:none}
+.exchange-analysis .gold-chart-toolbar{align-items:start;flex-wrap:wrap;gap:8px}
+.exchange-analysis .gold-chart-toolbar>.chart-period-control{flex-basis:100%}
+body.approved-ui .gold-workspace .exchange-analysis.gold-chart-workspace .chart-period-presets button{border:0;min-height:40px;border-radius:10px;background:transparent;color:#6681a4;box-shadow:none;padding:7px 11px}
+body.approved-ui .gold-workspace .exchange-analysis.gold-chart-workspace .chart-period-presets button[aria-pressed=true]{background:#176bff;color:#fff}
+@media(orientation:landscape) and (max-height:540px){.exchange-analysis.gold-chart-workspace .gold-chart-toolbar{display:flex;flex-wrap:nowrap;align-items:start;gap:8px}.exchange-analysis.gold-chart-workspace .gold-chart-toolbar>.chart-period-control{flex:1;min-width:0}.exchange-analysis.gold-chart-workspace .gold-chart-toolbar>.gold-segmented{flex-shrink:0;margin:0}}
+.exchange-analysis .chart-period-presets{display:flex;gap:3px;max-width:100%;overflow-x:auto;overscroll-behavior-x:contain;padding:3px;background:#f0f5fc;border-radius:13px;scrollbar-width:none}
+.exchange-analysis .chart-period-presets::-webkit-scrollbar{display:none}
+.exchange-analysis .chart-period-presets button{flex:0 0 auto;min-width:42px;min-height:40px;padding:7px 11px;border-radius:10px;color:#6681a4;font-size:12px;white-space:nowrap}
+.exchange-analysis .chart-period-presets button[aria-pressed=true]{background:#176bff;color:#fff;box-shadow:0 3px 8px #176bff1a}
+.exchange-analysis .chart-custom-period{margin-top:6px;font-size:11px;color:#6c85a6}
+.exchange-analysis .chart-custom-period>summary{cursor:pointer;min-height:28px;display:flex;align-items:center;gap:8px;width:fit-content}
+.exchange-analysis .chart-custom-period summary span{color:#176bff;font-weight:600}
+.exchange-analysis .chart-custom-period form{display:flex;flex-wrap:wrap;align-items:end;gap:8px;padding:10px;border:1px solid #e2ebf7;border-radius:12px;background:#f8faff;margin-bottom:6px}
+.exchange-analysis .chart-custom-period label{display:flex;flex-direction:column;gap:4px;max-width:100px}
+.exchange-analysis .chart-custom-period input{width:100%;min-width:0;min-height:40px;border:1px solid #dbe6f4;border-radius:9px;background:white;padding:6px 9px;color:#203450;font-size:16px}
+.exchange-analysis .chart-custom-period form button,.exchange-analysis .expanded-chart-actions>button{min-height:40px;padding:7px 12px;border:1px solid #e1eaf7;border-radius:10px;background:white;font-size:12px;color:#42628d}
+.exchange-analysis .chart-custom-period form button[aria-pressed=true]{color:#176bff;background:#eaf2ff}
+.exchange-analysis .chart-custom-period form p,.exchange-analysis .chart-custom-period form small{flex-basis:100%;overflow-wrap:anywhere}
+.exchange-analysis .chart-custom-period form p{color:#c4415a}
+.exchange-analysis .market-layout{grid-template-columns:206px minmax(0,1fr)}
+.exchange-analysis .analysis-modal.analysis-modal-immersive{inset:0;width:100%;max-width:100vw;height:100dvh;max-height:100dvh;margin:0;border-radius:0;padding:max(12px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) max(10px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left));overflow:hidden;background:#fdfefe}
+.exchange-analysis .analysis-modal-immersive[open]{display:flex;flex-direction:column}
+.exchange-analysis .analysis-modal-immersive .dialog-header{flex-shrink:0;display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.exchange-analysis .analysis-modal-immersive .dialog-header h2{font-size:16px}
+.exchange-analysis .analysis-modal-immersive .analysis-modal-body{min-height:0;flex:1;overflow-y:auto;overscroll-behavior:contain}
+.exchange-analysis .expanded-chart-controls{display:flex;align-items:start;gap:12px;flex-wrap:wrap}
+.exchange-analysis .expanded-chart-controls .chart-period-control{flex:1 1 370px}
+.exchange-analysis .expanded-chart-actions{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.exchange-analysis .expanded-chart-actions label{display:flex;align-items:center;gap:4px;min-height:40px;font-size:12px;color:#42628d}
+.exchange-analysis .expanded-chart-actions input{width:16px;height:16px;accent-color:#176bff}
+.exchange-analysis .expanded-chart-hint{font-size:11px;color:#8194af;padding:5px 0}
+.exchange-analysis .analysis-modal-immersive .analysis-expanded-chart .quote-chart-host{height:max(240px,calc(100dvh - 230px))}
+.exchange-analysis .analysis-modal-immersive [data-testid=chart-workbench]{display:flex;flex-direction:column}
+.exchange-analysis .analysis-modal-immersive [data-testid=chart-workbench]>*{order:2}
+.exchange-analysis .analysis-modal-immersive [data-testid=chart-workbench]>div:first-child{order:-1;padding:3px 0;min-height:34px}
+.exchange-analysis .analysis-modal-immersive [data-testid=chart-workbench]>[data-chart-surface]{order:0}
+@media(max-width:760px){.exchange-analysis .market-layout{display:flex}.exchange-analysis .chart-toolbar{align-items:start;gap:7px}.exchange-analysis .chart-tools{padding-top:4px}.exchange-analysis .chart-period-presets button{min-width:43px;padding:7px 9px}.exchange-analysis .analysis-modal-immersive .analysis-expanded-chart .quote-chart-host{height:max(300px,calc(100dvh - 280px))}.exchange-analysis .expanded-chart-controls .chart-period-control{flex-basis:100%}.exchange-analysis .expanded-chart-actions>button{min-height:36px}}
+@media(orientation:landscape) and (max-height:540px){.exchange-analysis .analysis-modal-immersive .dialog-header{margin-bottom:4px}.exchange-analysis .expanded-chart-controls{flex-wrap:nowrap;gap:8px}.exchange-analysis .expanded-chart-controls .chart-period-control{flex:1;min-width:180px}.exchange-analysis .expanded-chart-actions{max-width:300px;gap:4px}.exchange-analysis .expanded-chart-actions>button{min-height:34px;padding:5px 8px;font-size:11px}.exchange-analysis .expanded-chart-hint{display:none}.exchange-analysis .analysis-modal-immersive .analysis-expanded-chart .quote-chart-host{height:max(180px,calc(100dvh - 180px))}}
+@media(max-width:760px){.exchange-analysis .mobile-chart-actions{display:flex;justify-content:space-between;gap:8px;margin:2px 0 6px}.exchange-analysis .mobile-chart-actions button{display:flex;align-items:center;gap:5px;min-height:36px;padding:6px 9px;border:1px solid #e3ebf7;border-radius:10px;color:#58779e;font-size:11px}.exchange-analysis .mobile-chart-actions .icon{width:15px;height:15px}}

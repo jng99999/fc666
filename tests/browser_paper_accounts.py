@@ -58,7 +58,8 @@ if __name__ == '__main__':
             assert page.evaluate("localStorage.getItem('fc666.paper.session.v1')")==second['session_id']
             response=page.request.post(url+'/command',data={'expected_revision':3,'action':'step','count':10})
             assert response.status==200 and response.json()['status']=='ENDED'
-            page.get_by_label('账户状态筛选',exact=True).select_option('ENDED')
+            page.get_by_role('button',name='账户状态筛选',exact=True).click()
+            page.get_by_role('dialog',name='账户状态筛选',exact=True).get_by_role('option',name='历史已结束',exact=True).click()
             expect(row(id)).to_be_visible();expect(row(second['session_id'])).to_have_count(0)
             row(id).get_by_role('button',name='查看账户',exact=True).click()
             expect(panel).to_have_attribute('data-cursor','10')
@@ -78,7 +79,8 @@ if __name__ == '__main__':
                 assert response.status==409
             assert response.status==200
             page.goto(root+'/paper/realtime',wait_until='domcontentloaded')
-            page.get_by_label('账户状态筛选',exact=True).select_option('STOPPED')
+            page.get_by_role('button',name='账户状态筛选',exact=True).click()
+            page.get_by_role('dialog',name='账户状态筛选',exact=True).get_by_role('option',name='已停止',exact=True).click()
             rows=page.get_by_test_id('paper-accounts')
             row(realtime_id).get_by_role('button',name='查看账户',exact=True).click()
             expect(page.get_by_test_id('paper-stream-state')).to_have_attribute('data-status','STOPPED')

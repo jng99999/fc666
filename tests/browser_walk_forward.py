@@ -1,7 +1,7 @@
 """Actual stored-market-data task, worker, refresh and export acceptance."""
 import json,subprocess
 from playwright.sync_api import sync_playwright,expect
-from tests.browser_terminal import ARGS
+from tests.browser_terminal import ARGS,choose_workspace_option
 from core.backtest.walk_forward import verify
 
 if __name__=='__main__':
@@ -12,7 +12,7 @@ if __name__=='__main__':
         page.on('pageerror',lambda e:errors.append(str(e)))
         try:
             page.goto('http://127.0.0.1:3000/research',wait_until='domcontentloaded')
-            page.locator('select').nth(2).select_option('1m')
+            choose_workspace_option(page,'周期','1M')
             page.get_by_label('历史柱数').fill('120');page.get_by_label('EMA 周期',exact=True).fill('2')
             panel=page.get_by_test_id('walk-forward-research')
             panel.get_by_label('滚动训练柱数').fill('40');panel.get_by_label('滚动测试柱数').fill('20')

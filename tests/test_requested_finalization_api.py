@@ -4,6 +4,7 @@ from threading import Barrier
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import text
+from sqlalchemy.exc import DBAPIError
 from apps.api.main import create_app
 from apps.api.settings import Settings
 from core.paper import requested_finalization as finalization,requested_journal as journal,requested_controls as controls
@@ -113,8 +114,21 @@ def test_controlled_stale_revision_and_missing_request_are_rejected(database):
     assert journal.read(engine,'account')==before
 
 
-def test_storage_failure_is_generic():
+def test_storage_failure_is_generic(monkeypatch):
     settings=Settings(database_url='postgresql+psycopg://invalid:invalid@127.0.0.1:1/no_db')
+    def forbidden(*args,**kwargs):raise AssertionError('Unverified revocation reached finalization')
+    monkeypatch.setattr(finalization,'finalize',forbidden)
+    with TestClient(create_app(configured(settings,actions=['VOID_UNSUBMITTED']))) as client:
+        response=client.post(PATH,json=payload(),headers=HEADERS)
+        assert response.status_code==503 and response.json()=={'detail':'Operator revocation state temporarily unavailable'}
+        assert response.headers['cache-control']=='no-store' and 'invalid' not in response.text
+
+
+def test_finalization_storage_failure_after_revocation_check_is_generic(database,monkeypatch):
+    _,_,settings=database
+    def fail(*args,**kwargs):raise DBAPIError('sensitive-query',{},Exception('sensitive-storage'))
+    monkeypatch.setattr(finalization,'finalize',fail)
     with TestClient(create_app(configured(settings,actions=['VOID_UNSUBMITTED']))) as client:
         response=client.post(PATH,json=payload(),headers=HEADERS)
         assert response.status_code==503 and response.json()=={'detail':'Explicit Paper finalization temporarily unavailable'}
+        assert response.headers['cache-control']=='no-store' and 'sensitive' not in response.text

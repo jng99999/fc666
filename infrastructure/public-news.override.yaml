@@ -1,0 +1,10 @@
+services:
+  directional:
+    image: fc666-directional-test:nyfed-news-20261116
+    environment:
+      LIVE_TRADING: "false"
+      DIRECTIONAL_PUBLIC_NEWS_URL: "https://fc666-test.vercel.app/api/directional/news"
+      DIRECTIONAL_BITGET_SETTLEMENT_SECONDS: "60"
+      DIRECTIONAL_OFFICIAL_CALENDAR: "nyfed"
+    labels:
+      fc666.news.scope: nyfed-key-us-macro-and-published-bitget-risk-only

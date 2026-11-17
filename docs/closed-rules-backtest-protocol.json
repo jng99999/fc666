@@ -1,0 +1,41 @@
+{
+  "version": "closed-rules-study-v1",
+  "purpose": "Reproducible PAPER rule/cost diagnostics; never live eligibility",
+  "end_exclusive": "2026-11-15T00:00:00+00:00",
+  "bars_per_scope": 2000,
+  "products": ["BTCUSDT", "ETHUSDT"],
+  "timeframes": ["1h", "4h"],
+  "rules": ["STRUCTURE_FVG", "RANGE_REVERSION", "TREND_PULLBACK"],
+  "windows": {"FULL": [0, 2000], "LATER_40_PERCENT": [1200, 2000]},
+  "initial_cash": "10000",
+  "max_quantity": "100",
+  "max_order_quote": "5000",
+  "news_max_age_seconds": 120,
+  "quantity": {"BTCUSDT": "0.01", "ETHUSDT": "0.5"},
+  "tick_size": "0.01",
+  "quantity_step": "0.001",
+  "stop_loss_percent": "0.01",
+  "take_profit_percent": "0.02",
+  "base_costs": {
+    "BTCUSDT": {"fee_rate": "0.001", "spread": "1", "slippage": "0.05"},
+    "ETHUSDT": {"fee_rate": "0.001", "spread": "0.10", "slippage": "0.01"}
+  },
+  "stress_multiplier": {"fee_rate": "2", "spread": "2", "slippage": "3"},
+  "historical_news_policy": ["REQUIRE_HISTORICAL", "UNCOVERED_RESEARCH"],
+  "news_pre_seconds": 1800,
+  "news_post_seconds": 1800,
+  "gold_study": {
+    "month": "2025-01",
+    "source": "histdata.paired-ticks:1m",
+    "windows": ["FIRST_2000_OBSERVED", "LAST_2000_OBSERVED"],
+    "files": {"FIRST_2000_OBSERVED": "gold-2025-01-early-2000.json", "LAST_2000_OBSERVED": "gold-2025-01-late-2000.json"},
+    "quantity": "1",
+    "base_costs": {"fee_rate": "0.0001", "spread": "0.20", "slippage": "0.05"},
+    "scope": "Independent-source 1m diagnostic, not Swissquote forward replay; modeled spread is not historical actual spread"
+  },
+  "price_reference": "Real Bitget trade OHLC with explicitly assumed spread; not historical bid/ask or tick fills",
+  "holdout_limit": "Fixed later-time slice, visible and reusable, not a sealed blind test; each run starts an independent account and warmup",
+  "gold_limit": "Existing 1h/4h HistData catalogue cannot prove the realtime Swissquote 1m rule; only matching complete raw 1m data may be reported separately",
+  "trading_enabled": false,
+  "live_eligible": false
+}

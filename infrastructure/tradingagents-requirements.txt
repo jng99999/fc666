@@ -1,0 +1,5 @@
+# Optional isolated worker only; do not install in the account execution image.
+tradingagents @ git+https://github.com/TauricResearch/TradingAgents.git@c4544913a14ed3df5f1ed7b9e8483270ce20682a
+fastapi>=0.115,<1
+uvicorn>=0.34,<1
+pydantic>=2.11,<3

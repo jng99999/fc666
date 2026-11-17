@@ -5,7 +5,7 @@ from decimal import Decimal
 import json
 from sqlalchemy import select, text
 from sqlalchemy.orm import Session
-from core.exchange.binance import SYMBOLS
+from core.exchange.public import SYMBOLS, PROVIDER, SOURCE, BOOK_DEPTH
 from core.models import Candle, Instrument
 from core.storage.models import CandleRecord, InstrumentRecord
 from core.paper.fault_adapter import encoded, sha
@@ -67,7 +67,7 @@ def snapshot(value, symbol, channel, now):
         if (not isinstance(payload, dict) or set(payload) != {'valid', 'exchange_sequence', 'snapshot_depth_limit', 'bids', 'asks'}
                 or payload['valid'] is not True or type(payload['exchange_sequence']) is not int
                 or payload['exchange_sequence'] < 0 or type(payload['snapshot_depth_limit']) is not int
-                or payload['snapshot_depth_limit'] != 1000):
+                or payload['snapshot_depth_limit'] != BOOK_DEPTH):
             raise ValueError('Invalid book metadata')
         prices = {}
         for side in ('bids', 'asks'):
@@ -123,7 +123,7 @@ def evaluate(evidence):
     else:
         try:
             rules = Instrument.model_validate(evidence['instrument'])
-            if (rules.instrument_id != SYMBOLS[symbol] or rules.exchange != 'binance'
+            if (rules.instrument_id != SYMBOLS[symbol] or rules.exchange != PROVIDER
                     or rules.native_symbol != symbol or rules.market_type != 'SPOT'
                     or rules.base != symbol[:-4] or rules.quote != 'USDT'):
                 raise ValueError('Instrument identity mismatch')
@@ -149,7 +149,7 @@ def evaluate(evidence):
             if len(bars) != 3:
                 reasons.append('INSUFFICIENT_CLOSED_BARS')
             if any(bar.instrument_id != SYMBOLS[symbol] or bar.timeframe != '1m'
-                   or not bar.is_closed or bar.close_time > now or bar.source != 'binance.public' for bar in bars):
+                   or not bar.is_closed or bar.close_time > now or bar.source != SOURCE for bar in bars):
                 reasons.append('CLOSED_BAR_IDENTITY_OR_FINALITY_INVALID')
             if any(right.open_time != left.close_time for left, right in zip(bars, bars[1:])):
                 reasons.append('CLOSED_BAR_GAP')

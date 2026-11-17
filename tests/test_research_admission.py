@@ -19,7 +19,7 @@ def test_reject_before_database_access(change):
 @pytest.mark.parametrize('kind',['oversize','unclosed','foreign','perpetual','gap'])
 def test_reject_invalid_source_before_database(kind):
     series=liquid([10,12,14]);instrument=rules()
-    if kind=='oversize':series=liquid(list(range(10,1011)))
+    if kind=='oversize':series=liquid(list(range(10,5011)))
     elif kind=='unclosed':series[0]=series[0].model_copy(update={'is_closed':False})
     elif kind=='foreign':series[0]=series[0].model_copy(update={'instrument_id':'other'})
     elif kind=='perpetual':instrument=instrument.model_copy(update={'market_type':'PERPETUAL'})

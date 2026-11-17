@@ -1,0 +1,149 @@
+/* Exchange workspace skin. Layout/interaction contracts and trading permissions stay unchanged. */
+.gold-heading-actions{display:contents}.gold-mobile-settings{display:none}
+@media(max-width:760px),(max-width:1024px) and (hover:none) and (pointer:coarse){
+html:has(body.approved-ui){background:#fff;scroll-padding-bottom:100px}
+body.apple-ui.approved-ui{
+ --bg:#fff;--panel:#fff;--text:#15171a;--muted:#7c8088;--line:#eceef1;--border:#e6e8eb;
+ --blue:#17191c;--accent:#17191c;--blue-soft:#f3f4f5;--radius:7px;--shadow:none;
+ --apple-label:#15171a;--apple-secondary:#7c8088;--apple-separator:#eceef1;
+ background:#fff;color:var(--text);padding:14px 20px 20px;column-gap:16px;row-gap:12px;
+}
+body.approved-ui .approved-workspace-header{height:44px;padding:0 0 10px;border-bottom:1px solid var(--line);background:#fff}
+body.approved-ui .approved-workspace-brand{font-size:23px;color:#101214;letter-spacing:-.8px}
+body.approved-ui .approved-workspace-header-tools{gap:12px}
+body.approved-ui .workspace-search-trigger{border:1px solid var(--line);border-radius:6px;background:#f7f8f9;color:#7c8088;padding:7px 11px;min-height:36px}
+body.approved-ui .workspace-icon-button{border-radius:6px;border-color:var(--line);color:#282c31;background:#fff;box-shadow:none}
+body.approved-ui .workspace-icon-button:hover{background:#f3f4f5}
+body.approved-ui .workspace-avatar{background:#f3f4f5;border:1px solid var(--line);color:#282c31}
+body.approved-ui .workspace-live-badge{border-radius:4px;padding:3px 6px;font-size:10px;background:#fff6e6;color:#9b6d20}
+body.approved-ui .approved-workspace-content{gap:12px}
+body.approved-ui .approved-workspace-navigation{left:max(20px,calc((100% - 1880px)/2 + 20px));top:70px;gap:10px}
+body.approved-ui .workspace-primary-nav{padding:5px 3px;gap:3px;border:1px solid var(--line);border-radius:7px;background:#fff;box-shadow:none}
+body.approved-ui .workspace-primary-nav>a{min-height:58px;border-radius:4px;color:#777d86;font-size:11px;gap:4px}
+body.approved-ui .workspace-primary-nav>a[aria-current=page]{background:#f1f3f5;color:#121417;box-shadow:none;font-weight:650}
+body.approved-ui .workspace-primary-nav>a:not([aria-current=page]):hover{background:#f6f7f8;color:#15171a}
+body.approved-ui .workspace-settings{width:44px;height:44px;border-radius:6px;border-color:var(--line);color:#555c66;box-shadow:none}
+body.approved-ui .workspace-settings[aria-current=page]{background:#17191c;color:#fff}
+body.approved-ui .workspace-asset-navigation,body.approved-ui .account-navigation{background:#fff;border-bottom:1px solid var(--line);border-radius:0;padding:0;gap:14px;min-height:42px}
+body.approved-ui .workspace-asset-navigation a,body.approved-ui .account-navigation a{border-radius:0;min-height:42px;padding:8px 4px;border-bottom:2px solid transparent;color:#777d86;font-weight:500}
+body.approved-ui .workspace-asset-navigation a[aria-current=page],body.approved-ui .account-navigation a[aria-current=page]{background:#fff;box-shadow:none;border-bottom-color:#16181b;color:#16181b;font-weight:650}
+
+/* Shared native dialogs keep their existing positioning, size and focus behavior. */
+body.approved-ui .workspace-search-dialog,body.approved-ui .account-dialog,body.approved-ui .paper-stop-dialog{border-radius:10px;border-color:#e5e7eb;box-shadow:0 10px 36px #1012141a}
+body.approved-ui .workspace-search-dialog::backdrop,body.approved-ui .account-dialog::backdrop,body.approved-ui .paper-stop-dialog::backdrop{background:#11151b55;backdrop-filter:none}
+body.approved-ui .workspace-search-field{background:#f4f5f6;border-radius:6px}
+body.approved-ui .workspace-search-results a{border-radius:5px;border-bottom:1px solid #f0f1f3;padding:10px}
+body.approved-ui .workspace-search-results a:hover{background:#f5f6f7}
+
+/* Existing business surfaces only; market/chart contents are owned by exchange-market.css. */
+body.approved-ui :is(.approved-paper-page,.approved-account-page,.approved-system-page,.replay-workspace,.research-workbench,.gold-workspace){--radius:7px;--shadow:none;--line:#eceef1;--border:#e6e8eb;--muted:#7c8088;--text:#15171a;--bg:#fff;--panel:#fff}
+body.approved-ui :is(.account-card,.rp-card,.paper-create,.paper-account-picker,.paper-account-overview,.paper-record-panel,.paper-record-empty,.gold-card,.approved-system-page .health){border:1px solid #e9ebee;border-radius:7px;box-shadow:none;background:#fff;padding:16px}
+body.approved-ui :is(.account-layout,.account-aside,.system-status-grid,.rp-layout,.paper-dashboard){gap:12px}
+body.approved-ui .research-workbench section{border-radius:7px;box-shadow:none;border-color:#e9ebee}
+body.approved-ui :is(.account-page-heading,.paper-page-heading,.system-page-heading,.rp-page-heading){margin-bottom:12px}
+body.approved-ui :is(.account-page-heading,.paper-page-heading,.system-page-heading,.rp-page-heading) h1{font-size:23px;line-height:1.3;letter-spacing:-.5px}
+body.approved-ui :is(.account-panel-heading,.rp-panel-head,.paper-section-title){margin-bottom:12px}
+body.approved-ui :is(.account-card,.rp-card,.paper-create,.paper-account-overview,.approved-system-page .health) h2{font-size:16px}
+body.approved-ui :is(.account-card,.rp-card,.paper-create,.paper-account-overview,.approved-system-page .health) p{line-height:1.65}
+body.approved-ui :is(.paper-view-switch,.paper-record-tabs,.account-category-tiles){border-radius:6px;box-shadow:none;background:#f5f6f7}
+body.approved-ui :is(.paper-view-switch,.paper-record-tabs) button{border-radius:4px;box-shadow:none;color:#777d86}
+body.approved-ui :is(.paper-view-switch,.paper-record-tabs) button[aria-pressed=true]{background:#fff;color:#15171a;box-shadow:none}
+body.approved-ui :is(.paper-balance-grid>div,.account-category-tile,.account-additional-metrics>div,.approved-system-page .health dl>div){border-radius:5px;background:#f7f8f9;border-color:#eceef1;padding:11px}
+body.approved-ui :is(.account-category-tile,.account-overview-footer,.account-empty,.paper-record-empty){box-shadow:none}
+body.approved-ui :is(.approved-paper-page,.approved-account-page,.approved-system-page,.replay-workspace,.research-workbench) :is(input:not([type=checkbox]):not([type=radio]),textarea,.workspace-select-trigger){border-radius:6px;border-color:#e5e7eb;background:#f7f8f9;box-shadow:none}
+body.approved-ui :is(.approved-paper-page,.approved-account-page,.approved-system-page,.replay-workspace) :is(button,a.primary,a.secondary){border-radius:6px;box-shadow:none}
+body.approved-ui :is(.account-primary,.paper-create-submit,.approved-system-page .health button){background:#15171a;color:#fff;border-color:#15171a;box-shadow:none}
+body.approved-ui :is(.account-primary,.paper-create-submit,.approved-system-page .health button):hover:not(:disabled){background:#30353b}
+body.approved-ui :is(.approved-account-page,.approved-paper-page) :is(td,th),body.approved-ui .market-monitor :is(td,th){padding:12px 10px;border-color:#eceef1}
+body.approved-ui :is(.account-message,.paper-message,.system-boundary,.paper-mode-explainer){border-radius:6px;box-shadow:none}
+
+/* Directional paper uses CSS modules, so scope through its stable real header route. */
+body.approved-ui main:has(>header a[href="/research/closed-rules"]){padding:0;max-width:1080px;color:#15171a}
+body.approved-ui main:has(>header a[href="/research/closed-rules"])>header{margin-bottom:14px}
+body.approved-ui main:has(>header a[href="/research/closed-rules"])>header h1{font-size:24px;line-height:1.3;margin:4px 0 7px}
+body.approved-ui main:has(>header a[href="/research/closed-rules"])>section{padding:16px;border-radius:7px;border-color:#e6e8eb;margin-bottom:12px;box-shadow:none}
+body.approved-ui main:has(>header a[href="/research/closed-rules"])>details{padding:12px 14px;border-radius:6px;border-color:#e6e8eb;margin-bottom:10px;box-shadow:none;background:#fff}
+body.approved-ui main:has(>header a[href="/research/closed-rules"])>details>summary{font-size:12px;font-weight:550;color:#505761;cursor:pointer}
+body.approved-ui main:has(>header a[href="/research/closed-rules"])>section h2{font-size:16px;margin-bottom:11px}
+body.approved-ui main:has(>header a[href="/research/closed-rules"])>section h3{margin:14px 0 10px;font-size:14px}
+body.approved-ui main:has(>header a[href="/research/closed-rules"]) :is(input,.workspace-select-trigger){border:1px solid #e5e7eb;border-radius:6px;background:#f6f7f8;box-shadow:none}
+body.approved-ui main:has(>header a[href="/research/closed-rules"]) form>button[type=submit]{background:#15171a;color:#fff;border-color:#15171a;border-radius:6px;box-shadow:none}
+body.approved-ui main:has(>header a[href="/research/closed-rules"])>section>div[class*="metrics"]>div{padding:12px;border-radius:5px;background:#f5f6f7}
+
+/* Secure API setup has an actual named navigation; no auth state or fields are changed. */
+body.approved-ui main:has(>nav[aria-label="API接入导航"]){--radius:7px;--shadow:none;--text:#15171a;--muted:#7c8088;padding:0}
+body.approved-ui main:has(>nav[aria-label="API接入导航"])>header h1{font-size:24px;margin:4px 0 8px}
+body.approved-ui main:has(>nav[aria-label="API接入导航"])>nav a{border-radius:5px;background:#f6f7f8;border-color:#e5e7eb;color:#32373d}
+body.approved-ui main:has(>nav[aria-label="API接入导航"])>section,body.approved-ui main:has(>nav[aria-label="API接入导航"])>div>section{border-radius:7px;box-shadow:none;padding:16px;border-color:#e6e8eb}
+body.approved-ui main:has(>nav[aria-label="API接入导航"]) :is(input:not([type=checkbox]),textarea){background:#f7f8f9;border-color:#e5e7eb;border-radius:6px}
+body.approved-ui main:has(>nav[aria-label="API接入导航"]) button[type=submit]{background:#15171a;color:#fff;border-color:#15171a;border-radius:6px}
+
+@media(max-width:760px),(max-width:1024px) and (hover:none) and (pointer:coarse){
+ html:has(body.approved-ui){scroll-padding-bottom:calc(90px + env(safe-area-inset-bottom))}
+ body.apple-ui.approved-ui{padding:8px 12px calc(88px + env(safe-area-inset-bottom));font-size:13px;--radius:6px}
+ body.approved-ui .approved-workspace-header{height:38px;margin-bottom:4px;padding:0 0 5px}
+ body.approved-ui .approved-workspace-brand{font-size:19px}
+ body.approved-ui .approved-workspace-header .workspace-icon-button{height:34px;width:34px;border:0;border-radius:5px;background:#fff;color:#282c31}
+ body.approved-ui .workspace-mobile-title{margin:0 0 9px;min-height:32px;gap:8px}
+ body.approved-ui .workspace-mobile-title h1{font-size:19px;font-weight:700;letter-spacing:-.4px}
+ body.approved-ui:has(main.exchange-analysis) .workspace-mobile-title{display:none}
+ body.approved-ui .workspace-mobile-title .workspace-icon-button{width:32px;height:32px;border:0;border-radius:5px}
+ body.approved-ui .approved-workspace-navigation{inset:auto 0 0;left:0;right:0;bottom:0;top:auto;width:100vw;max-width:100vw;height:calc(62px + env(safe-area-inset-bottom));padding:4px 8px calc(4px + env(safe-area-inset-bottom));border:0;border-top:1px solid #e9ebee;border-radius:0;background:#fff;box-shadow:none;backdrop-filter:none;gap:0;box-sizing:border-box}
+ body.approved-ui .workspace-primary-nav{display:contents}
+ body.approved-ui .workspace-primary-nav>a{flex:1;min-height:52px;max-width:none;gap:3px;border-radius:4px;font-size:11px;color:#868b93;background:transparent;box-shadow:none}
+ body.approved-ui .workspace-primary-nav>a .workspace-icon{width:23px;height:23px}
+ body.approved-ui .workspace-primary-nav>a[aria-current=page]{background:transparent;color:#141619;box-shadow:none;font-weight:700}
+ body.approved-ui .workspace-asset-navigation,body.approved-ui .account-navigation{margin-bottom:10px;gap:10px;width:100%;max-width:100%;overflow-x:auto;flex-wrap:nowrap;border-radius:0;padding:0;scrollbar-width:none}
+ body.approved-ui .workspace-asset-navigation a,body.approved-ui .account-navigation a{flex:0 0 auto;min-height:42px;padding:8px 3px;font-size:12px;border-radius:0}
+ body.approved-ui :is(.account-page-heading,.paper-page-heading,.system-page-heading,.rp-page-heading){margin-bottom:12px;gap:10px}
+ body.approved-ui :is(.account-page-heading,.paper-page-heading,.system-page-heading,.rp-page-heading) h1{font-size:21px}
+ body.approved-ui :is(.account-card,.rp-card,.paper-create,.paper-account-picker,.paper-account-overview,.paper-record-panel,.paper-record-empty,.gold-card,.approved-system-page .health){padding:13px;border-radius:6px}
+ body.approved-ui :is(.approved-paper-page,.approved-account-page,.approved-system-page,.replay-workspace) :is(input:not([type=checkbox]):not([type=radio]),textarea,.workspace-select-trigger){font-size:16px;min-height:44px}
+ body.approved-ui :is(.approved-paper-page,.approved-account-page,.approved-system-page,.replay-workspace) :is(button,a.primary,a.secondary){min-height:42px}
+ body.approved-ui main:has(>header a[href="/research/closed-rules"])>section{padding:13px;border-radius:6px;margin-bottom:11px}
+ body.approved-ui main:has(>header a[href="/research/closed-rules"])>header{gap:10px;margin-bottom:12px}
+ body.approved-ui main:has(>header a[href="/research/closed-rules"])>header h1{font-size:21px}
+ body.approved-ui main:has(>header a[href="/research/closed-rules"]) :is(input:not([type=checkbox]),.workspace-select-trigger){font-size:16px;min-height:44px}
+ body.approved-ui main:has(>nav[aria-label="API接入导航"])>section,body.approved-ui main:has(>nav[aria-label="API接入导航"])>div>section{padding:13px;border-radius:6px}
+ body.approved-ui main:has(>nav[aria-label="API接入导航"]) input:not([type=checkbox]){font-size:16px;min-height:44px}
+ body.approved-ui .workspace-search-dialog,body.approved-ui .account-dialog,body.approved-ui .paper-stop-dialog{padding:16px;border-radius:10px}
+}
+@media(max-width:760px),(max-width:1024px) and (hover:none) and (pointer:coarse){
+ body.apple-ui.approved-ui{--text:#141619;--muted:#85898f;--apple-label:#141619;--apple-secondary:#85898f;color:#141619;font-size:13px;line-height:1.5}
+ body.apple-ui.approved-ui button:where(:not(.danger):not(.danger-outline)){border:1px solid transparent;border-radius:10px;background:#f4f5f6;color:#17191c;box-shadow:none;text-shadow:none;transform:none;min-height:38px}
+ body.apple-ui.approved-ui button:is([aria-pressed=true],[aria-selected=true],.active):where(:not(.danger):not(.danger-outline)){background:#e8ebed;color:#111;box-shadow:none}
+ body.apple-ui.approved-ui :is(button[type=submit],button.primary,a.primary,.account-primary,.paper-create-submit){background:#111315;color:#fff;border-color:#111315;border-radius:12px;box-shadow:none}
+ body.apple-ui.approved-ui button.danger{background:#ef4778;color:#fff;border-color:#ef4778}
+ body.apple-ui.approved-ui button.danger-outline{background:#fff1f5;color:#c3315c;border-color:#f5d5df}
+ body.apple-ui.approved-ui dialog[aria-labelledby="directional-stop-title"] button[type=submit]{background:#d83e69;color:#fff;border-color:#d83e69}
+ body.apple-ui.approved-ui :is(button,input,summary,a):focus-visible{outline:2px solid #8b929a;outline-offset:2px}
+ body.apple-ui.approved-ui :is(input:not([type=checkbox]):not([type=radio]),textarea,.workspace-select-trigger){background:#f4f5f6;color:#17191c;border:1px solid transparent;border-radius:12px;box-shadow:none;min-height:46px}
+ body.apple-ui.approved-ui .workspace-select-trigger>span{color:inherit}
+ body.apple-ui.approved-ui .approved-workspace-content{gap:0}
+ body.apple-ui.approved-ui :is(.account-card,.rp-card,.paper-create,.paper-account-picker,.paper-account-overview,.paper-record-panel,.paper-record-empty,.gold-card,.approved-system-page .health){border:0;border-bottom:1px solid #eceef0;border-radius:0;background:#fff;box-shadow:none;padding:14px 0;margin-bottom:12px}
+ body.apple-ui.approved-ui .research-workbench section{border-radius:0;box-shadow:none;border-color:#eceef0;background:#fff}
+ body.apple-ui.approved-ui .gold-heading h1{font-size:21px;letter-spacing:-.5px}
+ body.apple-ui.approved-ui .gold-workflow-links a{border-radius:3px;background:#f4f5f6;color:#53585f;box-shadow:none}
+ body.apple-ui.approved-ui .gold-panel-heading h2{font-size:15px}
+ body.apple-ui.approved-ui .gold-source-badge{background:#f4f5f6;color:#85898f;border-radius:2px}
+ body.apple-ui.approved-ui .gold-actions button:first-child{background:#00b8c4;color:#fff}
+ body.apple-ui.approved-ui .gold-actions button:last-child{background:#ef4778;color:#fff}
+ body.apple-ui.approved-ui .workspace-select-dialog{border:0;border-radius:20px;background:#fff;box-shadow:0 8px 32px #0002;color:#141619}
+ body.apple-ui.approved-ui .workspace-select-dialog .workspace-select-search{border-radius:12px;background:#f4f5f6}
+ body.apple-ui.approved-ui .workspace-select-dialog :is(button,[role=option]){border-radius:10px;box-shadow:none;color:#17191c}
+ body.apple-ui.approved-ui .workspace-select-dialog [aria-selected=true]{background:#edf0f1;color:#111}
+ body.apple-ui.approved-ui .workspace-icon-button{background:#fff;border:0;color:#17191c;box-shadow:none}
+ body.apple-ui.approved-ui .workspace-primary-nav>a[aria-current=page]{color:#111}
+ body.apple-ui.approved-ui .replay-workspace .rp-chart-empty{border-radius:0;background:#fafbfc;color:#85898f}
+ body.apple-ui.approved-ui .replay-workspace .rp-chart-empty>.rp-icon{color:#8d949c}
+ body.apple-ui.approved-ui .replay-workspace .rp-chart-empty strong{color:#50565e}
+ body.apple-ui.approved-ui .replay-workspace .rp-setup-shortcut{background:#111315;color:#fff;border-radius:4px;box-shadow:none}
+ body.apple-ui.approved-ui .replay-workspace .rp-segmented{border-radius:4px;background:#f3f4f5}
+ body.apple-ui.approved-ui .replay-workspace .rp-pill{border-radius:2px;background:#f4f5f6;color:#85898f}
+ body.apple-ui.approved-ui:has(main.gold-market-workspace)>.approved-workspace-header,body.apple-ui.approved-ui:has(main.gold-market-workspace) .workspace-mobile-title{display:none}
+ body.apple-ui.approved-ui .gold-heading-actions{display:flex;align-items:center;gap:6px}
+ body.apple-ui.approved-ui .gold-mobile-settings{display:grid;place-items:center;color:#17191c;min-width:32px;min-height:34px}
+ body.apple-ui.approved-ui .gold-market-workspace .gold-heading{margin-bottom:10px}
+ body.approved-ui:has([data-testid=mobile-directional-trade]) .approved-workspace-header,body.approved-ui:has([data-testid=mobile-directional-trade]) .workspace-mobile-title,body.approved-ui:has([data-testid=mobile-directional-trade]) .account-navigation{display:none}
+}
+}

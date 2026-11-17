@@ -1,0 +1,15 @@
+services:
+  directional:
+    image: fc666-directional-test:operator-20261102
+    group_add: ["10001"]
+    environment:
+      FC666_OPERATOR_DIR: /app/.runtime/directional/operator
+      FC666_OPERATOR_VAULT_READ_GROUP: "10001"
+      LIVE_TRADING: "false"
+  research-worker:
+    image: fc666-research-worker:operator-20261102
+    environment:
+      FC666_OPERATOR_VAULT_PATH: /app/.runtime/operator-vault
+      LIVE_TRADING: "false"
+    volumes:
+      - /opt/fc666-directional-test/data/operator/vault:/app/.runtime/operator-vault:ro

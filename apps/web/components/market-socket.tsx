@@ -1,9 +1,10 @@
 "use client";
 import {useEffect} from "react";
-import {SnapshotSchema,type Interval} from "../lib/market";
+import {SnapshotSchema,type Interval,type SymbolName} from "../lib/market";
 import {useMarketStore} from "../lib/market-store";
 import {marketSocketUrl} from "../lib/market-socket-url";
-export default function MarketSocket({timeframe}:{timeframe:Interval}) {
+export default function MarketSocket({timeframe,symbols}:{timeframe:Interval;symbols:SymbolName[]}) {
+  const subscription=symbols.join(',');
   useEffect(() => {
     let disposed=false,attempt=0,socket:WebSocket|null=null,timer:ReturnType<typeof setTimeout>|undefined;
     function connect() {
@@ -12,7 +13,7 @@ export default function MarketSocket({timeframe}:{timeframe:Interval}) {
       try {ws=new WebSocket(marketSocketUrl(process.env.NEXT_PUBLIC_MARKET_WS_URL,location));}
       catch {useMarketStore.getState().setConnection("offline");return;}
       socket=ws;
-      ws.onopen=() => ws.send(JSON.stringify({action:"subscribe",symbols:["BTCUSDT","ETHUSDT"],channels:["ticker","book","trade",`candle.${timeframe}`]}));
+      ws.onopen=() => ws.send(JSON.stringify({action:"subscribe",symbols:subscription.split(','),channels:["ticker","book","trade",`candle.${timeframe}`]}));
       ws.onmessage=event => {
         if (disposed || socket!==ws) return;
         try {
@@ -38,6 +39,6 @@ export default function MarketSocket({timeframe}:{timeframe:Interval}) {
     }
     connect();
     return () => {disposed=true;if(timer)clearTimeout(timer);socket?.close();useMarketStore.getState().setConnection("offline");};
-  },[timeframe]);
+  },[timeframe,subscription]);
   return null;
 }

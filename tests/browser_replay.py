@@ -8,6 +8,12 @@ from playwright.sync_api import sync_playwright,expect
 from tests.browser_terminal import ARGS
 ROOT=Path(__file__).resolve().parents[1]
 
+def choose(page,label,option):
+    page.get_by_role('button',name=label,exact=True).click()
+    dialog=page.get_by_role('dialog',name=label,exact=True)
+    dialog.get_by_role('option',name=option,exact=True).click()
+    expect(dialog).not_to_be_visible()
+
 if __name__=='__main__':
     binary=subprocess.check_output(['node','scripts/browser_path.mjs'],cwd=ROOT,text=True).strip()
     checks=[];errors=[];sockets=[];market_requests=[]
@@ -18,7 +24,7 @@ if __name__=='__main__':
         page.on('websocket',lambda socket:sockets.append(socket.url))
         page.on('request',lambda request:market_requests.append(request.url) if '/api/market/' in request.url else None)
         page.goto('http://127.0.0.1:3000/replay',wait_until='domcontentloaded')
-        page.get_by_label('回放周期',exact=True).select_option('1m')
+        choose(page,'回放周期','1m')
         page.get_by_label('回放柱数',exact=True).fill('8')
         page.get_by_label('回放均线周期',exact=True).fill('2')
         with page.expect_response(lambda response:response.url.endswith('/api/replay/sessions') and response.request.method=='POST') as response:page.get_by_role('button',name='创建固定回放').click()
@@ -37,12 +43,12 @@ if __name__=='__main__':
             clock=datetime.fromisoformat(observed['clock'])
             assert all(datetime.fromisoformat(bar['close_time'])<=clock for bar in observed['candles'])
             assert all(datetime.fromisoformat(row['available_at'])<=clock for row in observed['indicators'])
-            expect(page.get_by_test_id('replay-close')).to_have_text(observed['candles'][-1]['close'])
+            expect(page.get_by_test_id('replay-close')).to_have_attribute('data-value',observed['candles'][-1]['close'])
         canvas_count=page.get_by_test_id('replay-chart').locator('canvas').count()
         page.get_by_role('button',name='回放指标',exact=True).click()
         page.wait_for_function(f"document.querySelectorAll('[data-testid=replay-chart] canvas').length>{canvas_count}")
         checks.append('zero-bar initial view; every step returns only reached candles and causal indicators; chart panes use reached prefix; no live market requests')
-        page.get_by_label('回放速度',exact=True).select_option('4')
+        choose(page,'回放速度','4×')
         page.get_by_role('button',name='播放回放',exact=True).click()
         page.wait_for_function("Number(document.querySelector('[data-testid=replay-state]').dataset.cursor)>=3")
         page.get_by_role('button',name='暂停回放',exact=True).click()
@@ -53,7 +59,7 @@ if __name__=='__main__':
         page.reload(wait_until='domcontentloaded')
         expect(state).to_have_attribute('data-cursor',str(paused['cursor']))
         expect(state).to_have_attribute('data-playing','false')
-        expect(page.get_by_label('回放速度',exact=True)).to_have_value('4')
+        expect(page.get_by_role('button',name='回放速度',exact=True)).to_have_text('4×')
         checks.append('target speed playback; pause stops subsequent advancement; refresh restores acknowledged cursor and defaults paused')
         # Another client advances while this page holds a stale revision.
         remote=page.request.post(prefix+'/command',data={'expected_revision':paused['revision'],'action':'step'}).json()
