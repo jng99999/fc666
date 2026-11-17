@@ -17,3 +17,46 @@
 @media(max-width:760px){.replay-workspace .rp-field input,.replay-workspace .rp-field select{font-size:16px}}
 @media(prefers-reduced-motion:reduce){.replay-workspace *{transition:none!important;scroll-behavior:auto!important}}
 @media(max-width:760px),(max-width:1024px) and (hover:none) and (pointer:coarse){.replay-workspace .rp-chart-empty{z-index:3}.replay-workspace .rp-chart-wrap:has(>.rp-chart-empty){isolation:isolate}}
+.replay-workspace .rp-phone-facts{display:none}
+@media(max-width:760px),(max-width:1024px) and (hover:none) and (pointer:coarse){
+ .replay-workspace.replay-page{--text:#171b20;--muted:#68717b;--blue:#15181c;--blue-soft:#f0f2f4;--line:#edf0f2;--up:#00aeb8;--down:#ef4778}
+ .replay-workspace.replay-page .rp-card{padding:12px 0;border:0;border-radius:0;box-shadow:none;background:#fff;border-bottom:1px solid #edf0f2}
+ .replay-workspace.replay-page .rp-layout,.replay-workspace.replay-page .rp-main{gap:8px}
+ .replay-workspace.replay-page .rp-config{padding:0;border-bottom:1px solid #edf0f2}
+ .replay-workspace.replay-page .rp-mobile-config{padding:10px 0;min-height:40px}
+ .replay-workspace.replay-page .rp-player{display:flex;flex-direction:column;gap:0}
+ .replay-workspace.replay-page .rp-player-heading{order:0;margin-bottom:8px}
+ .replay-workspace.replay-page .rp-quote{order:1;margin-bottom:8px}
+ .replay-workspace.replay-page .rp-progress{order:2;margin:0 0 8px}
+ .replay-workspace.replay-page .rp-transport{order:3;margin:0 0 12px}
+ .replay-workspace.replay-page .rp-chart-head{order:4;flex-wrap:wrap;margin-bottom:8px}
+ .replay-workspace.replay-page .rp-player>[data-testid=chart-workbench]{order:5}
+ .replay-workspace.replay-page .rp-phone-facts{order:6;display:block;padding:10px 0 0;border-top:1px solid #edf0f2;margin-top:8px}
+ .replay-workspace.replay-page .rp-clock{order:7;margin-top:8px;padding-top:8px}
+ .replay-workspace.replay-page .rp-phone-facts h3{font-size:12px;margin-bottom:8px}
+ .replay-workspace.replay-page .rp-phone-facts dl{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px 8px;margin:0}
+ .replay-workspace.replay-page .rp-phone-facts dl>div{display:block;min-width:0;padding:0;border:0}
+ .replay-workspace.replay-page .rp-phone-facts dt{font-size:10px;color:#68717b;margin-bottom:3px}
+ .replay-workspace.replay-page .rp-phone-facts dd{font-size:12px;margin:0;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
+ .replay-workspace.replay-page .rp-phone-facts>p{font-size:10px;color:#68717b;line-height:1.6;margin-top:8px;overflow-wrap:anywhere}
+ .replay-workspace.replay-page .rp-chart-wrap:has(>.rp-chart-empty) .rp-canvas{height:140px}
+ .replay-workspace.replay-page .rp-chart-empty{gap:6px;padding:12px;background:#fafbfc;border-radius:0}
+ .replay-workspace.replay-page .rp-chart-empty>.rp-icon{display:none}
+ .replay-workspace.replay-page .rp-chart-empty strong{font-size:12px}
+ .replay-workspace.replay-page .rp-chart-empty p{font-size:10px}
+ .replay-workspace.replay-page .rp-segmented{padding:2px;background:#f4f5f6;border-radius:5px;max-width:100%;overflow-x:auto}
+ .replay-workspace.replay-page .rp-segmented button{min-height:32px;padding:5px 7px;border-radius:4px;color:#68717b;background:transparent;box-shadow:none;flex-shrink:0}
+ .replay-workspace.replay-page .rp-segmented button.active{background:#fff;color:#171b20}
+ .replay-workspace.replay-page .rp-button,.replay-workspace.replay-page .rp-icon-button{border-radius:6px;box-shadow:none;border-color:#e7eaed;color:#22272d}
+ .replay-workspace.replay-page .rp-button.primary{background:#14171b;border-color:#14171b;color:#fff;box-shadow:none}
+ .replay-workspace.replay-page .rp-button.soft{background:#f0f2f4;color:#22272d}
+ .replay-workspace.replay-page .rp-config form,.replay-workspace.replay-page fieldset{gap:12px}
+ .replay-workspace.replay-page .rp-config-note{padding:8px;border-radius:6px;background:#f5f6f7;color:#68717b}
+ .replay-workspace.replay-page .rp-mobile-decisions article{padding:8px 0}
+ .replay-workspace.replay-page .rp-target{border-radius:4px}
+ .replay-workspace.replay-page .rp-target.long{color:#008b94;background:#e8f9fa}
+ .replay-workspace.replay-page .rp-target.flat{color:#59616b;background:#f1f3f5}
+ .replay-workspace.replay-page .rp-decision-empty{padding:12px 8px;border-radius:4px;background:#fafbfc;color:#68717b}
+ .replay-workspace.replay-page .rp-details{padding:0}
+ .replay-workspace.replay-page .rp-details summary{padding:12px 0}
+}

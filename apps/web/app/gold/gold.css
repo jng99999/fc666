@@ -51,3 +51,39 @@
  .gold-mobile-order-quote small{display:block;font-size:10px;color:#8a9097;margin-bottom:4px}.gold-mobile-order-quote strong{display:block;font-size:17px;line-height:1.4;font-variant-numeric:tabular-nums;overflow-wrap:anywhere;margin-bottom:14px}.gold-mobile-order-quote strong:first-of-type{color:#00aeb8}.gold-mobile-order-quote strong:nth-of-type(2){color:#ef4778}.gold-mobile-order-quote>span{font-size:13px;font-variant-numeric:tabular-nums}.gold-mobile-order-quote p{font-size:10px;line-height:1.5;margin-top:12px}
  body.approved-ui .gold-market-workspace .gold-create-panel{margin-top:10px}.gold-create-panel>summary{font-size:14px;font-weight:650;padding:12px 0;color:#17191c}.gold-create-panel form{padding-top:8px}
 }
+/* Phone data rows share the exchange screen; desktop surfaces stay unchanged. */
+@media(max-width:760px),(max-width:1024px) and (hover:none) and (pointer:coarse){
+ body.apple-ui.approved-ui .gold-workspace.gold-market-workspace .gold-heading{margin-bottom:4px}
+ body.apple-ui.approved-ui .gold-workspace.gold-market-workspace .gold-mobile-tabs{margin-bottom:4px}
+ body.apple-ui.approved-ui .gold-workspace.gold-market-workspace .gold-card{padding:10px 0;margin-bottom:10px;border:0;border-bottom:1px solid #eceef0;border-radius:0;box-shadow:none}
+ body.apple-ui.approved-ui .gold-workspace.gold-market-workspace .gold-card h2{font-size:14px;margin-bottom:8px}
+ body.apple-ui.approved-ui .gold-workspace.gold-market-workspace .gold-market-card{padding-top:4px}
+ body.apple-ui.approved-ui .gold-workspace.gold-market-workspace .gold-panel-heading{margin:0;padding:0;min-height:0;line-height:1}
+ body.apple-ui.approved-ui .gold-workspace.gold-market-workspace .gold-source-badge{font-size:9px;padding:2px 5px}
+ body.apple-ui.approved-ui .gold-workspace.gold-market-workspace .gold-quote{padding:4px 0 8px;gap:4px 12px}
+ body.apple-ui.approved-ui .gold-workspace.gold-market-workspace .gold-mobile-sample{border-top:1px solid #eceef0;padding:10px 0 0;margin-top:8px}
+ .gold-mobile-sample>header{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+ body.apple-ui.approved-ui .gold-workspace.gold-market-workspace .gold-mobile-sample h2{font-size:12px;margin:0}
+ .gold-mobile-sample>header>span{font-size:10px;color:#69717b}
+ body.apple-ui.approved-ui .gold-workspace.gold-market-workspace :is(.gold-mobile-sample,.gold-mobile-analysis-context) dl{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px 8px;margin:0;font-variant-numeric:tabular-nums}
+ body.apple-ui.approved-ui .gold-workspace.gold-market-workspace :is(.gold-mobile-sample,.gold-mobile-analysis-context) dl>div{display:block;min-width:0;padding:0;border:0}
+ body.apple-ui.approved-ui .gold-workspace.gold-market-workspace :is(.gold-mobile-sample,.gold-mobile-analysis-context) dt{font-size:10px;color:#69717b;margin:0 0 3px}
+ body.apple-ui.approved-ui .gold-workspace.gold-market-workspace :is(.gold-mobile-sample,.gold-mobile-analysis-context) dd{font-size:12px;color:#17191c;text-align:left;margin:0;overflow-wrap:anywhere}
+ body.apple-ui.approved-ui .gold-workspace.gold-market-workspace :is(.gold-mobile-sample,.gold-mobile-analysis-context)>p{font-size:10px;color:#69717b;line-height:1.5;margin:8px 0;overflow-wrap:anywhere}
+ .gold-mobile-analysis-context{padding:12px 0;border-bottom:1px solid #eceef0}
+ body.apple-ui.approved-ui .gold-workspace.gold-market-workspace .gold-values{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 8px;margin:0 0 12px}
+ body.apple-ui.approved-ui .gold-workspace.gold-market-workspace .gold-values>div{display:block;padding:0;border:0;min-width:0}
+ body.apple-ui.approved-ui .gold-workspace.gold-market-workspace .gold-values dt{font-size:10px;color:#69717b;margin-bottom:3px}
+ body.apple-ui.approved-ui .gold-workspace.gold-market-workspace .gold-values dd{font-size:12px;margin:0;text-align:left;color:#17191c}
+ body.apple-ui.approved-ui .gold-workspace.gold-market-workspace .gold-account-balances .gold-values{grid-template-columns:repeat(3,minmax(0,1fr));padding:10px 0;border-block:1px solid #eceef0}
+ body.apple-ui.approved-ui .gold-workspace.gold-market-workspace :is(.gold-primary,form>button){background:#141619;border-color:#141619;color:#fff;box-shadow:none}
+ body.apple-ui.approved-ui .gold-workspace.gold-market-workspace .gold-segmented button[aria-pressed=true]{background:#eef0f2;color:#17191c;box-shadow:none}
+ body.apple-ui.approved-ui .gold-workspace.gold-market-workspace .gold-chart-workspace .chart-period-presets button{background:transparent;color:#69717b;border:0;border-radius:6px;box-shadow:none;min-height:34px;padding:6px 8px;font-size:11px}
+ body.apple-ui.approved-ui .gold-workspace.gold-market-workspace .gold-chart-workspace .chart-period-presets button[aria-pressed=true]{background:#eef0f2;color:#17191c;font-weight:650;box-shadow:none}
+ body.apple-ui.approved-ui .gold-workspace.gold-market-workspace .gold-chart-workspace .chart-custom-period [role=group] button{background:#f3f4f5;color:#69717b;border-color:transparent;box-shadow:none}
+ body.apple-ui.approved-ui .gold-workspace.gold-market-workspace .gold-chart-workspace .chart-custom-period [role=group] button[aria-pressed=true]{background:#e8ebee;color:#17191c}
+ body.apple-ui.approved-ui .gold-workspace.gold-market-workspace .gold-mobile-order-controls .gold-actions{display:flex;flex-direction:column;gap:8px;margin:10px 0}
+ body.apple-ui.approved-ui .gold-workspace.gold-market-workspace .gold-mobile-order-controls .gold-actions>button{flex:auto;min-height:44px;background:#00b8c4;border-color:transparent;color:#fff}
+ body.apple-ui.approved-ui .gold-workspace.gold-market-workspace .gold-mobile-order-controls .gold-actions>button:last-child{background:#ef4778}
+ body.apple-ui.approved-ui .gold-workspace.gold-market-workspace :is(.gold-primary,form>button,.gold-mobile-order-controls .gold-actions>button):disabled{background:#f1f2f4;border-color:#e8eaed;color:#858b94;box-shadow:none}
+}

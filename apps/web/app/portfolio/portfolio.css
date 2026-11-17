@@ -307,7 +307,9 @@ body.approved-ui .approved-account-page .account-holdings-table .account-footnot
  body.approved-ui .approved-account-page .account-chart-heading{margin:12px 0 6px;padding:0;border:0}
  body.approved-ui .approved-account-page .account-range{width:100%;max-width:none;min-width:0;height:27px;padding:2px;box-sizing:border-box;gap:2px}
  body.approved-ui .approved-account-page .account-range button{min-height:23px;padding:2px 0;font-size:11px;line-height:1.1}
- body.approved-ui .approved-account-page .account-chart-plot,body.approved-ui .approved-account-page .account-chart-empty{height:112px;min-height:112px;font-size:12px}
+ body.approved-ui .approved-account-page .account-chart-plot{height:112px;min-height:112px;font-size:12px}
+ body.approved-ui .approved-account-page .account-chart-empty{height:auto;min-height:72px;font-size:12px;padding:8px 0;background:none;gap:6px}
+ body.approved-ui .approved-account-page .account-empty{min-height:112px;padding:12px 0;gap:8px}
  body.approved-ui .approved-account-page .account-equity-svg text{font-size:9px}
  body.approved-ui .approved-account-page .account-panel-heading{margin-bottom:11px;gap:8px}
  body.approved-ui .approved-account-page .account-panel-heading h2{font-size:16px;line-height:20px}

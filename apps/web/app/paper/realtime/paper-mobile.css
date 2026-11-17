@@ -1,4 +1,5 @@
 /* Paper pages use the approved base/account/strategy surfaces. All rules stay in paper. */
+.approved-paper-page .paper-mobile-context,.approved-paper-page button.paper-mobile-create-link{display:none}
 .approved-paper-page{min-width:0;max-width:none;margin:0;padding:0;color:var(--text,#13213b);font-size:14px;line-height:1.5;font-variant-numeric:tabular-nums}
 .approved-paper-page :is(h1,h2,h3,p){margin:0}
 .approved-paper-page h1{font-size:25px;font-weight:750;line-height:1.5;letter-spacing:-.035em}
@@ -225,3 +226,30 @@
 }
 @media(max-width:359px){.approved-paper-page .paper-picker-identity{font-size:9px}.approved-paper-page .paper-picker-identity time{font-size:9px}.approved-paper-page .paper-ledger-title time{font-size:9px}.approved-paper-page .paper-ledger-list dl{gap:7px}.approved-paper-page .paper-ledger-list dt{font-size:10px}.approved-paper-page .paper-stop-actions button{font-size:11px}}
 @media(prefers-reduced-motion:reduce){.approved-paper-page :is(button,a){transition:none!important}}
+@media(max-width:760px),(max-width:1024px) and (hover:none) and (pointer:coarse){
+ body.apple-ui.approved-ui .approved-paper-page .paper-mobile-context{display:block;padding:10px 0 12px;border-bottom:1px solid #eceef0;margin-bottom:10px}
+ .paper-mobile-context>header{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+ body.apple-ui.approved-ui .approved-paper-page .paper-mobile-context h2{font-size:13px;color:#17191c}
+ .paper-mobile-context>header>span{font-size:10px;color:#69717b}
+ .paper-mobile-context dl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 8px;margin:0;font-variant-numeric:tabular-nums}
+ body.apple-ui.approved-ui .approved-paper-page .paper-mobile-context dl>div{display:block;min-width:0;padding:0;border:0}
+ .paper-mobile-context dt{font-size:10px;color:#69717b;margin:0 0 3px}.paper-mobile-context dd{font-size:12px;color:#17191c;margin:0;text-align:left;overflow-wrap:anywhere}
+ body.apple-ui.approved-ui .approved-paper-page .paper-mobile-context>p{font-size:10px;line-height:1.5;color:#69717b;margin:10px 0 0}
+ body.apple-ui.approved-ui .approved-paper-page>.paper-record-empty{min-height:0;padding:14px 0;text-align:left;border:0;border-bottom:1px solid #eceef0;border-radius:0;box-shadow:none}
+ body.apple-ui.approved-ui .approved-paper-page .paper-record-empty>p{margin:8px 0 12px;max-width:none;font-size:11px;line-height:1.6}
+ .paper-empty-actions{display:flex;gap:8px}
+ body.apple-ui.approved-ui .approved-paper-page .paper-empty-actions>button{display:inline-flex;flex:1;min-height:40px;font-size:12px;white-space:normal;background:#f3f4f5;color:#17191c;border:0;border-radius:8px;box-shadow:none}
+ body.apple-ui.approved-ui .approved-paper-page .paper-empty-actions>.paper-mobile-create-link{background:#141619;color:#fff}
+ body.apple-ui.approved-ui .approved-paper-page :is(.paper-account-overview,.paper-account-picker,.paper-record-panel,.paper-create){padding:12px 0;border:0;border-bottom:1px solid #eceef0;border-radius:0;box-shadow:none;margin-bottom:10px}
+ body.apple-ui.approved-ui .approved-paper-page .paper-balance-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:12px 8px;padding:10px 0;border-block:1px solid #eceef0}
+ body.apple-ui.approved-ui .approved-paper-page .paper-balance-grid>div{display:block;background:transparent;border:0;border-radius:0;box-shadow:none;padding:0;min-width:0}
+ body.apple-ui.approved-ui .approved-paper-page .paper-balance-grid dt{font-size:10px;color:#69717b;margin-bottom:4px}
+ body.apple-ui.approved-ui .approved-paper-page .paper-balance-grid dd{font-size:15px;line-height:1.4;color:#17191c;letter-spacing:0}
+ body.apple-ui.approved-ui .approved-paper-page .paper-account-actions{padding:12px 0;gap:8px}
+ body.apple-ui.approved-ui .approved-paper-page .paper-account-actions>button:first-child,body.apple-ui.approved-ui .approved-paper-page .paper-create-submit{background:#141619;color:#fff;border-color:#141619;box-shadow:none}
+ body.apple-ui.approved-ui .approved-paper-page :is(.paper-view-switch,.paper-record-tabs){background:#f3f4f5;border-radius:10px;margin-bottom:10px}
+ body.apple-ui.approved-ui .approved-paper-page :is(.paper-view-switch,.paper-record-tabs) button[aria-pressed=true]{background:#fff;color:#17191c;box-shadow:0 1px 3px #00000008}
+ body.apple-ui.approved-ui .approved-paper-page :is(.paper-account-details,.paper-account-management){margin-top:8px}
+ body.apple-ui.approved-ui .approved-paper-page .paper-record-panel>.paper-record-tabs{margin-bottom:8px}
+ body.apple-ui.approved-ui .approved-paper-page .paper-feed-summary{padding-top:8px}
+}

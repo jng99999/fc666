@@ -275,3 +275,48 @@
   .workbench.workbench .srParamField input,
   .workbench.workbench .srParamField select { font-size:16px; }
 }
+.workbench .srMobileScope { display:none; }
+@media(max-width:760px) {
+  .workbench.workbench { color:#171b20;--research-text:#171b20;--research-muted:#68717b;--research-blue:#15181c; }
+  .workbench.workbench .srMobilePicks { gap:4px;padding-bottom:8px;border-bottom:1px solid #edf0f2; }
+  .workbench.workbench .srMobilePicks>button { background:#fff;border-color:transparent;border-radius:6px;color:#68717b;min-height:36px;padding:7px 10px;box-shadow:none; }
+  .workbench.workbench .srMobilePicks>button[aria-pressed=true] { background:#f0f2f4;color:#15181c;border-color:transparent;box-shadow:none; }
+  .workbench.workbench .srPerformance,.workbench.workbench .srSignals { padding:12px 0;margin-top:0;border:0;border-bottom:1px solid #edf0f2;border-radius:0;box-shadow:none;background:#fff; }
+  .workbench.workbench .srStrategyHeader { padding-bottom:8px; }
+  .workbench.workbench .srStrategyHeader>.coin { width:28px;height:28px;flex-basis:28px; }
+  .workbench.workbench .srStrategyHeader h1 { font-size:16px; }
+  .workbench.workbench .srStrategyHeader p .demoBadge { display:inline-flex;font-size:9px; }
+  .workbench.workbench .srMetrics { grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:4px 0 12px; }
+  .workbench.workbench .srMetrics>div+.srTradeMetric,.workbench.workbench .srMetrics>.srTradeMetric { display:block; }
+  .workbench.workbench .srMetrics>div+div { padding-left:8px; }
+  .workbench.workbench .srMetrics span { font-size:10px; }
+  .workbench.workbench .srMetrics strong { font-size:22px;margin-top:4px; }
+  .workbench.workbench .up { color:#00aeb8; }.workbench.workbench .down { color:#ef4778; }
+  .workbench.workbench .srMobileScope { display:block;padding:10px 0;border-top:1px solid #edf0f2;border-bottom:1px solid #edf0f2; }
+  .workbench.workbench .srMobileScope>header { display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px; }
+  .workbench.workbench .srMobileScope h2 { font-size:12px; }
+  .workbench.workbench .srMobileScope header>button { min-height:32px;background:none;border:0;box-shadow:none;padding:4px 0;color:#59616b;font-size:10px; }
+  .workbench.workbench .srMobileScope dl { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:0; }
+  .workbench.workbench .srMobileScope dl>div { display:block;min-width:0;padding:0;border:0; }
+  .workbench.workbench .srMobileScope dt { font-size:10px;color:#68717b; }
+  .workbench.workbench .srMobileScope dd { font-size:12px;color:#20252b;margin:3px 0 0;overflow-wrap:anywhere;font-variant-numeric:tabular-nums; }
+  .workbench.workbench .srMobileScope p { font-size:10px;line-height:1.6;color:#68717b;margin:8px 0 0; }
+  .workbench.workbench .srChartPlaceholder { min-height:88px;gap:6px;padding:12px 8px;margin:0;background:#fafbfc;border-radius:0; }
+  .workbench.workbench .srChartPlaceholder>svg { display:none; }
+  .workbench.workbench .srChartPlaceholder strong { font-size:12px; }
+  .workbench.workbench .srChartPlaceholder>span { font-size:10px; }
+  .workbench.workbench .srMobilePeriods .srPeriods { border:0;border-radius:0;background:#fff;padding:4px 0; }
+  .workbench.workbench .srMobilePeriods .srPeriods button { border-radius:4px;color:#68717b;background:transparent;padding:6px 12px; }
+  .workbench.workbench .srMobilePeriods .srPeriods button[aria-pressed=true] { color:#171b20;background:#f0f2f4; }
+  .workbench.workbench .srSignals .panelHead { margin-bottom:8px; }
+  .workbench.workbench .srRule,.workbench.workbench .srRule.srExit { display:flex;border:0;border-bottom:1px solid #edf0f2;border-radius:0;background:#fff;padding:10px 0;gap:8px; }
+  .workbench.workbench .srRule strong { font-size:12px;margin:3px 0; }
+  .workbench.workbench .srRule p { display:block;font-size:10px;line-height:1.6;color:#68717b; }
+  .workbench.workbench .srRuleIcon { width:24px;height:24px;color:#00aeb8;background:#eaf9f9;border-radius:4px; }
+  .workbench.workbench .srRuleIcon.down { color:#ef4778;background:#fff0f4; }
+  .workbench.workbench .srMobileParams { gap:6px;margin:8px 0; }
+  .workbench.workbench .srMobileParams button { min-height:52px;padding:8px 6px;background:#f5f6f7;border:0;border-radius:6px;box-shadow:none; }
+  .workbench.workbench .srMobileParams button strong { font-size:12px; }
+  .workbench.workbench .srMobileConfig,.workbench.workbench .srInspector .btn.primary { background:#14171b;border-color:#14171b;border-radius:8px;box-shadow:none;color:#fff; }
+  .workbench.workbench .srOnly { position:static;width:auto;height:auto;overflow:visible;clip-path:none;white-space:normal;font-size:10px;line-height:1.6;color:#68717b;margin-top:8px; }
+}
