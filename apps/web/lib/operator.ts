@@ -38,6 +38,21 @@ export type ConfigurationDraft={
  gold_source:string;gold_url:string;gold_token:string;clear_gold_token:boolean;
  accounts:string;
 };
+export const DEEPSEEK_BASE_URL='https://api.deepseek.com';
+export function modelProviderSelection(model:Pick<ConfigurationDraft,'provider'|'base_url'>):string{
+ if(model.provider==='openai'){
+  try{const url=new URL(model.base_url);if(url.origin===DEEPSEEK_BASE_URL&&/^\/(?:v1\/?)?$/.test(url.pathname)&&!url.username&&!url.password&&!url.search&&!url.hash)return 'deepseek';}catch{/* An incomplete custom address remains an OpenAI-compatible draft. */}
+ }
+ return model.provider;
+}
+export function selectModelProvider(draft:ConfigurationDraft,selection:string):ConfigurationDraft{
+ const selected=z.enum(['','openai','deepseek','anthropic','google']).parse(selection),previous=modelProviderSelection(draft);
+ const provider=selected==='deepseek'?'openai':selected;
+ const base_url=selected==='deepseek'?DEEPSEEK_BASE_URL:selected==='google'||previous==='deepseek'?'':draft.base_url;
+ const destinationChanged=provider!==draft.provider||base_url!==draft.base_url;
+ return {...draft,provider,base_url,api_key:destinationChanged?'':draft.api_key,
+  model:selected!==previous&&(selected==='deepseek'||previous==='deepseek')?'':draft.model};
+}
 export function draftFromConfig(config:OperatorConfig):ConfigurationDraft{
  return {provider:config.model.provider,model:config.model.model,base_url:config.model.base_url,api_key:'',clear_api_key:false,
   news_source:config.news.source,news_url:config.news.url,news_token:'',clear_news_token:false,

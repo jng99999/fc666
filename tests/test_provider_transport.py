@@ -47,6 +47,7 @@ def install_transport(monkeypatch, *, address='1.1.1.1', redirect=False):
         def respond(request):
             payload = json.loads(request.read())
             records.append({'host': request.url.host, 'host_header': request.headers['Host'],
+                'path': request.url.path,
                 'sni': request.extensions['sni_hostname'], 'payload': payload,
                 'module': http_module.__name__})
             if redirect:
@@ -100,6 +101,26 @@ def test_actual_sync_and_structured_sdk_calls_use_pinned_module_matched_transpor
         assert record['module'] == ('httpx2' if provider == 'anthropic' else 'httpx')
         assert record['payload'].get('max_tokens', record['payload'].get('max_completion_tokens')) == 1200
         assert 'http_client' not in record['payload']
+    assert no_network == []
+
+
+def test_deepseek_official_endpoint_uses_chat_completions_and_supported_function_structure(monkeypatch, no_network):
+    sdk('openai')
+    records, resolutions, transports = install_transport(monkeypatch)
+    with model_client('openai', 'deepseek-flash', 'FAKE_DEEPSEEK_KEY', 'https://api.deepseek.com') as llm:
+        assert llm.root_client._client._transport is transports[0]
+        assert llm.root_client.max_retries == 0
+        assert llm.invoke('In-memory DeepSeek contract check only').content == 'In-memory response'
+        result = llm.with_structured_output(Candidate).invoke('In-memory candidate only')
+        assert isinstance(result, Candidate) and result.target == 'HOLD'
+    assert resolutions == [('api.deepseek.com', 443)] * 2 and len(records) == 2
+    for record in records:
+        assert record['path'] == '/chat/completions'
+        assert record['host_header'] == record['sni'] == 'api.deepseek.com'
+        assert record['payload']['model'] == 'deepseek-flash'
+        assert record['payload'].get('response_format', {}).get('type') != 'json_schema'
+    assert records[1]['payload']['tools'][0]['function']['name'] == 'Candidate'
+    assert records[1]['payload'].get('tool_choice') in (None, 'auto')
     assert no_network == []
 
 

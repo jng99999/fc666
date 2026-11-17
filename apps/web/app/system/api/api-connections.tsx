@@ -3,7 +3,7 @@ import Link from 'next/link';
 import {useEffect,useRef,useState,type FormEvent} from 'react';
 import {z} from 'zod';
 import WorkspaceSelect from '../../../components/workspace-select';
-import {OperatorStatus,OperatorConfiguration,OperatorAccounts,OperatorError,operatorRequest,draftFromConfig,configurationPayload,type OperatorSession,type OperatorConfig,type ConfigurationDraft} from '../../../lib/operator';
+import {OperatorStatus,OperatorConfiguration,OperatorAccounts,OperatorError,operatorRequest,draftFromConfig,configurationPayload,modelProviderSelection,selectModelProvider,type OperatorSession,type OperatorConfig,type ConfigurationDraft} from '../../../lib/operator';
 import ApiGuide from './api-guide';
 import styles from './page.module.css';
 
@@ -104,8 +104,9 @@ export default function ApiConnections({frontend}:{frontend:Frontend}){
    {!config||!draft?<section className={styles.card}><h2>正在读取受保护配置</h2><p>尚未收到服务器配置，不能保存。</p><button type="button" className={styles.secondary} disabled={busy} onClick={()=>void task(()=>read())}>重新读取配置</button></section>:<form onSubmit={event=>void save(event)} className={styles.configForm}>
     <fieldset disabled={busy} className={styles.grid}>
      <section className={styles.card} aria-labelledby="model-heading"><div className={styles.cardHeading}><span className={styles.number}>01</span><div><p className={styles.eyebrow}>模型决策</p><h2 id="model-heading">AI 模型 API</h2></div></div>
-      <label>服务商<WorkspaceSelect label="模型服务商" value={draft.provider} disabled={busy} onValueChange={value=>{change('provider',value);if(value==='google'){change('base_url','');setNotice('Google 仅使用官方接口，已清空 Base URL。更换服务商需重填密钥或勾选清除旧密钥。');}}} options={[{value:'',label:'尚未选择'},{value:'openai',label:'OpenAI / OpenAI 兼容接口'},{value:'anthropic',label:'Anthropic'},{value:'google',label:'Google'}]}/></label>
-      <label>真实模型名<input autoComplete="off" value={draft.model} maxLength={200} placeholder="按服务商提供的模型 ID 填写" onChange={event=>change('model',event.target.value)}/></label>
+      <label>服务商<WorkspaceSelect label="模型服务商" value={modelProviderSelection(draft)} disabled={busy} onValueChange={value=>{setDraft(previous=>previous?selectModelProvider(previous,value):null);setNotice(value==='deepseek'?'已选择 DeepSeek 官方接口。请填写真实模型 ID 和 DeepSeek API Key，再保存到服务器。':value==='google'?'Google 仅使用官方接口，已清空 Base URL。更换服务商需重填密钥或勾选清除旧密钥。':'');}} options={[{value:'',label:'尚未选择'},{value:'deepseek',label:'DeepSeek 官方 API'},{value:'openai',label:'OpenAI / 其他 OpenAI 兼容接口'},{value:'anthropic',label:'Anthropic'},{value:'google',label:'Google'}]}/></label>
+      <label>真实模型名<input autoComplete="off" value={draft.model} maxLength={200} placeholder={modelProviderSelection(draft)==='deepseek'?'如 deepseek-flash，按控制台模型 ID 填写':'按服务商提供的模型 ID 填写'} onChange={event=>change('model',event.target.value)}/></label>
+      {modelProviderSelection(draft)==='deepseek'?<p>DeepSeek 使用 OpenAI 兼容协议，已填入官方地址。模型 ID 可按控制台填写 deepseek-flash 或 deepseek-v4-pro，不会自动调用模型。<a href="https://api-docs.deepseek.com/" target="_blank" rel="noreferrer">查看官方接入说明 ↗</a></p>:null}
       {draft.provider!=='google'?<label>自定义 Base URL · 可选<input inputMode="url" autoComplete="off" autoCapitalize="none" spellCheck={false} value={draft.base_url} maxLength={2048} placeholder="https://服务商地址/v1" onChange={event=>change('base_url',event.target.value)}/></label>:<p>Google 使用官方默认接口。自定义兼容网关请选择 OpenAI。</p>}
       <label>API Key<input type="password" autoComplete="off" value={draft.api_key} maxLength={4096} placeholder={config.model.api_key_configured?'服务器已保存，留空保留':'尚未配置，填写后仅存服务器'} disabled={draft.clear_api_key||busy} onChange={event=>change('api_key',event.target.value)}/></label>
       <label className={styles.check}><input type="checkbox" checked={draft.clear_api_key} onChange={event=>{change('clear_api_key',event.target.checked);change('api_key','');}}/>清除服务器保存的模型密钥</label><p className={styles.status}>{config.model.api_key_configured?'模型密钥已保存 · 真实调用仍需验证':'服务器未保存模型密钥'}</p><p>更换服务商或 Base URL 时需重新填写密钥，或明确清除原密钥，不能把旧凭据发给新接口。</p>
