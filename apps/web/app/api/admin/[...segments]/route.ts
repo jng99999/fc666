@@ -14,7 +14,12 @@ async function boundedBody(request:Request){
  const bytes=new Uint8Array(total);let offset=0;for(const chunk of chunks){bytes.set(chunk,offset);offset+=chunk.length;}
  return new TextDecoder('utf-8',{fatal:true}).decode(bytes);
 }
-function message(status:number){return status===401?'管理员会话失效或登录信息错误，请重新登录。':status===403?'登录权限或请求校验未通过，请刷新后重试。':status===409?'配置版本已变化，请重新读取并确认；旧配置仍保留。':status===429?'尝试过于频繁，请稍后再试。':status===400||status===422?'填写内容未通过服务器校验，请检查字段、接口地址与账户归属。':'管理员服务暂不可用，未确认保存结果，请先刷新核对。';}
+function message(status:number,resource?:string){
+ if(resource==='setup'&&status===401)return '首次设置凭证无效或已过期，请联系运营者获取新的限时入口。';
+ if(resource==='setup'&&status===409)return '管理员已创建，请刷新此页后使用管理员用户名和密码登录。';
+ if(resource==='login'&&status===401)return '管理员用户名或密码未通过验证，请核对后重试。';
+ return status===401?'管理员会话已失效，请重新登录。':status===403?'登录权限或请求校验未通过，请刷新后重试。':status===409?'配置版本已变化，请重新读取并确认；旧配置仍保留。':status===429?'尝试过于频繁，请稍后再试。':status===400||status===422?'填写内容未通过服务器校验，请检查字段、接口地址与账户归属。':'管理员服务暂不可用，未确认保存结果，请先刷新核对。';
+}
 
 async function proxy(request:Request,context:{params:Promise<{segments:string[]}>}){
  const {segments}=await context.params,resource=segments[0],read=request.method==='GET';
@@ -53,7 +58,7 @@ async function proxy(request:Request,context:{params:Promise<{segments:string[]}
     forwarded.set('Set-Cookie',`${pair}; Path=/; Max-Age=${seconds}; Secure; HttpOnly; SameSite=Strict`);
    }
   }
-  if(!response.ok)return Response.json({detail:message(response.status)},{status:[400,401,403,409,413,415,422,429,503].includes(response.status)?response.status:502,headers:forwarded});
+  if(!response.ok)return Response.json({detail:message(response.status,resource)},{status:[400,401,403,409,413,415,422,429,503].includes(response.status)?response.status:502,headers:forwarded});
   const value:unknown=await response.json();
   const schema=resource==='configuration'?OperatorConfiguration:resource==='accounts'?OperatorAccounts:OperatorStatus;
   const parsed=schema.safeParse(value);

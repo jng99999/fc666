@@ -69,3 +69,20 @@ test('logout cookies are scoped deletions and unknown upstream cookies are ignor
   const response=await GET(request('status',{method:'GET'}),context('status'));assert.equal(response.headers.get('set-cookie'),null);
  }finally{globalThis.fetch=oldFetch;if(oldBase===undefined)delete process.env.DIRECTIONAL_API_BASE_URL;else process.env.DIRECTIONAL_API_BASE_URL=oldBase;}
 });
+
+test('expired setup invitations, existing administrators and invalid logins give distinct safe recovery instructions',async()=>{
+ const oldBase=process.env.DIRECTIONAL_API_BASE_URL,oldFetch=globalThis.fetch;process.env.DIRECTIONAL_API_BASE_URL='https://private-directional.example';
+ try{
+  for(const [resource,status,expected] of [
+   ['setup',401,'首次设置凭证无效或已过期，请联系运营者获取新的限时入口。'],
+   ['setup',409,'管理员已创建，请刷新此页后使用管理员用户名和密码登录。'],
+   ['login',401,'管理员用户名或密码未通过验证，请核对后重试。'],
+   ['configuration',401,'管理员会话已失效，请重新登录。'],
+  ]){
+   globalThis.fetch=async()=>new Response(JSON.stringify({detail:'PRIVATE_UPSTREAM_CREDENTIAL'}),{status});
+   const response=await POST(request(resource),context(resource));
+   assert.equal(response.status,status);assert.equal((await response.json()).detail,expected);
+   assert.equal(response.headers.get('cache-control'),'no-store');
+  }
+ }finally{globalThis.fetch=oldFetch;if(oldBase===undefined)delete process.env.DIRECTIONAL_API_BASE_URL;else process.env.DIRECTIONAL_API_BASE_URL=oldBase;}
+});
