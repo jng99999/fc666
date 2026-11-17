@@ -88,6 +88,50 @@ def test_bootstrap_expiration_and_invalid_invitation_do_not_create_admin(operato
     assert token not in store.path.read_bytes().decode(errors='ignore')
 
 
+def test_six_digit_password_can_initialize_logout_and_login_without_plaintext_storage(operator):
+    store, invitation, client, _ = operator
+    pin = '482716'  # Isolated fixture, never a deployed default password.
+    headers = {'Origin': ORIGIN}
+    setup = client.post('/api/v1/directional/admin/setup', headers=headers,
+                        json={'setup_token': invitation, 'username': 'operator', 'password': pin})
+    assert setup.status_code == 200 and setup.json()['authenticated'] is True
+    assert client.post('/api/v1/directional/admin/logout', headers=csrf(client), json={}).status_code == 200
+    login = client.post('/api/v1/directional/admin/login', headers=headers,
+                        json={'username': 'operator', 'password': pin})
+    assert login.status_code == 200 and login.json()['authenticated'] is True
+    for path in store.directory.rglob('*'):
+        if path.is_file():
+            assert pin.encode() not in path.read_bytes()
+    assert login.json()['trading_enabled'] is False
+
+
+@pytest.mark.parametrize('password', ['12345', '密' * 43])
+def test_password_boundaries_reject_short_or_overlong_utf8_before_creating_admin(operator, password):
+    store, invitation, client, _ = operator
+    with pytest.raises(OperatorError) as error:
+        store._password(password)
+    assert error.value.status == 422
+    response = client.post('/api/v1/directional/admin/setup', headers={'Origin': ORIGIN},
+                           json={'setup_token': invitation, 'username': 'operator', 'password': password})
+    assert response.status_code == 422 and not store.initialized()
+    assert password not in response.text
+
+
+def test_long_password_can_rotate_to_six_digits_and_revoke_old_sessions(operator):
+    store, _, client, _ = operator
+    initialize(operator)
+    old_token = client.cookies.get(COOKIE)
+    other = store.login('operator', PASSWORD)
+    rejected = client.post('/api/v1/directional/admin/password', headers=csrf(client),
+                           json={'current_password': PASSWORD, 'new_password': '12345'})
+    assert rejected.status_code == 422 and store.authenticate(old_token) is not None
+    changed = client.post('/api/v1/directional/admin/password', headers=csrf(client),
+                          json={'current_password': PASSWORD, 'new_password': '482716'})
+    assert changed.status_code == 200 and changed.json()['authenticated'] is True
+    assert store.authenticate(old_token) is None and store.authenticate(other) is None
+    assert store.login('operator', '482716')
+
+
 def test_write_boundaries_reject_cross_origin_wrong_type_size_and_duplicate_keys(operator):
     _, token, client, _ = operator
     body = {'setup_token': token, 'username': 'operator', 'password': PASSWORD}

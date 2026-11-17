@@ -299,8 +299,8 @@ class OperatorStore:
 
     @staticmethod
     def _password(password: str) -> bytes:
-        if not isinstance(password, str) or not 12 <= len(password) or len(password.encode('utf-8')) > 128 or '\x00' in password:
-            raise OperatorError(422, '密码至少 12 个字符，UTF-8 编码不超过 128 字节')
+        if not isinstance(password, str) or not 6 <= len(password) or len(password.encode('utf-8')) > 128 or '\x00' in password:
+            raise OperatorError(422, '密码至少 6 个字符，UTF-8 编码不超过 128 字节')
         return password.encode('utf-8')
 
     @staticmethod

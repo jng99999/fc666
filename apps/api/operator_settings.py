@@ -17,7 +17,7 @@ class Input(BaseModel):
 class Setup(Input):
     setup_token: str = Field(min_length=43, max_length=43)
     username: str = Field(min_length=3, max_length=32)
-    password: str = Field(min_length=12, max_length=128)
+    password: str = Field(min_length=6, max_length=128)
 
 
 class Login(Input):
@@ -27,7 +27,7 @@ class Login(Input):
 
 class Password(Input):
     current_password: str = Field(max_length=128)
-    new_password: str = Field(min_length=12, max_length=128)
+    new_password: str = Field(min_length=6, max_length=128)
 
 
 class Model(Input):
